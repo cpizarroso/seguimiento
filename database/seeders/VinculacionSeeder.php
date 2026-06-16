@@ -28,6 +28,7 @@ class VinculacionSeeder extends Seeder
                     'name' => $funcionario->nombre,
                     'email' => $funcionario->email,
                     'password' => bcrypt('funcionario123'),
+                    'role' => 'user',
                     'funcionario_id' => $funcionario->id,
                 ]);
 

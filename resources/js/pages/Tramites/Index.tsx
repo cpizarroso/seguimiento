@@ -29,7 +29,8 @@ const estadoLabels: Record<string, string> = {
 };
 
 export default function TramitesIndex({ tramites, puestos }: TramitesIndexProps) {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const role = (props.auth?.user as { role?: string } | null)?.role ?? 'user';
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
     const [estadoFiltro, setEstadoFiltro] = useState(params.get('estado') ?? '');
@@ -78,9 +79,11 @@ export default function TramitesIndex({ tramites, puestos }: TramitesIndexProps)
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Trámites</h2>
-                <Link href="/tramites/create">
-                    <Button>Nuevo Trámite</Button>
-                </Link>
+                {role === 'admin' && (
+                    <Link href="/tramites/create">
+                        <Button>Nuevo Trámite</Button>
+                    </Link>
+                )}
             </div>
 
             <Card padding="sm">
