@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-patuju-green: #2D6A4F;
+    --color-patuju-yellow: #F4A100;
+    --color-patuju-red: #C1121F;
+    --color-patuju-white: #F8FAFC;
+    --color-patuju-cream: #FFF8E7;
+    --color-patuju-card: #ECFBE9;
+}

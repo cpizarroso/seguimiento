@@ -1,0 +1,87 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "stack.md"],
+  "agent": {
+    "code-reviewer": {
+      "description": "Revisa código Laravel + React para mejores prácticas, seguridad y rendimiento",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "color": "#C1121F",
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "git diff": "allow",
+          "git log*": "allow",
+          "grep *": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    "test-generator": {
+      "description": "Genera tests con Pest (backend) y Vitest + React Testing Library (frontend)",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "color": "#2D6A4F",
+      "permission": {
+        "edit": "allow",
+        "bash": {
+          "php artisan *": "allow",
+          "composer *": "allow",
+          "npm *": "allow",
+          "vendor/bin/pest": "allow",
+          "npx vitest": "allow",
+          "*": "ask"
+        }
+      }
+    },
+    "docs-writer": {
+      "description": "Escribe y mantiene documentación técnica del proyecto",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "color": "#F4A100",
+      "permission": {
+        "edit": "allow",
+        "bash": {
+          "git diff": "allow",
+          "git log*": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    "debugger": {
+      "description": "Diagnostica bugs revisando logs, código y sugiere correcciones",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "color": "#C1121F",
+      "permission": {
+        "edit": "allow",
+        "bash": {
+          "php artisan *": "allow",
+          "tail *": "allow",
+          "cat *": "allow",
+          "grep *": "allow",
+          "composer *": "ask",
+          "npm *": "ask",
+          "*": "allow"
+        }
+      }
+    },
+    "planner": {
+      "description": "Analiza requisitos y genera planes de implementación detallados sin modificar código",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "color": "#2D6A4F",
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "git diff": "allow",
+          "git log*": "allow",
+          "grep *": "allow",
+          "php artisan route:list": "allow",
+          "php artisan db:show": "allow",
+          "*": "deny"
+        }
+      }
+    }
+  }
+}

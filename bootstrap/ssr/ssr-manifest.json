@@ -1,0 +1,77 @@
+{
+  "node_modules/laravel-vite-plugin/inertia-helpers/index.js": [],
+  "resources/js/app.css": [],
+  "resources/js/app.tsx": [],
+  "resources/js/components/features/reporte/SemanalChart.tsx": [
+    "/build/assets/TramitesPorFuncionarioChart-038mha2P.js"
+  ],
+  "resources/js/components/features/reporte/TramitesPorFuncionarioChart.tsx": [
+    "/build/assets/TramitesPorFuncionarioChart-038mha2P.js"
+  ],
+  "resources/js/components/layout/DashboardLayout.tsx": [],
+  "resources/js/components/layout/Header.tsx": [],
+  "resources/js/components/layout/Sidebar.tsx": [],
+  "resources/js/components/ui/Badge.tsx": [
+    "/build/assets/Badge-Dbmpxxc9.js"
+  ],
+  "resources/js/components/ui/Button.tsx": [
+    "/build/assets/Button-Cer-IB3G.js"
+  ],
+  "resources/js/components/ui/Card.tsx": [
+    "/build/assets/Card-B3vey6t_.js"
+  ],
+  "resources/js/components/ui/Input.tsx": [
+    "/build/assets/Input-C0A7m-Lh.js"
+  ],
+  "resources/js/components/ui/Modal.tsx": [
+    "/build/assets/Modal-B6sdQon2.js"
+  ],
+  "resources/js/components/ui/Pagination.tsx": [
+    "/build/assets/Pagination-C-7cevfm.js"
+  ],
+  "resources/js/components/ui/Select.tsx": [
+    "/build/assets/Select-DHMLvRNX.js"
+  ],
+  "resources/js/components/ui/Table.tsx": [
+    "/build/assets/Table-BdngzARu.js"
+  ],
+  "resources/js/pages/Auth/Login.tsx": [
+    "/build/assets/Login-CbFkbGUP.js"
+  ],
+  "resources/js/pages/Contador/Index.tsx": [
+    "/build/assets/Index-IFGPDtsz.js"
+  ],
+  "resources/js/pages/Dashboard.tsx": [
+    "/build/assets/Dashboard-DF06dWRi.js"
+  ],
+  "resources/js/pages/Funcionarios/Create.tsx": [
+    "/build/assets/Create-CzaKkKIi.js"
+  ],
+  "resources/js/pages/Funcionarios/Edit.tsx": [
+    "/build/assets/Edit-20l6yArM.js"
+  ],
+  "resources/js/pages/Funcionarios/Index.tsx": [
+    "/build/assets/Index-B0yU8rHO.js"
+  ],
+  "resources/js/pages/Puestos/Create.tsx": [
+    "/build/assets/Create-GAFZHWN4.js"
+  ],
+  "resources/js/pages/Puestos/Edit.tsx": [
+    "/build/assets/Edit-Bda1XdVB.js"
+  ],
+  "resources/js/pages/Puestos/Index.tsx": [
+    "/build/assets/Index-Wl-737Wj.js"
+  ],
+  "resources/js/pages/Reporte/Index.tsx": [
+    "/build/assets/Index-C8z2dWq-.js"
+  ],
+  "resources/js/pages/Tramites/Create.tsx": [
+    "/build/assets/Create-NhDXIWRQ.js"
+  ],
+  "resources/js/pages/Tramites/Index.tsx": [
+    "/build/assets/Index-DHLKQofn.js"
+  ],
+  "resources/js/pages/Tramites/Show.tsx": [
+    "/build/assets/Show-CwULR3kQ.js"
+  ]
+}
