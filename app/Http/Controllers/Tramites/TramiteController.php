@@ -5,11 +5,10 @@ namespace App\Http\Controllers\Tramites;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tramites\StoreTramiteRequest;
 use App\Http\Requests\Tramites\UpdateEstadoTramiteRequest;
-use App\Http\Resources\FuncionarioResource;
 use App\Http\Resources\PuestoResource;
 use App\Http\Resources\TramiteResource;
+use App\Http\Resources\UserResource;
 use App\Models\Tramite;
-use App\Services\FuncionarioService;
 use App\Services\PuestoService;
 use App\Services\TramiteService;
 use Illuminate\Http\RedirectResponse;
@@ -21,18 +20,17 @@ class TramiteController extends Controller
     public function __construct(
         private readonly TramiteService $tramiteService,
         private readonly PuestoService $puestoService,
-        private readonly FuncionarioService $funcionarioService,
     ) {}
 
     public function index(): Response
     {
-        $funcionarioId = request()->user()?->funcionario?->id;
+        $usuarioId = request()->user()?->id;
 
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
                 $this->tramiteService->listar(
                     request()->only(['search', 'estado', 'puesto_id', 'fecha_desde', 'fecha_hasta', 'vista']),
-                    $funcionarioId,
+                    $usuarioId,
                 )
             ),
             'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
@@ -48,11 +46,6 @@ class TramiteController extends Controller
 
     public function store(StoreTramiteRequest $request): RedirectResponse
     {
-        $user = $request->user();
-        $funcionario = $user->funcionario ?? FuncionarioResource::collection(
-            $this->funcionarioService->obtenerTodos()
-        )->first();
-
         $tramite = $this->tramiteService->crear(
             $request->validated(),
             $request->user()->id
@@ -68,7 +61,7 @@ class TramiteController extends Controller
 
         return Inertia::render('Tramites/Show', [
             'tramite' => new TramiteResource($tramite),
-            'funcionarios' => FuncionarioResource::collection($this->funcionarioService->obtenerTodos()),
+            'usuarios' => UserResource::collection(\App\Models\User::all()),
         ]);
     }
 

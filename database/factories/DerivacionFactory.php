@@ -2,71 +2,89 @@
 
 namespace Database\Factories;
 
-use App\Models\Funcionario;
+use App\Models\Derivacion;
 use App\Models\Tramite;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class DerivacionFactory extends Factory
 {
     public function definition(): array
     {
-        $funcionarios = Funcionario::pluck('id')->toArray();
-        $origenId = fake()->randomElement($funcionarios);
-
-        do {
-            $destinoId = fake()->randomElement($funcionarios);
-        } while ($destinoId === $origenId);
-
-        $tieneRecepcion = fake()->boolean(60);
-
         return [
             'tramite_id' => Tramite::factory(),
             'numero_derivacion' => 1,
-            'derivado_de' => $origenId,
-            'derivado_a' => $destinoId,
+            'derivado_de' => User::inRandomOrder()->value('id'),
+            'derivado_a' => User::whereNotIn('id', [User::inRandomOrder()->value('id')])->inRandomOrder()->value('id'),
             'fecha_derivacion' => fake()->dateTimeBetween('-5 months', 'now'),
-            'glosa_derivacion' => fake()->optional(0.9)->sentence(),
-            'fecha_recepcion' => $tieneRecepcion ? fake()->dateTimeBetween('-5 months', 'now') : null,
-            'glosa_recepcion' => $tieneRecepcion ? fake()->optional(0.7)->sentence() : null,
-            'estado' => $tieneRecepcion
-                ? fake()->randomElement(['recepcionado', 'rechazado'])
-                : 'derivado',
-        ];
-    }
-
-    public function derivado(): static
-    {
-        return $this->state(fn () => [
+            'glosa_derivacion' => fake()->sentence(),
             'fecha_recepcion' => null,
             'glosa_recepcion' => null,
             'estado' => 'derivado',
-        ]);
+        ];
     }
 
-    public function recepcionado(): static
+    public function crearCadena(Tramite $tramite, int $cantidad): void
     {
-        return $this->state(fn () => [
-            'fecha_recepcion' => fake()->dateTimeBetween('-5 months', 'now'),
-            'glosa_recepcion' => fake()->optional(0.7)->sentence(),
-            'estado' => 'recepcionado',
-        ]);
-    }
+        $fechaActual = Carbon::parse($tramite->fecha);
 
-    public function rechazado(): static
-    {
-        return $this->state(fn () => [
-            'fecha_recepcion' => fake()->dateTimeBetween('-5 months', 'now'),
-            'glosa_recepcion' => fake()->sentence(),
-            'estado' => 'rechazado',
-        ]);
-    }
+        for ($i = 0; $i < $cantidad; $i++) {
+            $ultima = Derivacion::where('tramite_id', $tramite->id)
+                ->orderBy('numero_derivacion', 'desc')
+                ->first();
 
-    public function historico(): static
-    {
-        return $this->state(fn () => [
-            'fecha_recepcion' => fake()->dateTimeBetween('-5 months', 'now'),
-            'glosa_recepcion' => fake()->optional(0.7)->sentence(),
-            'estado' => 'historico',
-        ]);
+            $numero = ($ultima?->numero_derivacion ?? 0) + 1;
+            $fechaActual = $fechaActual->copy()->addDays(random_int(3, 15));
+
+            if (!$ultima) {
+                $destino = User::where('id', '!=', $tramite->creado_por)->inRandomOrder()->value('id') ?? User::inRandomOrder()->value('id');
+
+                $tramite->update(['estado' => 'proceso', 'derivado_a' => $destino]);
+
+                Derivacion::create([
+                    'tramite_id' => $tramite->id,
+                    'numero_derivacion' => $numero,
+                    'derivado_de' => $tramite->creado_por,
+                    'derivado_a' => $destino,
+                    'fecha_derivacion' => $fechaActual->format('Y-m-d H:i:s'),
+                    'glosa_derivacion' => fake()->sentence(),
+                    'fecha_recepcion' => null,
+                    'glosa_recepcion' => null,
+                    'estado' => 'derivado',
+                ]);
+
+                continue;
+            }
+
+            if ($ultima->estado === 'derivado') {
+                $ultima->update([
+                    'estado' => 'recepcionado',
+                    'fecha_recepcion' => $fechaActual->format('Y-m-d H:i:s'),
+                    'glosa_recepcion' => fake()->optional(0.7)->sentence(),
+                ]);
+                continue;
+            }
+
+            if ($ultima->estado === 'recepcionado') {
+                $ultima->update(['estado' => 'historico']);
+
+                $destino = User::where('id', '!=', $ultima->derivado_a)->inRandomOrder()->value('id') ?? User::inRandomOrder()->value('id');
+
+                $tramite->update(['derivado_a' => $destino]);
+
+                Derivacion::create([
+                    'tramite_id' => $tramite->id,
+                    'numero_derivacion' => $numero,
+                    'derivado_de' => $ultima->derivado_a,
+                    'derivado_a' => $destino,
+                    'fecha_derivacion' => $fechaActual->format('Y-m-d H:i:s'),
+                    'glosa_derivacion' => fake()->sentence(),
+                    'fecha_recepcion' => null,
+                    'glosa_recepcion' => null,
+                    'estado' => 'derivado',
+                ]);
+            }
+        }
     }
 }

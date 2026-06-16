@@ -10,14 +10,6 @@ class VinculacionSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::where('email', 'admin@seguimiento.gob.bo')->first();
-        $carlos = Funcionario::where('nombre', 'Carlos Mendoza')->first();
-
-        if ($admin && $carlos) {
-            $admin->update(['funcionario_id' => $carlos->id]);
-            $this->command->info("Admin vinculado a funcionario: {$carlos->nombre}");
-        }
-
         $funcionarios = Funcionario::all();
 
         foreach ($funcionarios as $funcionario) {
@@ -29,7 +21,6 @@ class VinculacionSeeder extends Seeder
                     'email' => $funcionario->email,
                     'password' => bcrypt('funcionario123'),
                     'role' => 'user',
-                    'funcionario_id' => $funcionario->id,
                 ]);
 
                 $this->command->info("Usuario creado: {$user->email} / funcionario123");
@@ -37,7 +28,6 @@ class VinculacionSeeder extends Seeder
         }
 
         $totalUsers = User::count();
-        $vinculados = User::whereNotNull('funcionario_id')->count();
-        $this->command->info("Total usuarios: {$totalUsers}, vinculados: {$vinculados}");
+        $this->command->info("Total usuarios: {$totalUsers}");
     }
 }

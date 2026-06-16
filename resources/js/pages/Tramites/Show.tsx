@@ -6,11 +6,12 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Table, type Column } from '@/components/ui/Table';
 import { useState } from 'react';
-import type { Tramite, Funcionario, Derivacion } from '@/types/generated/Tramite';
+import type { Tramite, Derivacion } from '@/types/generated/Tramite';
+import type { User } from '@/types/generated/User';
 
 interface ShowProps {
     tramite: Tramite;
-    funcionarios: { data: Funcionario[] };
+    usuarios: { data: User[] };
 }
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
@@ -41,9 +42,9 @@ const derivacionEstadoLabels: Record<string, string> = {
     historico: 'Histórico',
 };
 
-export default function TramitesShow({ tramite, funcionarios }: ShowProps) {
+export default function TramitesShow({ tramite, usuarios }: ShowProps) {
     const { auth } = usePage().props;
-    const funcionarioId = auth?.user?.funcionario_id;
+    const usuarioId = auth?.user?.id;
     const [derivarOpen, setDerivarOpen] = useState(false);
     const [recepcionarOpen, setRecepcionarOpen] = useState<number | null>(null);
     const [rechazarOpen, setRechazarOpen] = useState<number | null>(null);
@@ -52,12 +53,15 @@ export default function TramitesShow({ tramite, funcionarios }: ShowProps) {
     const recepcionarForm = useForm({ glosa_recepcion: '' });
     const rechazarForm = useForm({ glosa_rechazo: '' });
 
-    const puedeDerivar = ['iniciado', 'proceso', 'observado'].includes(tramite.estado) && tramite.asignado?.id === funcionarioId;
-    const puedeObservar = tramite.estado === 'proceso' && tramite.asignado?.id === funcionarioId;
-    const puedeFinalizar = ['proceso', 'observado'].includes(tramite.estado) && tramite.asignado?.id === funcionarioId;
     const ultimaDerivacion = tramite.derivaciones?.at(-1);
-    const puedeRecepcionar = ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === funcionarioId && tramite.estado !== 'finalizado';
-    const puedeRechazar = ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === funcionarioId && tramite.estado !== 'finalizado';
+    const asignadoAMi = tramite.asignado?.id === usuarioId;
+    const recepcionadoPorMi = ultimaDerivacion?.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId;
+
+    const puedeDerivar = tramite.estado !== 'finalizado' && asignadoAMi && (tramite.estado === 'iniciado' || recepcionadoPorMi);
+    const puedeObservar = tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
+    const puedeFinalizar = ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
+    const puedeRecepcionar = ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
+    const puedeRechazar = ultimaDerivacion && ultimaDerivacion.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
 
     const derivacionColumns: Column<Derivacion>[] = [
         {
@@ -68,7 +72,7 @@ export default function TramitesShow({ tramite, funcionarios }: ShowProps) {
         {
             key: 'derivado_de',
             header: 'De:',
-            render: (d) => d.derivado_de?.nombre ?? '—',
+            render: (d) => d.derivado_de?.name ?? '—',
         },
         {
             key: 'fecha_derivacion',
@@ -93,7 +97,7 @@ export default function TramitesShow({ tramite, funcionarios }: ShowProps) {
         {
             key: 'derivado_a',
             header: 'A:',
-            render: (d) => d.derivado_a?.nombre ?? '—',
+            render: (d) => d.derivado_a?.name ?? '—',
         },
         {
             key: 'fecha_recepcion',
@@ -177,7 +181,7 @@ export default function TramitesShow({ tramite, funcionarios }: ShowProps) {
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Estado</dt>
                         <dd>
-                            <Badge variant={estadoColors[tramite.estado] ?? 'default'}>
+                            <Badge variant={estadoColors[tramite.estado] ?? 'default'} className="text-base px-5 py-2 font-bold">
                                 {estadoLabels[tramite.estado] ?? tramite.estado}
                             </Badge>
                         </dd>
@@ -235,7 +239,7 @@ export default function TramitesShow({ tramite, funcionarios }: ShowProps) {
                     <Select
                         label="Derivar a"
                         placeholder="Seleccione funcionario"
-                        options={funcionarios.data.map((f) => ({ value: String(f.id), label: f.nombre }))}
+                        options={usuarios.data.map((u) => ({ value: String(u.id), label: u.name }))}
                         value={derivarForm.data.derivado_a}
                         onChange={(e) => derivarForm.setData('derivado_a', e.target.value)}
                         error={derivarForm.errors.derivado_a}

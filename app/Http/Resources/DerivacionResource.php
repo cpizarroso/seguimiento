@@ -16,8 +16,8 @@ class DerivacionResource extends JsonResource
         return [
             'id' => $this->id,
             'numero_derivacion' => $this->numero_derivacion,
-            'derivado_de' => $this->whenLoaded('de') ? new FuncionarioResource($this->de) : null,
-            'derivado_a' => $this->whenLoaded('a') ? new FuncionarioResource($this->a) : null,
+            'derivado_de' => $this->whenLoaded('de') ? new UserResource($this->de) : null,
+            'derivado_a' => $this->whenLoaded('a') ? new UserResource($this->a) : null,
             'fecha_derivacion' => $this->fecha_derivacion?->format('d/m/Y H:i'),
             'glosa_derivacion' => $this->glosa_derivacion,
             'fecha_recepcion' => $this->fecha_recepcion?->format('d/m/Y H:i'),

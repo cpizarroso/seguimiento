@@ -71,7 +71,7 @@ export default function TramitesIndex({ tramites, puestos }: TramitesIndexProps)
         {
             key: 'asignado',
             header: 'Derivado a',
-            render: (t: Tramite) => t.asignado?.nombre ?? t.creador?.nombre ?? '—',
+            render: (t: Tramite) => t.asignado?.name ?? t.creador?.name ?? '—',
         },
         { key: 'numero_diamante', header: 'Diamante', render: (t: Tramite) => t.numero_diamante ?? '—' },
         { key: 'ultima_respuesta', header: 'Respuesta', render: (t: Tramite) => t.ultima_respuesta ?? '—' },

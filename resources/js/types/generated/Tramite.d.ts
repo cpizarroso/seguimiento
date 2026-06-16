@@ -1,3 +1,5 @@
+import type { User } from './User';
+
 export interface Tramite {
     id: number;
     numero_tramite: number;
@@ -10,8 +12,8 @@ export interface Tramite {
     estado: string;
     ultima_respuesta: string | null;
     puesto: Puesto | null;
-    creador: Funcionario | null;
-    asignado: Funcionario | null;
+    creador: User | null;
+    asignado: User | null;
     derivaciones: Derivacion[];
 }
 
@@ -22,18 +24,11 @@ export interface Puesto {
     funcionarios_count?: number;
 }
 
-export interface Funcionario {
-    id: number;
-    nombre: string;
-    email: string | null;
-    puesto: Puesto | null;
-}
-
 export interface Derivacion {
     id: number;
     numero_derivacion: number;
-    derivado_de: Funcionario | null;
-    derivado_a: Funcionario | null;
+    derivado_de: User | null;
+    derivado_a: User | null;
     fecha_derivacion: string;
     glosa_derivacion: string | null;
     fecha_recepcion: string | null;

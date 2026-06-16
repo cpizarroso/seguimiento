@@ -19,9 +19,9 @@ class DerivacionController extends Controller
 
     public function derivar(DerivarTramiteRequest $request, Tramite $tramite): RedirectResponse
     {
-        $funcionarioId = $request->user()?->funcionario?->id;
+        $usuarioId = $request->user()?->id;
 
-        abort_if(!$funcionarioId || $tramite->derivado_a !== $funcionarioId, 403,
+        abort_if(!$usuarioId || $tramite->derivado_a !== $usuarioId || $tramite->estado === 'finalizado', 403,
             'No tienes permiso para derivar este trámite.');
 
         $this->derivacionService->derivar(
@@ -36,9 +36,9 @@ class DerivacionController extends Controller
 
     public function recepcionar(RecepcionarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse
     {
-        $funcionarioId = $request->user()?->funcionario?->id;
+        $usuarioId = $request->user()?->id;
 
-        abort_if(!$funcionarioId || $derivacion->derivado_a !== $funcionarioId, 403,
+        abort_if(!$usuarioId || $derivacion->derivado_a !== $usuarioId, 403,
             'No tienes permiso para recepcionar esta derivación.');
 
         $this->derivacionService->recepcionar(
@@ -52,9 +52,9 @@ class DerivacionController extends Controller
 
     public function rechazar(RechazarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse
     {
-        $funcionarioId = $request->user()?->funcionario?->id;
+        $usuarioId = $request->user()?->id;
 
-        abort_if(!$funcionarioId || $derivacion->derivado_a !== $funcionarioId, 403,
+        abort_if(!$usuarioId || $derivacion->derivado_a !== $usuarioId, 403,
             'No tienes permiso para rechazar esta derivación.');
 
         $this->derivacionService->rechazar(

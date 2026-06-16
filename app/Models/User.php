@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -23,7 +23,6 @@ class User extends Authenticatable
         'cargo',
         'password',
         'role',
-        'funcionario_id',
     ];
 
     protected $hidden = [
@@ -39,8 +38,23 @@ class User extends Authenticatable
         ];
     }
 
-    public function funcionario(): BelongsTo
+    public function tramitesCreados(): HasMany
     {
-        return $this->belongsTo(Funcionario::class);
+        return $this->hasMany(Tramite::class, 'creado_por');
+    }
+
+    public function tramitesAsignados(): HasMany
+    {
+        return $this->hasMany(Tramite::class, 'derivado_a');
+    }
+
+    public function derivacionesEnviadas(): HasMany
+    {
+        return $this->hasMany(Derivacion::class, 'derivado_de');
+    }
+
+    public function derivacionesRecibidas(): HasMany
+    {
+        return $this->hasMany(Derivacion::class, 'derivado_a');
     }
 }

@@ -23,8 +23,8 @@ class TramiteResource extends JsonResource
             'estado' => $this->estado,
             'ultima_respuesta' => $this->ultima_respuesta,
             'puesto' => new PuestoResource($this->whenLoaded('puesto')),
-            'creador' => new FuncionarioResource($this->whenLoaded('creador')),
-            'asignado' => new FuncionarioResource($this->whenLoaded('asignado')),
+            'creador' => new UserResource($this->whenLoaded('creador')),
+            'asignado' => new UserResource($this->whenLoaded('asignado')),
             'derivaciones' => DerivacionResource::collection($this->whenLoaded('derivaciones')),
             'created_at' => $this->created_at?->format('d/m/Y H:i'),
         ];

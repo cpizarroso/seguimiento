@@ -54,8 +54,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PuestoSeeder::class,
             FuncionarioSeeder::class,
-            TramiteSeeder::class,
             VinculacionSeeder::class,
+            TramiteSeeder::class,
         ]);
     }
 }

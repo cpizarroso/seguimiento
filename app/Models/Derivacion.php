@@ -43,12 +43,12 @@ class Derivacion extends Model
 
     public function de(): BelongsTo
     {
-        return $this->belongsTo(Funcionario::class, 'derivado_de');
+        return $this->belongsTo(User::class, 'derivado_de');
     }
 
     public function a(): BelongsTo
     {
-        return $this->belongsTo(Funcionario::class, 'derivado_a');
+        return $this->belongsTo(User::class, 'derivado_a');
     }
 
     public function getDiasEnDerivacionAttribute(): int

@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Funcionario;
 use App\Models\Puesto;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TramiteFactory extends Factory
@@ -66,8 +66,8 @@ class TramiteFactory extends Factory
                 'finalizado',
             ]),
             'puesto_id' => Puesto::inRandomOrder()->value('id'),
-            'creado_por' => Funcionario::inRandomOrder()->value('id'),
-            'derivado_a' => Funcionario::inRandomOrder()->value('id'),
+            'creado_por' => User::inRandomOrder()->value('id'),
+            'derivado_a' => User::inRandomOrder()->value('id'),
         ];
     }
 

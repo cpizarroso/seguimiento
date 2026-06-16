@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tramite_id')->constrained()->cascadeOnDelete();
             $table->integer('numero_derivacion');
-            $table->foreignId('derivado_de')->nullable()->constrained('funcionarios')->nullOnDelete();
-            $table->foreignId('derivado_a')->constrained('funcionarios')->cascadeOnDelete();
+            $table->foreignId('derivado_de')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('derivado_a')->constrained('users')->cascadeOnDelete();
             $table->timestamp('fecha_derivacion')->useCurrent();
             $table->text('glosa_derivacion')->nullable();
             $table->timestamp('fecha_recepcion')->nullable();

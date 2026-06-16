@@ -12,14 +12,14 @@ class TramiteService
         private readonly DerivacionService $derivacionService,
     ) {}
 
-    public function listar(array $filtros = [], ?int $funcionarioId = null): LengthAwarePaginator
+    public function listar(array $filtros = [], ?int $usuarioId = null): LengthAwarePaginator
     {
         $vista = $filtros['vista'] ?? 'bandeja';
 
-        return Tramite::with(['creador.puesto', 'asignado.puesto', 'puesto', 'derivaciones' => function ($q) {
+        return Tramite::with(['creador', 'asignado', 'puesto', 'derivaciones' => function ($q) {
             $q->latest()->limit(1);
         }])
-            ->when($funcionarioId, fn($q) => $q->where('derivado_a', $funcionarioId))
+            ->when($usuarioId, fn($q) => $q->where('derivado_a', $usuarioId))
             ->when($vista === 'por_recepcionar', function ($q) {
                 $q->whereHas('derivaciones', fn($q) => $q->where('estado', 'derivado'));
             })
@@ -34,8 +34,8 @@ class TramiteService
                         ->orWhere('numero_diamante', 'like', "%{$v}%")
                         ->orWhere('estado', 'like', "%{$v}%")
                         ->orWhere('year', 'like', "%{$v}%")
-                        ->orWhereHas('creador', fn($q) => $q->where('nombre', 'like', "%{$v}%"))
-                        ->orWhereHas('asignado', fn($q) => $q->where('nombre', 'like', "%{$v}%"));
+                        ->orWhereHas('creador', fn($q) => $q->where('name', 'like', "%{$v}%"))
+                        ->orWhereHas('asignado', fn($q) => $q->where('name', 'like', "%{$v}%"));
                 });
             })
             ->when($filtros['estado'] ?? null, fn($q, $v) => $q->where('estado', $v))
@@ -72,10 +72,10 @@ class TramiteService
     public function obtenerPorId(int $id): Tramite
     {
         return Tramite::with([
-            'creador.puesto',
-            'asignado.puesto',
+            'creador',
+            'asignado',
             'puesto',
-            'derivaciones' => fn($q) => $q->with(['de.puesto', 'a.puesto'])->orderBy('numero_derivacion'),
+            'derivaciones' => fn($q) => $q->with(['de', 'a'])->orderBy('numero_derivacion'),
         ])->findOrFail($id);
     }
 

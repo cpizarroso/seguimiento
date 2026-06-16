@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('tramites', [TramiteController::class, 'index'])->name('tramites.index');
+    Route::get('tramites/create', [TramiteController::class, 'create'])->name('tramites.create');
     Route::get('tramites/{tramite}', [TramiteController::class, 'show'])->name('tramites.show');
 
     Route::post('tramites/{tramite}/derivar', [DerivacionController::class, 'derivar'])
@@ -40,7 +41,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('puestos', PuestoController::class)->except(['show']);
         Route::resource('funcionarios', FuncionarioController::class)->except(['show']);
 
-        Route::get('tramites/create', [TramiteController::class, 'create'])->name('tramites.create');
         Route::post('tramites', [TramiteController::class, 'store'])->name('tramites.store');
         Route::delete('tramites/{tramite}', [TramiteController::class, 'destroy'])->name('tramites.destroy');
 

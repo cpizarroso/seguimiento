@@ -7,24 +7,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends JsonResource
 {
+    public static $wrap = null;
+
     public function toArray(Request $request): array
     {
-        if (!$this->resource) {
-            return [];
-        }
-
         return [
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'username' => $this->username,
-            'phone' => $this->phone,
-            'profesion' => $this->profesion,
-            'cargo' => $this->cargo,
-            'role' => $this->role,
-            'funcionario' => $this->whenLoaded('funcionario')
-                ? ['id' => $this->funcionario->id, 'nombre' => $this->funcionario->nombre]
-                : null,
         ];
     }
 }

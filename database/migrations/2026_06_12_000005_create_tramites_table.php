@@ -18,8 +18,8 @@ return new class extends Migration
             $table->text('glosa')->nullable();
             $table->string('estado', 50)->default('iniciado');
             $table->foreignId('puesto_id')->constrained('puestos')->cascadeOnDelete();
-            $table->foreignId('creado_por')->constrained('funcionarios')->cascadeOnDelete();
-            $table->foreignId('derivado_a')->nullable()->constrained('funcionarios')->nullOnDelete();
+            $table->foreignId('creado_por')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('derivado_a')->nullable()->constrained('users')->nullOnDelete();
             $table->text('ultima_respuesta')->nullable();
             $table->timestamps();
 

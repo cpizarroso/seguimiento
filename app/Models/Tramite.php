@@ -45,12 +45,12 @@ class Tramite extends Model
 
     public function creador(): BelongsTo
     {
-        return $this->belongsTo(Funcionario::class, 'creado_por');
+        return $this->belongsTo(User::class, 'creado_por');
     }
 
     public function asignado(): BelongsTo
     {
-        return $this->belongsTo(Funcionario::class, 'derivado_a');
+        return $this->belongsTo(User::class, 'derivado_a');
     }
 
     public function derivaciones(): HasMany

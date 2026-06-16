@@ -3,23 +3,23 @@
 namespace Database\Seeders;
 
 use App\Models\ContadorTramite;
-use App\Models\Derivacion;
-use App\Models\Funcionario;
 use App\Models\Puesto;
 use App\Models\Tramite;
+use App\Models\User;
+use Database\Factories\DerivacionFactory;
 use Illuminate\Database\Seeder;
 
 class TramiteSeeder extends Seeder
 {
     private string $fechaBase;
     private int $year;
-    private array $funcionarios;
+    private array $usuarios;
 
     public function run(): void
     {
         $this->fechaBase = now()->subMonths(6)->format('Y-m-d');
         $this->year = now()->year;
-        $this->funcionarios = Funcionario::all()->keyBy('id')->toArray();
+        $this->usuarios = User::all()->keyBy('id')->toArray();
 
         $tramites = [
             [
@@ -234,11 +234,12 @@ class TramiteSeeder extends Seeder
             ],
         ];
 
-        $funcionarioIds = Funcionario::pluck('id')->toArray();
+        $usuarioIds = User::pluck('id')->toArray();
         $puestoIds = Puesto::pluck('id')->toArray();
 
         foreach ($tramites as $i => $t) {
-            $creadoPor = $funcionarioIds[array_rand($funcionarioIds)];
+            $esAdmin = $i < 5;
+            $creadoPor = $esAdmin ? 1 : $usuarioIds[array_rand($usuarioIds)];
 
             $tramite = Tramite::create([
                 'numero_tramite' => $t['num'],
@@ -247,84 +248,32 @@ class TramiteSeeder extends Seeder
                 'descripcion' => $t['descripcion'],
                 'numero_diamante' => $t['year'] . '-' . str_pad((string) $t['num'], 4, '0', STR_PAD_LEFT),
                 'glosa' => fake()->optional(0.7)->sentence(),
-                'estado' => $t['estado'],
+                'estado' => 'iniciado',
                 'puesto_id' => $t['puesto'],
                 'creado_por' => $creadoPor,
                 'derivado_a' => null,
                 'ultima_respuesta' => null,
             ]);
 
-            $this->crearDerivaciones($tramite, $t['estado'], $funcionarioIds, $t['fecha']);
+            $this->crearDerivaciones($tramite);
         }
     }
 
-    private function crearDerivaciones(Tramite $tramite, string $estadoFinal, array $funcionarioIds, string $fechaInicio): void
+    private function crearDerivaciones(Tramite $tramite): void
     {
-        $numDerivaciones = match (true) {
-            $estadoFinal === 'iniciado' => random_int(0, 1),
-            $estadoFinal === 'proceso' => random_int(1, 4),
-            $estadoFinal === 'finalizado' => random_int(3, 6),
-            default => random_int(1, 3),
-        };
+        $numDerivaciones = random_int(9, 19);
 
-        if ($numDerivaciones === 0) return;
+        DerivacionFactory::new()->crearCadena($tramite, $numDerivaciones);
 
-        $fechaActual = \Carbon\Carbon::parse($fechaInicio);
-        $origen = $tramite->creado_por;
+        $ultima = \App\Models\Derivacion::where('tramite_id', $tramite->id)
+            ->orderBy('numero_derivacion', 'desc')
+            ->first();
 
-        $puestosDerivacion = [1, 4, 5, 6, 2, 3, 1, 4, 5, 6, 8];
-        $funcionariosPorPuesto = [];
-        foreach ($funcionarioIds as $fid) {
-            $func = Funcionario::find($fid);
-            if ($func) {
-                $funcionariosPorPuesto[$func->puesto_id][] = $func->id;
-            }
-        }
-
-        for ($i = 1; $i <= $numDerivaciones; $i++) {
-            $fechaActual = $fechaActual->copy()->addDays(random_int(3, 15));
-            $puestoDestino = $puestosDerivacion[($i - 1) % count($puestosDerivacion)];
-            $destinosPosibles = $funcionariosPorPuesto[$puestoDestino] ?? $funcionarioIds;
-            $destino = $destinosPosibles[array_rand($destinosPosibles)];
-
-            Derivacion::where('tramite_id', $tramite->id)
-                ->whereIn('estado', ['derivado', 'recepcionado'])
-                ->update(['estado' => 'historico']);
-
-            $estadoDeriv = match (true) {
-                $i < $numDerivaciones => random_int(0, 3) === 0 ? 'recepcionado' : 'derivado',
-                $estadoFinal === 'proceso' => random_int(0, 1) ? 'derivado' : 'recepcionado',
-                $estadoFinal === 'finalizado' => 'recepcionado',
-                default => 'derivado',
-            };
-
-            $derivacion = Derivacion::create([
-                'tramite_id' => $tramite->id,
-                'numero_derivacion' => $i,
-                'derivado_de' => $origen,
-                'derivado_a' => $destino,
-                'fecha_derivacion' => $fechaActual->format('Y-m-d H:i:s'),
-                'glosa_derivacion' => match ($i) {
-                    1 => 'Derivado para revisión inicial y evaluación de documentos',
-                    2 => 'Derivado para análisis técnico del expediente',
-                    3 => 'Derivado para dictamen legal',
-                    4 => 'Derivado para aprobación final',
-                    5 => 'Derivado para archivo y custodia',
-                    default => 'Derivado para trámite correspondiente',
-                },
-                'fecha_recepcion' => $fechaActual->copy()->addDays(random_int(0, 3))->format('Y-m-d H:i:s'),
-                'glosa_recepcion' => fake()->optional(0.6)->sentence(),
-                'estado' => $estadoDeriv,
+        if ($ultima) {
+            $tramite->updateQuietly([
+                'derivado_a' => $ultima->derivado_a,
+                'ultima_respuesta' => $ultima->glosa_derivacion,
             ]);
-
-            $origen = $destino;
-
-            if ($i === $numDerivaciones) {
-                $tramite->update([
-                    'derivado_a' => $destino,
-                    'ultima_respuesta' => $derivacion->glosa_derivacion,
-                ]);
-            }
         }
     }
 }
