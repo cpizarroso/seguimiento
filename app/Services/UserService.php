@@ -14,7 +14,8 @@ class UserService
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->where('name', 'like', "%{$v}%")
-                        ->orWhere('email', 'like', "%{$v}%");
+                        ->orWhere('email', 'like', "%{$v}%")
+                        ->orWhere('username', 'like', "%{$v}%");
                 });
             })
             ->orderBy('name')
@@ -26,6 +27,10 @@ class UserService
         return User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'username' => $data['username'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'profesion' => $data['profesion'] ?? null,
+            'cargo' => $data['cargo'] ?? null,
             'password' => Hash::make($data['password']),
             'role' => $data['role'] ?? 'user',
             'funcionario_id' => $data['funcionario_id'] ?? null,
@@ -37,6 +42,10 @@ class UserService
         $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
+            'username' => $data['username'] ?? $user->username,
+            'phone' => $data['phone'] ?? $user->phone,
+            'profesion' => $data['profesion'] ?? $user->profesion,
+            'cargo' => $data['cargo'] ?? $user->cargo,
             'role' => $data['role'] ?? $user->role,
             'funcionario_id' => $data['funcionario_id'] ?? $user->funcionario_id,
         ];
