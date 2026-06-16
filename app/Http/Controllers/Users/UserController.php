@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Users;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\Funcionario;
 use App\Models\User;
 use App\Services\UserService;
@@ -21,7 +22,9 @@ class UserController extends Controller
     public function index(): Response
     {
         return Inertia::render('Users/Index', [
-            'users' => $this->userService->listar(request()->only(['search'])),
+            'users' => UserResource::collection(
+                $this->userService->listar(request()->only(['search']))
+            ),
         ]);
     }
 
