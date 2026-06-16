@@ -14,6 +14,12 @@ interface TramitesIndexProps {
     puestos: Puesto[];
 }
 
+const vistas = [
+    { value: 'bandeja', label: 'Bandeja' },
+    { value: 'por_recepcionar', label: 'Por Recepcionar' },
+    { value: 'recepcionados', label: 'Recepcionados' },
+];
+
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
     iniciado: 'info',
     proceso: 'warning',
@@ -33,9 +39,14 @@ export default function TramitesIndex({ tramites, puestos }: TramitesIndexProps)
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
     const [estadoFiltro, setEstadoFiltro] = useState(params.get('estado') ?? '');
+    const [vista, setVista] = useState(params.get('vista') ?? 'bandeja');
 
-    const buscar = () => {
-        router.get('/tramites', { search, estado: estadoFiltro }, { preserveState: true });
+    const buscar = (nuevaVista?: string) => {
+        router.get('/tramites', {
+            search,
+            estado: estadoFiltro,
+            vista: nuevaVista ?? vista,
+        }, { preserveState: true, preserveScroll: true });
     };
 
     const columns = [
@@ -83,6 +94,22 @@ export default function TramitesIndex({ tramites, puestos }: TramitesIndexProps)
                 </Link>
             </div>
 
+            <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
+                {vistas.map((v) => (
+                    <button
+                        key={v.value}
+                        onClick={() => { setVista(v.value); buscar(v.value); }}
+                        className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                            vista === v.value
+                                ? 'border-patuju-green text-patuju-green'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                        }`}
+                    >
+                        {v.label}
+                    </button>
+                ))}
+            </div>
+
             <Card padding="sm">
                 <div className="flex flex-wrap gap-3 items-end">
                     <div className="flex-1 min-w-48">
@@ -117,7 +144,7 @@ export default function TramitesIndex({ tramites, puestos }: TramitesIndexProps)
                 <Pagination
                     currentPage={tramites.meta.current_page}
                     lastPage={tramites.meta.last_page}
-                    onPageChange={(page) => router.get('/tramites', { page, search, estado: estadoFiltro }, { preserveState: true })}
+                    onPageChange={(page) => router.get('/tramites', { page, search, estado: estadoFiltro, vista }, { preserveState: true })}
                 />
             </Card>
         </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Derivaciones;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Derivaciones\DerivarTramiteRequest;
 use App\Http\Requests\Derivaciones\RecepcionarDerivacionRequest;
+use App\Http\Requests\Derivaciones\RechazarDerivacionRequest;
 use App\Models\Derivacion;
 use App\Models\Tramite;
 use App\Services\DerivacionService;
@@ -47,5 +48,21 @@ class DerivacionController extends Controller
 
         return to_route('tramites.show', $derivacion->tramite_id)
             ->with('success', 'Derivación recepcionada exitosamente.');
+    }
+
+    public function rechazar(RechazarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse
+    {
+        $funcionarioId = $request->user()?->funcionario?->id;
+
+        abort_if(!$funcionarioId || $derivacion->derivado_a !== $funcionarioId, 403,
+            'No tienes permiso para rechazar esta derivación.');
+
+        $this->derivacionService->rechazar(
+            $derivacion,
+            $request->input('glosa_rechazo'),
+        );
+
+        return to_route('tramites.show', $derivacion->tramite_id)
+            ->with('success', 'Derivación rechazada exitosamente.');
     }
 }

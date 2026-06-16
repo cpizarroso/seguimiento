@@ -287,10 +287,14 @@ class TramiteSeeder extends Seeder
             $destinosPosibles = $funcionariosPorPuesto[$puestoDestino] ?? $funcionarioIds;
             $destino = $destinosPosibles[array_rand($destinosPosibles)];
 
+            Derivacion::where('tramite_id', $tramite->id)
+                ->whereIn('estado', ['derivado', 'recepcionado'])
+                ->update(['estado' => 'historico']);
+
             $estadoDeriv = match (true) {
-                $i < $numDerivaciones => 'derivado',
+                $i < $numDerivaciones => random_int(0, 3) === 0 ? 'recepcionado' : 'derivado',
                 $estadoFinal === 'proceso' => random_int(0, 1) ? 'derivado' : 'recepcionado',
-                $estadoFinal === 'finalizado' => 'finalizado',
+                $estadoFinal === 'finalizado' => 'recepcionado',
                 default => 'derivado',
             };
 

@@ -25,6 +25,9 @@ Route::post('tramites/{tramite}/derivar', [DerivacionController::class, 'derivar
 Route::put('derivaciones/{derivacion}/recepcionar', [DerivacionController::class, 'recepcionar'])
     ->name('derivaciones.recepcionar');
 
+Route::put('derivaciones/{derivacion}/rechazar', [DerivacionController::class, 'rechazar'])
+    ->name('derivaciones.rechazar');
+
 Route::get('reporte', [ReporteController::class, 'index'])->name('reporte.index');
 
 Route::get('contador', [ContadorController::class, 'index'])

@@ -12,11 +12,20 @@ class TramiteService
         private readonly DerivacionService $derivacionService,
     ) {}
 
-    public function listar(array $filtros = []): LengthAwarePaginator
+    public function listar(array $filtros = [], ?int $funcionarioId = null): LengthAwarePaginator
     {
+        $vista = $filtros['vista'] ?? 'bandeja';
+
         return Tramite::with(['creador.puesto', 'asignado.puesto', 'puesto', 'derivaciones' => function ($q) {
             $q->latest()->limit(1);
         }])
+            ->when($funcionarioId, fn($q) => $q->where('derivado_a', $funcionarioId))
+            ->when($vista === 'por_recepcionar', function ($q) {
+                $q->whereHas('derivaciones', fn($q) => $q->where('estado', 'derivado'));
+            })
+            ->when($vista === 'recepcionados', function ($q) {
+                $q->whereHas('derivaciones', fn($q) => $q->where('estado', 'recepcionado'));
+            })
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->where('numero_tramite', 'like', "%{$v}%")

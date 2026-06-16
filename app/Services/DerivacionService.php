@@ -9,6 +9,8 @@ class DerivacionService
 {
     public function derivar(Tramite $tramite, int $derivadoA, ?string $glosaDerivacion = null): Derivacion
     {
+        $this->marcarAnterioresComoHistorico($tramite);
+
         $ultimoNumero = $tramite->derivaciones()->max('numero_derivacion') ?? 0;
         $nuevoNumero = $ultimoNumero + 1;
 
@@ -32,6 +34,10 @@ class DerivacionService
 
     public function recepcionar(Derivacion $derivacion, ?string $glosaRecepcion = null): Derivacion
     {
+        if (!in_array($derivacion->estado, [Derivacion::ESTADOS[0]])) {
+            throw new \InvalidArgumentException("Solo se pueden recepcionar derivaciones en estado 'derivado'.");
+        }
+
         $derivacion->update([
             'fecha_recepcion' => now(),
             'glosa_recepcion' => $glosaRecepcion,
@@ -45,11 +51,40 @@ class DerivacionService
         return $derivacion->load(['de', 'a']);
     }
 
+    public function rechazar(Derivacion $derivacion, ?string $glosaRechazo = null): Derivacion
+    {
+        if (!in_array($derivacion->estado, [Derivacion::ESTADOS[0]])) {
+            throw new \InvalidArgumentException("Solo se pueden rechazar derivaciones en estado 'derivado'.");
+        }
+
+        $funcionarioAnterior = $derivacion->derivado_de;
+
+        $derivacion->update([
+            'fecha_recepcion' => now(),
+            'glosa_recepcion' => $glosaRechazo,
+            'estado' => 'rechazado',
+        ]);
+
+        $derivacion->tramite->update([
+            'derivado_a' => $funcionarioAnterior,
+            'estado' => 'proceso',
+        ]);
+
+        return $derivacion->load(['de', 'a']);
+    }
+
     public function obtenerDerivacionesDelTramite(Tramite $tramite)
     {
         return $tramite->derivaciones()
             ->with(['de', 'a'])
             ->orderBy('numero_derivacion')
             ->get();
+    }
+
+    private function marcarAnterioresComoHistorico(Tramite $tramite): void
+    {
+        $tramite->derivaciones()
+            ->whereIn('estado', ['derivado', 'recepcionado'])
+            ->update(['estado' => 'historico']);
     }
 }

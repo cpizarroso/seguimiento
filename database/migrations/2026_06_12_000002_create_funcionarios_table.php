@@ -15,10 +15,19 @@ return new class extends Migration
             $table->foreignId('puesto_id')->constrained('puestos')->cascadeOnDelete();
             $table->timestamps();
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('funcionario_id')->nullable()->constrained('funcionarios')->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['funcionario_id']);
+            $table->dropColumn('funcionario_id');
+        });
+
         Schema::dropIfExists('funcionarios');
     }
 };

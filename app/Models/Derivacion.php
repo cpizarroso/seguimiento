@@ -21,6 +21,13 @@ class Derivacion extends Model
         'estado',
     ];
 
+    public const ESTADOS = [
+        'derivado',
+        'recepcionado',
+        'rechazado',
+        'historico',
+    ];
+
     protected function casts(): array
     {
         return [

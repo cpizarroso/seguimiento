@@ -26,9 +26,14 @@ class TramiteController extends Controller
 
     public function index(): Response
     {
+        $funcionarioId = request()->user()?->funcionario?->id;
+
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
-                $this->tramiteService->listar(request()->only(['search', 'estado', 'puesto_id', 'fecha_desde', 'fecha_hasta']))
+                $this->tramiteService->listar(
+                    request()->only(['search', 'estado', 'puesto_id', 'fecha_desde', 'fecha_hasta', 'vista']),
+                    $funcionarioId,
+                )
             ),
             'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
         ]);

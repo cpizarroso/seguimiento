@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Funcionario;
+use App\Models\Puesto;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TramiteFactory extends Factory
@@ -10,8 +11,10 @@ class TramiteFactory extends Factory
     public function definition(): array
     {
         return [
-            'codigo' => 'TR-' . fake()->unique()->bothify('####-??##'),
-            'titulo' => fake()->randomElement([
+            'numero_tramite' => fake()->unique()->numberBetween(1, 9999),
+            'year' => (int) fake()->year(),
+            'fecha' => fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),
+            'descripcion' => fake()->randomElement([
                 'Solicitud de permiso municipal',
                 'Registro de propiedad intelectual',
                 'Licencia de funcionamiento',
@@ -53,33 +56,38 @@ class TramiteFactory extends Factory
                 'Solicitud de beca deportiva',
                 'Registro de función de teatro',
             ]),
-            'descripcion' => fake()->optional(0.8)->paragraph(),
+            'numero_diamante' => fake()->optional(0.3)->bothify('DIA-####'),
+            'glosa' => fake()->optional(0.5)->sentence(),
             'estado' => fake()->randomElement([
-                'pendiente',
-                'en_progreso',
-                'en_progreso',
-                'completado',
-                'cancelado',
+                'iniciado',
+                'proceso',
+                'proceso',
+                'observado',
+                'finalizado',
             ]),
-            'fecha_inicio' => fake()->dateTimeBetween('-6 months', '-1 month')->format('Y-m-d'),
-            'fecha_fin' => null,
-            'funcionario_id' => Funcionario::inRandomOrder()->first()?->id,
+            'puesto_id' => Puesto::inRandomOrder()->value('id'),
+            'creado_por' => Funcionario::inRandomOrder()->value('id'),
+            'derivado_a' => Funcionario::inRandomOrder()->value('id'),
         ];
     }
 
-    public function completado(): static
+    public function iniciado(): static
     {
-        return $this->state(fn (array $attrs) => [
-            'estado' => 'completado',
-            'fecha_fin' => fake()->dateTimeBetween($attrs['fecha_inicio'] ?? '-3 months', 'now')->format('Y-m-d'),
-        ]);
+        return $this->state(fn () => ['estado' => 'iniciado']);
     }
 
-    public function cancelado(): static
+    public function proceso(): static
     {
-        return $this->state(fn (array $attrs) => [
-            'estado' => 'cancelado',
-            'fecha_fin' => null,
-        ]);
+        return $this->state(fn () => ['estado' => 'proceso']);
+    }
+
+    public function observado(): static
+    {
+        return $this->state(fn () => ['estado' => 'observado']);
+    }
+
+    public function finalizado(): static
+    {
+        return $this->state(fn () => ['estado' => 'finalizado']);
     }
 }
