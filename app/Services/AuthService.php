@@ -10,7 +10,11 @@ class AuthService
 {
     public function login(array $credentials): User
     {
-        $user = User::where('email', $credentials['email'])->first();
+        $login = $credentials['email'];
+
+        $user = User::where('email', $login)
+            ->orWhere('username', $login)
+            ->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([

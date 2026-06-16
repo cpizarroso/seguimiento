@@ -1,12 +1,19 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useTheme } from '@/hooks/useTheme';
 
-const menuItems = [
+interface MenuItem {
+    label: string;
+    href: string;
+    icon: string;
+    adminOnly?: boolean;
+}
+
+const allMenuItems: MenuItem[] = [
     { label: 'Dashboard', href: '/dashboard', icon: '📊' },
     { label: 'Trámites', href: '/tramites', icon: '📋' },
-    { label: 'Funcionarios', href: '/funcionarios', icon: '👥' },
-    { label: 'Puestos', href: '/puestos', icon: '🏢' },
-    { label: 'Contador', href: '/contador', icon: '🔢' },
+    { label: 'Funcionarios', href: '/funcionarios', icon: '👥', adminOnly: true },
+    { label: 'Puestos', href: '/puestos', icon: '🏢', adminOnly: true },
+    { label: 'Contador', href: '/contador', icon: '🔢', adminOnly: true },
     { label: 'Reporte', href: '/reporte', icon: '📈' },
 ];
 
@@ -16,8 +23,18 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-    const { url } = usePage();
+    const { url, props } = usePage();
     const { theme, toggle } = useTheme();
+    const role = (props.auth?.user as { role?: string } | null)?.role ?? 'user';
+
+    const menuItems = allMenuItems.filter((item) => {
+        if (item.adminOnly) return role === 'admin';
+        return true;
+    });
+
+    const adminItems: MenuItem[] = role === 'admin'
+        ? [{ label: 'Usuarios', href: '/users', icon: '🔐' }]
+        : [];
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return url === '/dashboard';
@@ -59,6 +76,25 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         <span>{item.label}</span>
                     </Link>
                 ))}
+                {role === 'admin' && adminItems.length > 0 && (
+                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                        {adminItems.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={onClose}
+                                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                    isActive(item.href)
+                                        ? 'bg-patuju-green text-white'
+                                        : 'text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green dark:hover:text-patuju-green'
+                                }`}
+                            >
+                                <span>{item.icon}</span>
+                                <span>{item.label}</span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </nav>
 
             <div className="border-t border-gray-100 dark:border-gray-700 p-3 space-y-2">

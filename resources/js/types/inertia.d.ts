@@ -1,9 +1,15 @@
-import type { User as UserModel } from './generated/User';
+interface AuthUser {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    funcionario_id: number | null;
+}
 
 declare module '@inertiajs/react' {
     interface PageProps {
         auth: {
-            user: UserModel | null;
+            user: AuthUser | null;
         };
         flash?: {
             success?: string;
