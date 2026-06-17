@@ -1,34 +1,44 @@
+import { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 
-interface FuncionarioOption {
-    id: number;
-    nombre: string;
-}
+const EMAIL_DOMAIN = '@seguimiento.gob.bo';
 
-interface CreateProps {
-    funcionarios: FuncionarioOption[];
-}
-
-export default function UsersCreate({ funcionarios }: CreateProps) {
+export default function UsersCreate() {
+    const [showPassword, setShowPassword] = useState(false);
+    const [emailLocal, setEmailLocal] = useState('');
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
-        username: '',
-        phone: '',
+        nro_telefono: '',
         profesion: '',
         cargo: '',
         password: '',
-        password_confirmation: '',
         role: 'user',
-        funcionario_id: '',
     });
+
+    const generarPassword = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+        let pwd = '';
+        for (let i = 0; i < 8; i++) {
+            pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setData('password', pwd);
+    };
+
+    const handleEmailChange = (value: string) => {
+        setEmailLocal(value);
+        setData('email', value + EMAIL_DOMAIN);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (emailLocal) {
+            setData('email', emailLocal + EMAIL_DOMAIN);
+        }
         post('/users');
     };
 
@@ -47,35 +57,22 @@ export default function UsersCreate({ funcionarios }: CreateProps) {
                         />
                         <Input
                             label="Email"
-                            type="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
+                            type="text"
+                            value={emailLocal}
+                            onChange={(e) => handleEmailChange(e.target.value)}
                             error={errors.email}
+                            append={EMAIL_DOMAIN}
+                            placeholder="usuario"
                         />
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Input
-                            label="Usuario"
-                            value={data.username}
-                            onChange={(e) => setData('username', e.target.value)}
-                            error={errors.username}
-                        />
                         <Input
                             label="Número de Teléfono"
                             type="tel"
-                            value={data.phone}
-                            onChange={(e) => setData('phone', e.target.value)}
-                            error={errors.phone}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Input
-                            label="Profesión"
-                            value={data.profesion}
-                            onChange={(e) => setData('profesion', e.target.value)}
-                            error={errors.profesion}
+                            value={data.nro_telefono}
+                            onChange={(e) => setData('nro_telefono', e.target.value)}
+                            error={errors.nro_telefono}
                         />
                         <Input
                             label="Cargo"
@@ -85,23 +82,48 @@ export default function UsersCreate({ funcionarios }: CreateProps) {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Input
-                            label="Contraseña"
-                            type="password"
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
-                            error={errors.password}
-                        />
-                        <Input
-                            label="Confirmar Contraseña"
-                            type="password"
-                            value={data.password_confirmation}
-                            onChange={(e) => setData('password_confirmation', e.target.value)}
-                        />
-                    </div>
+                    <Input
+                        label="Profesión"
+                        value={data.profesion}
+                        onChange={(e) => setData('profesion', e.target.value)}
+                        error={errors.profesion}
+                    />
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <Input
+                                label="Contraseña"
+                                type={showPassword ? 'text' : 'password'}
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                error={errors.password}
+                                rightElement={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                }
+                            />
+                            <div className="mt-2">
+                                <Button type="button" size="sm" variant="secondary" onClick={generarPassword}>
+                                    Generar contraseña segura
+                                </Button>
+                            </div>
+                        </div>
                         <Select
                             label="Rol"
                             options={[
@@ -111,14 +133,6 @@ export default function UsersCreate({ funcionarios }: CreateProps) {
                             value={data.role}
                             onChange={(e) => setData('role', e.target.value)}
                             error={errors.role}
-                        />
-                        <Select
-                            label="Funcionario (opcional)"
-                            placeholder="Seleccione un funcionario"
-                            options={funcionarios.map((f) => ({ value: String(f.id), label: f.nombre }))}
-                            value={data.funcionario_id}
-                            onChange={(e) => setData('funcionario_id', e.target.value)}
-                            error={errors.funcionario_id}
                         />
                     </div>
 

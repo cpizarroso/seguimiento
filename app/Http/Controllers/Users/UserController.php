@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\UserResource;
-use App\Models\Funcionario;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -30,9 +29,7 @@ class UserController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Users/Create', [
-            'funcionarios' => Funcionario::orderBy('nombre')->get(['id', 'nombre']),
-        ]);
+        return Inertia::render('Users/Create');
     }
 
     public function store(StoreUserRequest $request): RedirectResponse
@@ -46,8 +43,7 @@ class UserController extends Controller
     public function edit(User $user): Response
     {
         return Inertia::render('Users/Edit', [
-            'user' => $user->load('funcionario'),
-            'funcionarios' => Funcionario::orderBy('nombre')->get(['id', 'nombre']),
+            'user' => $user,
         ]);
     }
 

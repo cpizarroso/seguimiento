@@ -12,12 +12,10 @@ interface UserRow {
     id: number;
     name: string;
     email: string;
-    username: string | null;
-    phone: string | null;
+    nro_telefono: string | null;
     profesion: string | null;
     cargo: string | null;
     role: string;
-    funcionario: { id: number; nombre: string } | null;
 }
 
 interface UsersIndexProps {
@@ -38,8 +36,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
             ),
         },
         { key: 'email', header: 'Email' },
-        { key: 'username', header: 'Usuario', render: (u: UserRow) => u.username ?? '—' },
-        { key: 'phone', header: 'Teléfono', render: (u: UserRow) => u.phone ?? '—' },
+        { key: 'nro_telefono', header: 'Teléfono', render: (u: UserRow) => u.nro_telefono ?? '—' },
         { key: 'profesion', header: 'Profesión', render: (u: UserRow) => u.profesion ?? '—' },
         { key: 'cargo', header: 'Cargo', render: (u: UserRow) => u.cargo ?? '—' },
         {
@@ -50,11 +47,6 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     {u.role === 'admin' ? 'Administrador' : 'Usuario'}
                 </Badge>
             ),
-        },
-        {
-            key: 'funcionario',
-            header: 'Funcionario',
-            render: (u: UserRow) => u.funcionario?.nombre ?? '—',
         },
         {
             key: 'acciones',

@@ -84,6 +84,8 @@ return [
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
+    'user_domain' => env('APP_USER_DOMAIN', 'seguimiento.gob.bo'),
+
     /*
     |--------------------------------------------------------------------------
     | Encryption Key

@@ -3,7 +3,6 @@ interface AuthUser {
     name: string;
     email: string;
     role: string;
-    funcionario_id: number | null;
 }
 
 declare module '@inertiajs/react' {

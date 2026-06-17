@@ -12,9 +12,11 @@ class AuthService
     {
         $login = $credentials['email'];
 
-        $user = User::where('email', $login)
-            ->orWhere('username', $login)
-            ->first();
+        if (!str_contains($login, '@')) {
+            $login .= '@' . config('app.user_domain');
+        }
+
+        $user = User::where('email', $login)->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([

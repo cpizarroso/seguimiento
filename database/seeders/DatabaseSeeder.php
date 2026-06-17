@@ -46,15 +46,29 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'name' => 'Admin',
-            'email' => 'admin@seguimiento.gob.bo',
-            'password' => bcrypt('admin123'),
+            'email' => 'admin@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Alfredo Montoya Calderón',
+            'email' => 'amontoya@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Cristian Marcelo Pizarroso Peredo',
+            'email' => 'cpizarroso@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
             'role' => 'admin',
         ]);
 
         $this->call([
             PuestoSeeder::class,
             FuncionarioSeeder::class,
-            VinculacionSeeder::class,
+            UserSeeder::class,
             TramiteSeeder::class,
         ]);
     }
