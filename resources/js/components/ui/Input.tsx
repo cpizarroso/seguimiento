@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import { type InputHTMLAttributes } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -11,16 +11,16 @@ export function Input({ label, error, rightElement, append, className = '', id, 
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
-        <div className="space-y-1">
+        <div>
             {label && (
-                <label htmlFor={inputId} className="block text-sm font-medium text-patuju-green">
+                <label htmlFor={inputId} className="block text-sm font-medium text-patuju-green dark:text-patuju-green mb-1">
                     {label}
                 </label>
             )}
             <div className={append ? 'flex rounded-lg shadow-sm' : 'relative'}>
                 <input
                     id={inputId}
-                    className={`block w-full border px-3 py-2 text-sm shadow-sm transition-colors focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white ${append ? 'rounded-l-lg' : 'rounded-lg'} ${error ? 'border-patuju-red' : 'border-gray-300 dark:border-gray-600'} ${className}`}
+                    className={`block w-full border px-3 py-2 text-sm shadow-sm transition-colors focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white ${rightElement && !append ? 'pr-10' : ''} ${append ? 'rounded-l-lg' : 'rounded-lg'} ${error ? 'border-patuju-red' : 'border-gray-300 dark:border-gray-600'} ${className}`}
                     {...props}
                 />
                 {rightElement && !append && (
@@ -34,7 +34,7 @@ export function Input({ label, error, rightElement, append, className = '', id, 
                     </span>
                 )}
             </div>
-            {error && <p className="text-xs text-patuju-red">{error}</p>}
+            {error && <p className="text-xs text-patuju-red mt-1">{error}</p>}
         </div>
     );
 }

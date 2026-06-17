@@ -17,10 +17,11 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
-            'nro_telefono' => ['nullable', 'string', 'max:20'],
+            'username' => ['nullable', 'string', 'max:100', Rule::unique('users', 'username')->ignore($this->route('user'))],
+            'phone' => ['nullable', 'string', 'max:20'],
             'profesion' => ['nullable', 'string', 'max:255'],
             'cargo' => ['nullable', 'string', 'max:255'],
-            'password' => ['nullable', 'string', 'min:6'],
+            'password' => ['nullable', 'string', 'min:5'],
             'role' => ['required', 'string', 'in:admin,user'],
         ];
     }

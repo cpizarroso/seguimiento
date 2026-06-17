@@ -86,6 +86,8 @@ return [
 
     'user_domain' => env('APP_USER_DOMAIN', 'seguimiento.gob.bo'),
 
+    'user_domain' => env('APP_USER_DOMAIN', 'seguimiento.gob.bo'),
+
     /*
     |--------------------------------------------------------------------------
     | Encryption Key

@@ -11,7 +11,8 @@ interface UserEdit {
     id: number;
     name: string;
     email: string;
-    nro_telefono: string | null;
+    username: string | null;
+    phone: string | null;
     profesion: string | null;
     cargo: string | null;
     role: string;
@@ -27,7 +28,8 @@ export default function UsersEdit({ user }: EditProps) {
     const { data, setData, put, processing, errors } = useForm({
         name: user.name,
         email: user.email,
-        nro_telefono: user.nro_telefono ?? '',
+        username: user.username ?? '',
+        phone: user.phone ?? '',
         profesion: user.profesion ?? '',
         cargo: user.cargo ?? '',
         password: '',
@@ -80,11 +82,26 @@ export default function UsersEdit({ user }: EditProps) {
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Input
-                            label="Número de Teléfono"
+                            label="Usuario"
+                            value={data.username}
+                            onChange={(e) => setData('username', e.target.value)}
+                            error={errors.username}
+                        />
+                        <Input
+                            label="Teléfono"
                             type="tel"
-                            value={data.nro_telefono}
-                            onChange={(e) => setData('nro_telefono', e.target.value)}
-                            error={errors.nro_telefono}
+                            value={data.phone}
+                            onChange={(e) => setData('phone', e.target.value)}
+                            error={errors.phone}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Input
+                            label="Profesión"
+                            value={data.profesion}
+                            onChange={(e) => setData('profesion', e.target.value)}
+                            error={errors.profesion}
                         />
                         <Input
                             label="Cargo"
@@ -93,13 +110,6 @@ export default function UsersEdit({ user }: EditProps) {
                             error={errors.cargo}
                         />
                     </div>
-
-                    <Input
-                        label="Profesión"
-                        value={data.profesion}
-                        onChange={(e) => setData('profesion', e.target.value)}
-                        error={errors.profesion}
-                    />
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>

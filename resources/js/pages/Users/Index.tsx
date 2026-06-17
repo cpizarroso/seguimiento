@@ -3,16 +3,17 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
 import { Table } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
-import { Badge } from '@/components/ui/Badge';
 import type { PaginatedData } from '@/types/generated/Tramite';
 
 interface UserRow {
     id: number;
     name: string;
     email: string;
-    nro_telefono: string | null;
+    username: string | null;
+    phone: string | null;
     profesion: string | null;
     cargo: string | null;
     role: string;
@@ -36,15 +37,16 @@ export default function UsersIndex({ users }: UsersIndexProps) {
             ),
         },
         { key: 'email', header: 'Email' },
-        { key: 'nro_telefono', header: 'Teléfono', render: (u: UserRow) => u.nro_telefono ?? '—' },
+        { key: 'username', header: 'Usuario', render: (u: UserRow) => u.username ?? '—' },
+        { key: 'phone', header: 'Teléfono', render: (u: UserRow) => u.phone ?? '—' },
         { key: 'profesion', header: 'Profesión', render: (u: UserRow) => u.profesion ?? '—' },
         { key: 'cargo', header: 'Cargo', render: (u: UserRow) => u.cargo ?? '—' },
         {
             key: 'role',
             header: 'Rol',
             render: (u: UserRow) => (
-                <Badge variant={u.role === 'admin' ? 'success' : 'info'}>
-                    {u.role === 'admin' ? 'Administrador' : 'Usuario'}
+                <Badge variant={u.role === 'admin' ? 'primary' : 'secondary'}>
+                    {u.role === 'admin' ? 'Admin' : 'Usuario'}
                 </Badge>
             ),
         },
@@ -56,17 +58,6 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     <Link href={`/users/${u.id}/edit`}>
                         <Button size="sm" variant="secondary">Editar</Button>
                     </Link>
-                    <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => {
-                            if (confirm('¿Eliminar este usuario?')) {
-                                router.delete(`/users/${u.id}`);
-                            }
-                        }}
-                    >
-                        Eliminar
-                    </Button>
                 </div>
             ),
         },
@@ -86,7 +77,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     <div className="flex-1 max-w-sm">
                         <Input
                             label="Buscar"
-                            placeholder="Buscar por nombre o email..."
+                            placeholder="Buscar por nombre, email o usuario..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && router.get('/users', { search }, { preserveState: true })}
