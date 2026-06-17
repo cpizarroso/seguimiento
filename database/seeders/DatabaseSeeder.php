@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Puesto;
+use App\Models\Tramite;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -71,5 +73,30 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             TramiteSeeder::class,
         ]);
+
+        $ericka = User::factory()->create([
+            'name' => 'Erika Rodriguez',
+            'email' => 'erodriguez@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
+            'role' => 'user',
+        ]);
+
+        $puestoId = Puesto::value('id');
+        $year = now()->year;
+
+        foreach (range(1, 10) as $i) {
+            Tramite::create([
+                'numero_tramite' => $i,
+                'year' => $year,
+                'fecha' => now()->subDays(10 - $i)->format('Y-m-d'),
+                'descripcion' => "Trámite {$i} - Erika Rodríguez",
+                'numero_diamante' => "{$year}-" . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'estado' => 'iniciado',
+                'puesto_id' => $puestoId,
+                'creado_por' => $ericka->id,
+                'derivado_a' => null,
+                'ultima_respuesta' => null,
+            ]);
+        }
     }
 }

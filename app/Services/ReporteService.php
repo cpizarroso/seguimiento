@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Funcionario;
 use App\Models\Tramite;
+use App\Models\User;
 
 class ReporteService
 {
@@ -57,11 +57,10 @@ class ReporteService
 
     public function tramitesPorFuncionario(): array
     {
-        return Funcionario::query()
-            ->selectRaw('funcionarios.id, funcionarios.nombre, puestos.nombre as puesto, COUNT(tramites.id) as total')
-            ->join('puestos', 'puestos.id', '=', 'funcionarios.puesto_id')
-            ->leftJoin('tramites', 'tramites.puesto_id', '=', 'funcionarios.puesto_id')
-            ->groupBy('funcionarios.id', 'funcionarios.nombre', 'puestos.nombre')
+        return User::query()
+            ->selectRaw('users.id, users.name, COUNT(CASE WHEN tramites.estado != \'finalizado\' THEN 1 END) as total')
+            ->leftJoin('tramites', 'tramites.creado_por', '=', 'users.id')
+            ->groupBy('users.id', 'users.name')
             ->orderByDesc('total')
             ->get()
             ->toArray();

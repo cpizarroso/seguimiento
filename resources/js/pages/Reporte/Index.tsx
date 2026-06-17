@@ -6,13 +6,12 @@ import { TramitesPorFuncionarioChart } from '@/components/features/reporte/Trami
 
 interface FuncionarioOption {
     id: number;
-    nombre: string;
+    name: string;
 }
 
 interface FuncionarioTramite {
     id: number;
-    nombre: string;
-    puesto: string;
+    name: string;
     total: number;
 }
 
@@ -51,8 +50,8 @@ export default function Reporte({
     };
 
     const options = [
-        { value: '', label: 'Todos los funcionarios' },
-        ...funcionarios.map((f) => ({ value: String(f.id), label: f.nombre })),
+        { value: '', label: 'Todos los usuarios' },
+        ...funcionarios.map((f) => ({ value: String(f.id), label: f.name })),
     ];
 
     return (
@@ -61,7 +60,7 @@ export default function Reporte({
                 <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Reporte</h2>
                 <div className="w-64">
                     <Select
-                        label="Filtrar por funcionario"
+                        label="Filtrar por usuario"
                         options={options}
                         value={filtro_funcionario_id ? String(filtro_funcionario_id) : ''}
                         onChange={handleFiltroChange}
