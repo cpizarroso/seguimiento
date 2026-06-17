@@ -28,7 +28,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->userName() . '@' . config('app.user_domain'),
             'role' => 'user',
-            'nro_telefono' => fake()->phoneNumber(),
+            'phone' => fake()->phoneNumber(),
             'profesion' => fake()->jobTitle(),
             'cargo' => fake()->jobTitle(),
             'email_verified_at' => now(),

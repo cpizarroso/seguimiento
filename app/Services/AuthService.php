@@ -12,15 +12,18 @@ class AuthService
     {
         $login = $credentials['email'];
 
-        if (!str_contains($login, '@')) {
-            $login .= '@' . config('app.user_domain');
-        }
+        $user = User::where('email', $login)
+            ->orWhere('username', $login)
+            ->first();
 
-        $user = User::where('email', $login)->first();
+        if (!$user && !str_contains($login, '@')) {
+            $email = $login . '@' . config('app.user_domain');
+            $user = User::where('email', $email)->first();
+        }
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Las credenciales proporcionadas son incorrectas.'],
+                'email' => ['Las credenciales ingresadas no coinciden con nuestros registros.'],
             ]);
         }
 
