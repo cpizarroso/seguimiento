@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             'users',
             'funcionarios',
             'puestos',
+            'areas',
             'personal_access_tokens',
             'sessions',
             'cache',
@@ -66,7 +67,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            PuestoSeeder::class,
+            AreaSeeder::class,
             FuncionarioSeeder::class,
             UserSeeder::class,
             TramiteSeeder::class,
