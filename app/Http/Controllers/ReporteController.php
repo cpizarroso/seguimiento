@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Funcionario;
+use App\Models\User;
 use App\Services\ReporteService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,7 +22,7 @@ class ReporteController extends Controller
             ...$this->reporteService->resumenGeneral(),
             ...$this->reporteService->tramitesPorDiaSemana($funcionarioId),
             'tramites_por_funcionario' => $this->reporteService->tramitesPorFuncionario(),
-            'funcionarios' => Funcionario::orderBy('nombre')->get(['id', 'nombre']),
+            'funcionarios' => User::orderBy('name')->get(['id', 'name']),
             'filtro_funcionario_id' => $funcionarioId,
         ]);
     }
