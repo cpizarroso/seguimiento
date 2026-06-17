@@ -13,7 +13,8 @@ export default function UsersCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
-        nro_telefono: '',
+        username: '',
+        phone: '',
         profesion: '',
         cargo: '',
         password: '',
@@ -68,11 +69,26 @@ export default function UsersCreate() {
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Input
-                            label="Número de Teléfono"
+                            label="Usuario"
+                            value={data.username}
+                            onChange={(e) => setData('username', e.target.value)}
+                            error={errors.username}
+                        />
+                        <Input
+                            label="Teléfono"
                             type="tel"
-                            value={data.nro_telefono}
-                            onChange={(e) => setData('nro_telefono', e.target.value)}
-                            error={errors.nro_telefono}
+                            value={data.phone}
+                            onChange={(e) => setData('phone', e.target.value)}
+                            error={errors.phone}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Input
+                            label="Profesión"
+                            value={data.profesion}
+                            onChange={(e) => setData('profesion', e.target.value)}
+                            error={errors.profesion}
                         />
                         <Input
                             label="Cargo"
@@ -81,13 +97,6 @@ export default function UsersCreate() {
                             error={errors.cargo}
                         />
                     </div>
-
-                    <Input
-                        label="Profesión"
-                        value={data.profesion}
-                        onChange={(e) => setData('profesion', e.target.value)}
-                        error={errors.profesion}
-                    />
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>

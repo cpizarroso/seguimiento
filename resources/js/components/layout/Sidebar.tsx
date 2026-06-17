@@ -12,7 +12,7 @@ const allMenuItems: MenuItem[] = [
     { label: 'Dashboard', href: '/dashboard', icon: '📊' },
     { label: 'Trámites', href: '/tramites', icon: '📋' },
     { label: 'Funcionarios', href: '/funcionarios', icon: '👥', adminOnly: true },
-    { label: 'Puestos', href: '/puestos', icon: '🏢', adminOnly: true },
+    { label: 'Áreas y Puestos', href: '/areas', icon: '🗂️', adminOnly: true },
     { label: 'Contador', href: '/contador', icon: '🔢', adminOnly: true },
     { label: 'Reporte', href: '/reporte', icon: '📈' },
 ];

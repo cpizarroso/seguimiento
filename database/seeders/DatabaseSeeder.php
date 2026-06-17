@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             'users',
             'funcionarios',
             'puestos',
+            'areas',
             'personal_access_tokens',
             'sessions',
             'cache',
@@ -46,31 +47,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->limpiarTablas();
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@' . config('app.user_domain'),
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Alfredo Montoya Calderón',
-            'email' => 'amontoya@' . config('app.user_domain'),
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Cristian Marcelo Pizarroso Peredo',
-            'email' => 'cpizarroso@' . config('app.user_domain'),
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
-
         $this->call([
-            PuestoSeeder::class,
+            AreaSeeder::class,
             FuncionarioSeeder::class,
-            UserSeeder::class,
+            VinculacionSeeder::class,
             TramiteSeeder::class,
         ]);
 

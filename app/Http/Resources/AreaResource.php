@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class PuestoResource extends JsonResource
+class AreaResource extends JsonResource
 {
     public static $wrap = null;
 
@@ -19,9 +19,8 @@ class PuestoResource extends JsonResource
             'id' => $this->id,
             'nombre' => $this->nombre,
             'descripcion' => $this->descripcion,
-            'area_id' => $this->area_id,
-            'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,
-            'funcionarios_count' => $this->whenCounted('funcionarios'),
+            'puestos_count' => $this->whenCounted('puestos'),
+            'puestos' => PuestoResource::collection($this->whenLoaded('puestos')),
             'created_at' => $this->created_at,
         ];
     }

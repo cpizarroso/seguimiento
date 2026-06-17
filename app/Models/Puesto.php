@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Puesto extends Model
@@ -12,7 +13,13 @@ class Puesto extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'area_id',
     ];
+
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class);
+    }
 
     public function funcionarios(): HasMany
     {
