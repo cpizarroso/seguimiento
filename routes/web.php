@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\Areas\AreaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Contador\ContadorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Derivaciones\DerivacionController;
 use App\Http\Controllers\Funcionarios\FuncionarioController;
-use App\Http\Controllers\Puestos\PuestoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\Tramites\TramiteController;
 use App\Http\Controllers\Users\UserController;
@@ -38,7 +38,10 @@ Route::middleware('auth')->group(function () {
     Route::get('reporte', [ReporteController::class, 'index'])->name('reporte.index');
 
     Route::middleware('role:admin')->group(function () {
-        Route::resource('puestos', PuestoController::class)->except(['show']);
+        Route::resource('areas', AreaController::class);
+        Route::post('areas/{area}/puestos', [AreaController::class, 'storePuesto'])->name('areas.puestos.store');
+        Route::put('areas/{area}/puestos/{puesto}', [AreaController::class, 'updatePuesto'])->name('areas.puestos.update');
+        Route::delete('areas/{area}/puestos/{puesto}', [AreaController::class, 'destroyPuesto'])->name('areas.puestos.destroy');
         Route::resource('funcionarios', FuncionarioController::class)->except(['show']);
 
         Route::post('tramites', [TramiteController::class, 'store'])->name('tramites.store');

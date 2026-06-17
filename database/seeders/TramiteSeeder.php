@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Area;
 use App\Models\ContadorTramite;
 use App\Models\Puesto;
 use App\Models\Tramite;
@@ -20,6 +21,14 @@ class TramiteSeeder extends Seeder
         $this->fechaBase = now()->subMonths(6)->format('Y-m-d');
         $this->year = now()->year;
         $this->usuarios = User::all()->keyBy('id')->toArray();
+
+        $puestoMesaPartes = Puesto::where('nombre', 'Secretaria')
+            ->whereHas('area', fn ($q) => $q->where('nombre', 'Administrativa'))
+            ->first()->id;
+
+        $oldPuestoMap = [
+            7 => $puestoMesaPartes,
+        ];
 
         $tramites = [
             [
@@ -249,7 +258,7 @@ class TramiteSeeder extends Seeder
                 'numero_diamante' => $t['year'] . '-' . str_pad((string) $t['num'], 4, '0', STR_PAD_LEFT),
                 'glosa' => fake()->optional(0.7)->sentence(),
                 'estado' => 'iniciado',
-                'puesto_id' => $t['puesto'],
+                'puesto_id' => $oldPuestoMap[$t['puesto']] ?? $t['puesto'],
                 'creado_por' => $creadoPor,
                 'derivado_a' => null,
                 'ultima_respuesta' => null,

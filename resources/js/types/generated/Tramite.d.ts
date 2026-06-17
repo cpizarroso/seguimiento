@@ -17,10 +17,20 @@ export interface Tramite {
     derivaciones: Derivacion[];
 }
 
+export interface Area {
+    id: number;
+    nombre: string;
+    descripcion: string | null;
+    puestos_count?: number;
+    puestos?: Puesto[];
+}
+
 export interface Puesto {
     id: number;
     nombre: string;
     descripcion: string | null;
+    area_id: number | null;
+    area: Area | null;
     funcionarios_count?: number;
 }
 

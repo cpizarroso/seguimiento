@@ -2,44 +2,52 @@
 
 namespace Database\Seeders;
 
+use App\Models\Area;
 use App\Models\Funcionario;
+use App\Models\Puesto;
 use Illuminate\Database\Seeder;
 
 class FuncionarioSeeder extends Seeder
 {
     public function run(): void
     {
+        $adminArea = Area::where('nombre', 'Administrativa')->first();
+        $legalArea = Area::where('nombre', 'Legal')->first();
+
+        $puestoAdmin = fn ($nombre) => Puesto::where('nombre', $nombre)->where('area_id', $adminArea->id)->first()->id;
+        $puestoLegal = fn ($nombre) => Puesto::where('nombre', $nombre)->where('area_id', $legalArea->id)->first()->id;
+
         $funcionarios = [
-            // Mesa de Partes (puesto_id = 7)
-            ['nombre' => 'Carlos Mendoza', 'email' => 'cmendoza@ejemplo.gob.bo', 'puesto_id' => 7],
-            ['nombre' => 'Rosa Quispe', 'email' => 'rquispe@ejemplo.gob.bo', 'puesto_id' => 7],
+            // Mesa de Partes (se asigna a Secretaria Administrativa)
+            ['nombre' => 'Carlos Mendoza', 'email' => 'cmendoza@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Secretaria')],
+            ['nombre' => 'Rosa Quispe', 'email' => 'rquispe@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Secretaria')],
 
-            // Secretaría General (puesto_id = 1)
-            ['nombre' => 'Ana Vargas', 'email' => 'avargas@ejemplo.gob.bo', 'puesto_id' => 1],
-            ['nombre' => 'Pedro Mamani', 'email' => 'pmamani@ejemplo.gob.bo', 'puesto_id' => 1],
+            // Profesionales Administrativos
+            ['nombre' => 'Ana Vargas', 'email' => 'avargas@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Profesional')],
+            ['nombre' => 'Pedro Mamani', 'email' => 'pmamani@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Profesional')],
 
-            // Recursos Humanos (puesto_id = 2)
-            ['nombre' => 'Lucía Flores', 'email' => 'lflores@ejemplo.gob.bo', 'puesto_id' => 2],
-            ['nombre' => 'Jorge Ríos', 'email' => 'jrios@ejemplo.gob.bo', 'puesto_id' => 2],
+            // Jefes Administrativos
+            ['nombre' => 'Lucía Flores', 'email' => 'lflores@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Jefe de Área')],
+            ['nombre' => 'Jorge Ríos', 'email' => 'jrios@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Jefe de Área')],
 
-            // Dirección Financiera (puesto_id = 3)
-            ['nombre' => 'María Luna', 'email' => 'mluna@ejemplo.gob.bo', 'puesto_id' => 3],
-            ['nombre' => 'Diego Campos', 'email' => 'dcampos@ejemplo.gob.bo', 'puesto_id' => 3],
+            // Secretaria Legal
+            ['nombre' => 'María Luna', 'email' => 'mluna@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Secretaria')],
+            ['nombre' => 'Diego Campos', 'email' => 'dcampos@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Secretaria')],
 
-            // Asesoría Jurídica (puesto_id = 4)
-            ['nombre' => 'Sofía Orozco', 'email' => 'sorozco@ejemplo.gob.bo', 'puesto_id' => 4],
-            ['nombre' => 'Gabriel Torrez', 'email' => 'gtorrez@ejemplo.gob.bo', 'puesto_id' => 4],
+            // Profesionales Legales
+            ['nombre' => 'Sofía Orozco', 'email' => 'sorozco@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Profesional')],
+            ['nombre' => 'Gabriel Torrez', 'email' => 'gtorrez@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Profesional')],
 
-            // Fiscalización (puesto_id = 5)
-            ['nombre' => 'Elena Paredes', 'email' => 'eparedes@ejemplo.gob.bo', 'puesto_id' => 5],
-            ['nombre' => 'Hugo Salinas', 'email' => 'hsalinas@ejemplo.gob.bo', 'puesto_id' => 5],
+            // Jefes Legales
+            ['nombre' => 'Elena Paredes', 'email' => 'eparedes@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Jefe de Área')],
+            ['nombre' => 'Hugo Salinas', 'email' => 'hsalinas@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Jefe de Área')],
 
-            // Departamento Técnico (puesto_id = 6)
-            ['nombre' => 'Carmen Delgado', 'email' => 'cdelgado@ejemplo.gob.bo', 'puesto_id' => 6],
-            ['nombre' => 'Luis Suárez', 'email' => 'lsuarez@ejemplo.gob.bo', 'puesto_id' => 6],
+            // Personal adicional en Secretaria Administrativa
+            ['nombre' => 'Carmen Delgado', 'email' => 'cdelgado@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Secretaria')],
+            ['nombre' => 'Luis Suárez', 'email' => 'lsuarez@ejemplo.gob.bo', 'puesto_id' => $puestoAdmin('Secretaria')],
 
-            // Archivo Central (puesto_id = 8)
-            ['nombre' => 'Patricia Nava', 'email' => 'pnava@ejemplo.gob.bo', 'puesto_id' => 8],
+            // Personal adicional en Secretaria Legal
+            ['nombre' => 'Patricia Nava', 'email' => 'pnava@ejemplo.gob.bo', 'puesto_id' => $puestoLegal('Secretaria')],
         ];
 
         foreach ($funcionarios as $funcionario) {
