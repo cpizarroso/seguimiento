@@ -45,10 +45,31 @@ class DatabaseSeeder extends Seeder
     {
         $this->limpiarTablas();
 
+        User::factory()->create([
+            'name' => 'Admin',
+            'email' => 'admin@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Alfredo Montoya Calderón',
+            'email' => 'amontoya@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Cristian Marcelo Pizarroso Peredo',
+            'email' => 'cpizarroso@' . config('app.user_domain'),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+
         $this->call([
             AreaSeeder::class,
             FuncionarioSeeder::class,
-            VinculacionSeeder::class,
+            UserSeeder::class,
             TramiteSeeder::class,
         ]);
     }

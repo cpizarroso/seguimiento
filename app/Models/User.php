@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -18,13 +17,11 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'username',
-        'phone',
+        'nro_telefono',
         'profesion',
         'cargo',
         'password',
         'role',
-        'funcionario_id',
     ];
 
     protected $hidden = [
@@ -58,10 +55,5 @@ class User extends Authenticatable
     public function derivacionesRecibidas(): HasMany
     {
         return $this->hasMany(Derivacion::class, 'derivado_a');
-    }
-
-    public function funcionario(): BelongsTo
-    {
-        return $this->belongsTo(Funcionario::class);
     }
 }

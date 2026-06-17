@@ -15,13 +15,15 @@ use Inertia\Response;
 class UserController extends Controller
 {
     public function __construct(
-        private readonly UserService $userService,
+        private readonly UserService $userService
     ) {}
 
     public function index(): Response
     {
         return Inertia::render('Users/Index', [
-            'users' => UserResource::collection($this->userService->listar(request()->only(['search']))),
+            'users' => UserResource::collection(
+                $this->userService->listar(request()->only(['search']))
+            ),
         ]);
     }
 

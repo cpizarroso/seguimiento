@@ -10,16 +10,14 @@ class UserService
 {
     public function listar(array $filtros = []): LengthAwarePaginator
     {
-        return User::with('funcionario')
-            ->when($filtros['search'] ?? null, function ($q, $v) {
+        return User::when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->where('name', 'like', "%{$v}%")
-                        ->orWhere('email', 'like', "%{$v}%")
-                        ->orWhere('username', 'like', "%{$v}%");
+                        ->orWhere('email', 'like', "%{$v}%");
                 });
             })
             ->orderBy('name')
-            ->paginate(10);
+            ->paginate(15);
     }
 
     public function crear(array $data): User
@@ -27,8 +25,7 @@ class UserService
         return User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'username' => $data['username'] ?? null,
-            'phone' => $data['phone'] ?? null,
+            'nro_telefono' => $data['nro_telefono'] ?? null,
             'profesion' => $data['profesion'] ?? null,
             'cargo' => $data['cargo'] ?? null,
             'password' => Hash::make($data['password']),
@@ -41,8 +38,7 @@ class UserService
         $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
-            'username' => $data['username'] ?? $user->username,
-            'phone' => $data['phone'] ?? $user->phone,
+            'nro_telefono' => $data['nro_telefono'] ?? $user->nro_telefono,
             'profesion' => $data['profesion'] ?? $user->profesion,
             'cargo' => $data['cargo'] ?? $user->cargo,
             'role' => $data['role'] ?? $user->role,
@@ -53,7 +49,8 @@ class UserService
         }
 
         $user->update($updateData);
-        return $user;
+
+        return $user->fresh();
     }
 
     public function eliminar(User $user): void
@@ -63,6 +60,6 @@ class UserService
 
     public function obtenerPorId(int $id): User
     {
-        return User::with('funcionario')->findOrFail($id);
+        return User::findOrFail($id);
     }
 }
