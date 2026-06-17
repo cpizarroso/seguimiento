@@ -33,6 +33,7 @@ class UserService
             'cargo' => $data['cargo'] ?? null,
             'password' => Hash::make($data['password']),
             'role' => $data['role'] ?? 'user',
+            'funcionario_id' => $data['funcionario_id'] ?? null,
         ]);
     }
 
@@ -46,6 +47,7 @@ class UserService
             'profesion' => $data['profesion'] ?? $user->profesion,
             'cargo' => $data['cargo'] ?? $user->cargo,
             'role' => $data['role'] ?? $user->role,
+            'funcionario_id' => $data['funcionario_id'] ?? $user->funcionario_id,
         ];
 
         if (!empty($data['password'])) {
