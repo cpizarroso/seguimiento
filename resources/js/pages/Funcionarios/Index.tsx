@@ -21,16 +21,30 @@ export default function FuncionariosIndex({ funcionarios }: FuncionariosIndexPro
             header: 'Nombre',
             render: (f: Funcionario) => (
                 <Link href={`/funcionarios/${f.id}/edit`} className="text-patuju-green hover:underline font-medium">
-                    {f.nombre}
+                    {f.nombre} {f.apellidos}
                 </Link>
             ),
         },
         { key: 'email', header: 'Email', render: (f: Funcionario) => f.email ?? '—' },
         {
-            key: 'puesto',
-            header: 'Puesto',
+            key: 'cedula_identidad',
+            header: 'CI',
+            render: (f: Funcionario) => f.cedula_identidad ?? '—',
+        },
+        {
+            key: 'area',
+            header: 'Área',
             render: (f: Funcionario) => (
-                <Badge variant="info">{f.puesto?.nombre ?? '—'}</Badge>
+                <Badge variant="info">{f.area?.nombre ?? '—'}</Badge>
+            ),
+        },
+        {
+            key: 'tipo_funcionario',
+            header: 'Tipo',
+            render: (f: Funcionario) => (
+                <Badge variant={f.tipo_funcionario === 'item' ? 'success' : 'default'}>
+                    {f.tipo_funcionario}
+                </Badge>
             ),
         },
         {
@@ -60,7 +74,7 @@ export default function FuncionariosIndex({ funcionarios }: FuncionariosIndexPro
                     <div className="flex-1 max-w-sm">
                         <Input
                             label="Buscar"
-                            placeholder="Buscar por nombre..."
+                            placeholder="Buscar por nombre, apellidos o CI..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && router.get('/funcionarios', { search }, { preserveState: true })}

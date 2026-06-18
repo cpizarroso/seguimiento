@@ -16,8 +16,15 @@ class FuncionarioResource extends JsonResource
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
+            'apellidos' => $this->apellidos,
             'email' => $this->email,
-            'puesto' => $this->whenLoaded('puesto') ? new PuestoResource($this->puesto) : null,
+            'direccion' => $this->direccion,
+            'nro_telefono' => $this->nro_telefono,
+            'cedula_identidad' => $this->cedula_identidad,
+            'tipo_funcionario' => $this->tipo_funcionario,
+            'nivel' => $this->nivel,
+            'area_id' => $this->area_id,
+            'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,
             'created_at' => $this->created_at,
         ];
     }

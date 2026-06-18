@@ -11,6 +11,7 @@ use App\Models\Puesto;
 use App\Services\AreaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -83,6 +84,8 @@ class AreaController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
+            'sigla' => ['required', 'string', 'max:10', 'unique:puestos,sigla'],
+            'estado' => ['nullable', 'boolean'],
         ]);
 
         $this->areaService->crearPuesto($area, $validated);
@@ -100,6 +103,8 @@ class AreaController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
+            'sigla' => ['required', 'string', 'max:10', Rule::unique('puestos', 'sigla')->ignore($puesto->id)],
+            'estado' => ['nullable', 'boolean'],
         ]);
 
         $this->areaService->actualizarPuesto($puesto, $validated);

@@ -13,8 +13,12 @@ const allMenuItems: MenuItem[] = [
     { label: 'Trámites', href: '/tramites', icon: '📋' },
     { label: 'Funcionarios', href: '/funcionarios', icon: '👥', adminOnly: true },
     { label: 'Áreas y Puestos', href: '/areas', icon: '🗂️', adminOnly: true },
-    { label: 'Contador', href: '/contador', icon: '🔢', adminOnly: true },
     { label: 'Reporte', href: '/reporte', icon: '📈' },
+];
+
+const configMenuItems: MenuItem[] = [
+    { label: 'Contador', href: '/contador', icon: '🔢', adminOnly: true },
+    { label: 'Usuarios', href: '/users', icon: '🔐', adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -31,10 +35,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         if (item.adminOnly) return role === 'admin';
         return true;
     });
-
-    const adminItems: MenuItem[] = role === 'admin'
-        ? [{ label: 'Usuarios', href: '/users', icon: '🔐' }]
-        : [];
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return url === '/dashboard';
@@ -76,9 +76,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         <span>{item.label}</span>
                     </Link>
                 ))}
-                {role === 'admin' && adminItems.length > 0 && (
-                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                        {adminItems.map((item) => (
+                {role === 'admin' && (
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                            Configuración
+                        </p>
+                        {configMenuItems.map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
@@ -98,6 +101,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </nav>
 
             <div className="border-t border-gray-100 dark:border-gray-700 p-3 space-y-2">
+                <Link
+                    href="/profile"
+                    onClick={onClose}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors"
+                >
+                    <span>👤</span>
+                    <span>Mi Perfil</span>
+                </Link>
+
                 <button
                     onClick={toggle}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors"

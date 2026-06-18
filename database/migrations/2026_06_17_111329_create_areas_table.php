@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('areas', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 255);
+            $table->string('sigla', 10)->nullable()->unique();
             $table->text('descripcion')->nullable();
+            $table->boolean('estado')->default(true);
             $table->timestamps();
         });
     }

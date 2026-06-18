@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import type { Area, Puesto } from '@/types/generated/Tramite';
 
@@ -10,7 +11,7 @@ interface EditProps {
 
 let puestoKey = 0;
 
-function initPuestos(area: Area): { _key: number; id?: number; nombre: string; descripcion: string }[] {
+function initPuestos(area: Area): { _key: number; id?: number; nombre: string; descripcion: string; sigla: string; estado: boolean }[] {
     const max = area.puestos?.reduce((m, p) => Math.max(m, p.id), 0) ?? 0;
     puestoKey = max;
     return (area.puestos ?? []).map((p) => ({
@@ -18,6 +19,8 @@ function initPuestos(area: Area): { _key: number; id?: number; nombre: string; d
         id: p.id,
         nombre: p.nombre,
         descripcion: p.descripcion ?? '',
+        sigla: p.sigla,
+        estado: p.estado,
     }));
 }
 
@@ -25,18 +28,20 @@ export default function AreasEdit({ area }: EditProps) {
     const { data, setData, put, processing, errors } = useForm({
         nombre: area.nombre,
         descripcion: area.descripcion ?? '',
+        sigla: area.sigla,
+        estado: area.estado,
         puestos: initPuestos(area),
     });
 
     const addPuesto = () => {
-        setData('puestos', [...data.puestos, { _key: ++puestoKey, nombre: '', descripcion: '' }]);
+        setData('puestos', [...data.puestos, { _key: ++puestoKey, nombre: '', descripcion: '', sigla: '', estado: true }]);
     };
 
     const removePuesto = (key: number) => {
         setData('puestos', data.puestos.filter((p) => p._key !== key));
     };
 
-    const updatePuesto = (key: number, field: 'nombre' | 'descripcion', value: string) => {
+    const updatePuesto = (key: number, field: 'nombre' | 'descripcion' | 'sigla' | 'estado', value: string | boolean) => {
         setData(
             'puestos',
             data.puestos.map((p) => (p._key === key ? { ...p, [field]: value } : p)),
@@ -54,12 +59,21 @@ export default function AreasEdit({ area }: EditProps) {
 
             <Card>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                        label="Nombre del área"
-                        value={data.nombre}
-                        onChange={(e) => setData('nombre', e.target.value)}
-                        error={errors.nombre}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            label="Nombre del área"
+                            value={data.nombre}
+                            onChange={(e) => setData('nombre', e.target.value)}
+                            error={errors.nombre}
+                        />
+                        <Input
+                            label="Sigla"
+                            value={data.sigla}
+                            onChange={(e) => setData('sigla', e.target.value)}
+                            error={errors.sigla}
+                            placeholder="Ej: ADM"
+                        />
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-patuju-green">Descripción</label>
                         <textarea
@@ -69,6 +83,17 @@ export default function AreasEdit({ area }: EditProps) {
                             onChange={(e) => setData('descripcion', e.target.value)}
                         />
                         {errors.descripcion && <p className="text-xs text-patuju-red mt-1">{errors.descripcion}</p>}
+                    </div>
+                    <div className="max-w-xs">
+                        <Select
+                            label="Estado"
+                            value={data.estado ? '1' : '0'}
+                            onChange={(e) => setData('estado', e.target.value === '1')}
+                            options={[
+                                { value: '1', label: 'Activo' },
+                                { value: '0', label: 'Inactivo' },
+                            ]}
+                        />
                     </div>
 
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -95,7 +120,7 @@ export default function AreasEdit({ area }: EditProps) {
                                     key={puesto._key}
                                     className="flex gap-3 items-start p-3 rounded-lg border border-gray-200 dark:border-gray-700"
                                 >
-                                    <div className="flex-1">
+                                    <div className="flex-1 space-y-2">
                                         <input
                                             type="text"
                                             placeholder="Nombre del puesto"
@@ -107,14 +132,36 @@ export default function AreasEdit({ area }: EditProps) {
                                             <p className="text-xs text-patuju-red mt-1">{errors[`puestos.${idx}.nombre`]}</p>
                                         )}
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex-1 space-y-2">
                                         <input
                                             type="text"
-                                            placeholder="Descripción (opcional)"
+                                            placeholder="Sigla del puesto"
+                                            className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                                            value={puesto.sigla}
+                                            onChange={(e) => updatePuesto(puesto._key, 'sigla', e.target.value)}
+                                        />
+                                        {errors[`puestos.${idx}.sigla`] && (
+                                            <p className="text-xs text-patuju-red mt-1">{errors[`puestos.${idx}.sigla`]}</p>
+                                        )}
+                                    </div>
+                                    <div className="w-28 space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Descripción"
                                             className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
                                             value={puesto.descripcion}
                                             onChange={(e) => updatePuesto(puesto._key, 'descripcion', e.target.value)}
                                         />
+                                    </div>
+                                    <div className="w-28">
+                                        <select
+                                            className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                                            value={puesto.estado ? '1' : '0'}
+                                            onChange={(e) => updatePuesto(puesto._key, 'estado', e.target.value === '1')}
+                                        >
+                                            <option value="1">Activo</option>
+                                            <option value="0">Inactivo</option>
+                                        </select>
                                     </div>
                                     <button
                                         type="button"

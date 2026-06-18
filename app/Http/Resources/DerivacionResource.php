@@ -22,6 +22,7 @@ class DerivacionResource extends JsonResource
             'glosa_derivacion' => $this->glosa_derivacion,
             'fecha_recepcion' => $this->fecha_recepcion?->format('d/m/Y H:i'),
             'glosa_recepcion' => $this->glosa_recepcion,
+            'glosa_observacion' => $this->glosa_observacion,
             'estado' => $this->estado,
             'dias_en_derivacion' => $this->dias_en_derivacion,
         ];

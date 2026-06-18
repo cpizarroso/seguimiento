@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Contador;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Contador\ReiniciarContadorRequest;
-use App\Http\Resources\PuestoResource;
+use App\Http\Resources\AreaResource;
+use App\Services\AreaService;
 use App\Services\ContadorTramiteService;
-use App\Services\PuestoService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,15 +15,15 @@ class ContadorController extends Controller
 {
     public function __construct(
         private readonly ContadorTramiteService $contadorService,
-        private readonly PuestoService $puestoService,
+        private readonly AreaService $areaService,
     ) {}
 
     public function index(): Response
     {
-        $puestos = $this->puestoService->obtenerTodos();
-        $contadores = $puestos->map(fn ($puesto) => [
-            'puesto' => new PuestoResource($puesto),
-            'contador' => $this->contadorService->obtenerContador($puesto->id),
+        $areas = $this->areaService->obtenerTodos();
+        $contadores = $areas->map(fn ($area) => [
+            'area' => new AreaResource($area),
+            'contador' => $this->contadorService->obtenerContador($area->id),
         ]);
 
         return Inertia::render('Contador/Index', [
@@ -34,7 +34,7 @@ class ContadorController extends Controller
     public function reiniciar(ReiniciarContadorRequest $request): RedirectResponse
     {
         $this->contadorService->reiniciar(
-            $request->input('puesto_id'),
+            $request->input('area_id'),
             $request->input('glosa'),
         );
 

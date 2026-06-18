@@ -10,14 +10,14 @@ return new class extends Migration
     {
         Schema::create('contador_tramites', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('puesto_id')->constrained('puestos')->cascadeOnDelete();
+            $table->foreignId('area_id')->constrained('areas')->cascadeOnDelete();
             $table->integer('year');
             $table->integer('ultimo_numero')->default(0);
             $table->text('reset_glosa')->nullable();
             $table->timestamp('ultimo_reset_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['puesto_id', 'year']);
+            $table->unique(['area_id', 'year']);
         });
     }
 

@@ -16,12 +16,11 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'username' => ['nullable', 'string', 'max:100', 'unique:users,username'],
             'phone' => ['nullable', 'string', 'max:20'],
             'profesion' => ['nullable', 'string', 'max:255'],
-            'cargo' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:5'],
             'role' => ['required', 'string', 'in:admin,user'],
+            'puesto_id' => ['nullable', 'exists:puestos,id'],
         ];
     }
 }

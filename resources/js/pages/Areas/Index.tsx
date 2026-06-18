@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Table } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import type { PaginatedData } from '@/types/generated/Tramite';
 
@@ -11,6 +12,8 @@ interface AreaRow {
     id: number;
     nombre: string;
     descripcion: string | null;
+    sigla: string;
+    estado: boolean;
     puestos_count: number | null;
 }
 
@@ -32,9 +35,23 @@ export default function AreasIndex({ areas }: AreasIndexProps) {
             ),
         },
         {
+            key: 'sigla',
+            header: 'Sigla',
+            render: (a: AreaRow) => (
+                <span className="font-mono text-sm text-gray-600 dark:text-gray-400">{a.sigla}</span>
+            ),
+        },
+        {
             key: 'descripcion',
             header: 'Descripción',
             render: (a: AreaRow) => a.descripcion ?? '—',
+        },
+        {
+            key: 'estado',
+            header: 'Estado',
+            render: (a: AreaRow) => a.estado
+                ? <Badge variant="success">Activo</Badge>
+                : <Badge variant="danger">Inactivo</Badge>,
         },
         {
             key: 'puestos_count',

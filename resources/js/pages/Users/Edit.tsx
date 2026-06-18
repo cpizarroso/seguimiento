@@ -1,39 +1,62 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 
-const EMAIL_DOMAIN = '@seguimiento.gob.bo';
+interface AreaOption {
+    id: number;
+    nombre: string;
+    sigla: string;
+}
+
+interface PuestoOption {
+    id: number;
+    nombre: string;
+    sigla: string;
+    area_id: number;
+}
+
+interface PuestoActivo {
+    id: number;
+    puesto_id: number;
+    puesto: PuestoOption | null;
+}
 
 interface UserEdit {
     id: number;
     name: string;
     email: string;
-    username: string | null;
     phone: string | null;
     profesion: string | null;
-    cargo: string | null;
     role: string;
+    puesto_activo?: PuestoActivo | null;
 }
 
 interface EditProps {
     user: UserEdit;
+    areas: { data: AreaOption[] };
+    puestos: { data: PuestoOption[] };
 }
 
-export default function UsersEdit({ user }: EditProps) {
+const EMAIL_DOMAIN = '@seguimiento.gob.bo';
+
+export default function UsersEdit({ user, areas, puestos }: EditProps) {
+    const initialPuesto = user.puesto_activo?.puesto;
+    const initialAreaId = user.puesto_activo?.puesto?.area_id ?? '';
+
     const [showPassword, setShowPassword] = useState(false);
     const [emailLocal, setEmailLocal] = useState(user.email.replace(EMAIL_DOMAIN, ''));
     const { data, setData, put, processing, errors } = useForm({
         name: user.name,
         email: user.email,
-        username: user.username ?? '',
         phone: user.phone ?? '',
         profesion: user.profesion ?? '',
-        cargo: user.cargo ?? '',
         password: '',
         role: user.role,
+        area_id: String(initialAreaId),
+        puesto_id: String(user.puesto_activo?.puesto_id ?? ''),
     });
 
     const generarPassword = () => {
@@ -44,6 +67,11 @@ export default function UsersEdit({ user }: EditProps) {
         }
         setData('password', pwd);
     };
+
+    const puestosFiltrados = useMemo(
+        () => (data.area_id ? puestos.data.filter((p) => p.area_id === Number(data.area_id)) : []),
+        [data.area_id, puestos.data],
+    );
 
     const handleEmailChange = (value: string) => {
         setEmailLocal(value);
@@ -78,15 +106,6 @@ export default function UsersEdit({ user }: EditProps) {
                             append={EMAIL_DOMAIN}
                             placeholder="usuario"
                         />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Input
-                            label="Usuario"
-                            value={data.username}
-                            onChange={(e) => setData('username', e.target.value)}
-                            error={errors.username}
-                        />
                         <Input
                             label="Teléfono"
                             type="tel"
@@ -94,58 +113,12 @@ export default function UsersEdit({ user }: EditProps) {
                             onChange={(e) => setData('phone', e.target.value)}
                             error={errors.phone}
                         />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Input
                             label="Profesión"
                             value={data.profesion}
                             onChange={(e) => setData('profesion', e.target.value)}
                             error={errors.profesion}
                         />
-                        <Input
-                            label="Cargo"
-                            value={data.cargo}
-                            onChange={(e) => setData('cargo', e.target.value)}
-                            error={errors.cargo}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Input
-                                label="Nueva Contraseña (dejar vacío para mantener)"
-                                type={showPassword ? 'text' : 'password'}
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                error={errors.password}
-                                rightElement={
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                                        tabIndex={-1}
-                                    >
-                                        {showPassword ? (
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                                <line x1="1" y1="1" x2="23" y2="23" />
-                                            </svg>
-                                        ) : (
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                                <circle cx="12" cy="12" r="3" />
-                                            </svg>
-                                        )}
-                                    </button>
-                                }
-                            />
-                            <div className="mt-2">
-                                <Button type="button" size="sm" variant="secondary" onClick={generarPassword}>
-                                    Generar contraseña segura
-                                </Button>
-                            </div>
-                        </div>
                         <Select
                             label="Rol"
                             options={[
@@ -155,6 +128,66 @@ export default function UsersEdit({ user }: EditProps) {
                             value={data.role}
                             onChange={(e) => setData('role', e.target.value)}
                             error={errors.role}
+                        />
+                        <div className="flex flex-col justify-end">
+                            <label className="block text-sm font-medium text-patuju-green mb-1">Contraseña</label>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <Input
+                                        placeholder="Dejar vacío para mantener"
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={data.password}
+                                        onChange={(e) => setData('password', e.target.value)}
+                                        error={errors.password}
+                                        rightElement={
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                                tabIndex={-1}
+                                            >
+                                                {showPassword ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        }
+                                    />
+                                </div>
+                                <Button type="button" variant="secondary" onClick={generarPassword} className="whitespace-nowrap shrink-0">
+                                    Generar
+                                </Button>
+                            </div>
+                        </div>
+                        <Select
+                            label="Área"
+                            options={[
+                                { value: '', label: 'Seleccionar área' },
+                                ...areas.data.map((a) => ({ value: String(a.id), label: `${a.nombre} (${a.sigla})` })),
+                            ]}
+                            value={data.area_id}
+                            onChange={(e) => {
+                                setData('area_id', e.target.value);
+                                setData('puesto_id', '');
+                            }}
+                            error={errors.area_id}
+                        />
+                        <Select
+                            label="Puesto"
+                            options={[
+                                { value: '', label: puestosFiltrados.length ? 'Seleccionar puesto' : 'Seleccione un área primero' },
+                                ...puestosFiltrados.map((p) => ({ value: String(p.id), label: `${p.nombre} (${p.sigla})` })),
+                            ]}
+                            value={data.puesto_id}
+                            onChange={(e) => setData('puesto_id', e.target.value)}
+                            error={errors.puesto_id}
+                            disabled={!data.area_id}
                         />
                     </div>
 

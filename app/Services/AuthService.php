@@ -12,9 +12,7 @@ class AuthService
     {
         $login = $credentials['email'];
 
-        $user = User::where('email', $login)
-            ->orWhere('username', $login)
-            ->first();
+        $user = User::where('email', $login)->first();
 
         if (!$user && !str_contains($login, '@')) {
             $email = $login . '@' . config('app.user_domain');

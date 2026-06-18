@@ -65,4 +65,15 @@ class ReporteService
             ->get()
             ->toArray();
     }
+
+    public function tramitesPorArea(?int $funcionarioId = null): array
+    {
+        return Tramite::selectRaw('areas.nombre as name, COUNT(*) as total')
+            ->join('areas', 'tramites.area_id', '=', 'areas.id')
+            ->groupBy('areas.id', 'areas.nombre')
+            ->orderByDesc('total')
+            ->when($funcionarioId, fn ($q) => $q->where('tramites.creado_por', $funcionarioId))
+            ->get()
+            ->toArray();
+    }
 }

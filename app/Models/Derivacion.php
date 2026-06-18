@@ -18,6 +18,7 @@ class Derivacion extends Model
         'glosa_derivacion',
         'fecha_recepcion',
         'glosa_recepcion',
+        'glosa_observacion',
         'estado',
     ];
 

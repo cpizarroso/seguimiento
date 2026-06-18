@@ -16,12 +16,14 @@ class Tramite extends Model
         'fecha',
         'descripcion',
         'numero_diamante',
-        'glosa',
         'estado',
-        'puesto_id',
+        'area_id',
         'creado_por',
         'derivado_a',
         'ultima_respuesta',
+        'glosa_finalizacion',
+        'fecha_finalizacion',
+        'finalizado_por',
     ];
 
     public const ESTADOS = [
@@ -34,13 +36,14 @@ class Tramite extends Model
     protected function casts(): array
     {
         return [
-            'fecha' => 'date',
+            'fecha' => 'datetime',
+            'fecha_finalizacion' => 'datetime',
         ];
     }
 
-    public function puesto(): BelongsTo
+    public function area(): BelongsTo
     {
-        return $this->belongsTo(Puesto::class);
+        return $this->belongsTo(Area::class);
     }
 
     public function creador(): BelongsTo
@@ -61,5 +64,10 @@ class Tramite extends Model
     public function getNumeroFormateadoAttribute(): string
     {
         return str_pad((string) $this->numero_tramite, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function finalizadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'finalizado_por');
     }
 }

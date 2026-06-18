@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import type { Area, Puesto } from '@/types/generated/Tramite';
 
@@ -16,8 +17,8 @@ export default function AreasShow({ area }: ShowProps) {
     const [editingPuesto, setEditingPuesto] = useState<Puesto | null>(null);
     const [deletingPuesto, setDeletingPuesto] = useState<Puesto | null>(null);
 
-    const createForm = useForm({ nombre: '', descripcion: '' });
-    const editForm = useForm({ nombre: '', descripcion: '' });
+    const createForm = useForm({ nombre: '', descripcion: '', sigla: '', estado: true });
+    const editForm = useForm({ nombre: '', descripcion: '', sigla: '', estado: true });
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,7 +33,12 @@ export default function AreasShow({ area }: ShowProps) {
 
     const openEdit = (puesto: Puesto) => {
         setEditingPuesto(puesto);
-        editForm.setData({ nombre: puesto.nombre, descripcion: puesto.descripcion ?? '' });
+        editForm.setData({
+            nombre: puesto.nombre,
+            descripcion: puesto.descripcion ?? '',
+            sigla: puesto.sigla,
+            estado: puesto.estado,
+        });
     };
 
     const handleEdit = (e: React.FormEvent) => {
@@ -55,14 +61,23 @@ export default function AreasShow({ area }: ShowProps) {
     const columns = [
         { key: 'nombre', header: 'Nombre' },
         {
+            key: 'sigla',
+            header: 'Sigla',
+            render: (p: Puesto) => (
+                <span className="font-mono text-sm text-gray-600 dark:text-gray-400">{p.sigla}</span>
+            ),
+        },
+        {
             key: 'descripcion',
             header: 'Descripción',
             render: (p: Puesto) => p.descripcion ?? '—',
         },
         {
-            key: 'funcionarios_count',
-            header: 'Funcionarios',
-            render: (p: Puesto) => String((p as Puesto & { funcionarios_count?: number }).funcionarios_count ?? 0),
+            key: 'estado',
+            header: 'Estado',
+            render: (p: Puesto) => p.estado
+                ? <Badge variant="success">Activo</Badge>
+                : <Badge variant="danger">Inactivo</Badge>,
         },
         {
             key: 'acciones',
@@ -82,6 +97,13 @@ export default function AreasShow({ area }: ShowProps) {
                 <div>
                     <Link href="/areas" className="text-sm text-patuju-green hover:underline">&larr; Volver a Áreas</Link>
                     <h2 className="text-2xl font-bold text-patuju-green mt-1">{area.nombre}</h2>
+                    <div className="flex items-center gap-3 mt-1">
+                        <span className="font-mono text-sm text-gray-500 dark:text-gray-400">{area.sigla}</span>
+                        {area.estado
+                            ? <Badge variant="success">Activo</Badge>
+                            : <Badge variant="danger">Inactivo</Badge>
+                        }
+                    </div>
                     {area.descripcion && (
                         <p className="text-gray-600 dark:text-gray-400 mt-1">{area.descripcion}</p>
                     )}
@@ -117,6 +139,16 @@ export default function AreasShow({ area }: ShowProps) {
                         {createForm.errors.nombre && <p className="text-xs text-patuju-red mt-1">{createForm.errors.nombre}</p>}
                     </div>
                     <div>
+                        <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Sigla</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                            value={createForm.data.sigla}
+                            onChange={(e) => createForm.setData('sigla', e.target.value)}
+                        />
+                        {createForm.errors.sigla && <p className="text-xs text-patuju-red mt-1">{createForm.errors.sigla}</p>}
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Descripción</label>
                         <textarea
                             rows={3}
@@ -124,6 +156,17 @@ export default function AreasShow({ area }: ShowProps) {
                             value={createForm.data.descripcion}
                             onChange={(e) => createForm.setData('descripcion', e.target.value)}
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Estado</label>
+                        <select
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                            value={createForm.data.estado ? '1' : '0'}
+                            onChange={(e) => createForm.setData('estado', e.target.value === '1')}
+                        >
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
                     </div>
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" loading={createForm.processing}>Guardar</Button>
@@ -145,6 +188,16 @@ export default function AreasShow({ area }: ShowProps) {
                         {editForm.errors.nombre && <p className="text-xs text-patuju-red mt-1">{editForm.errors.nombre}</p>}
                     </div>
                     <div>
+                        <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Sigla</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                            value={editForm.data.sigla}
+                            onChange={(e) => editForm.setData('sigla', e.target.value)}
+                        />
+                        {editForm.errors.sigla && <p className="text-xs text-patuju-red mt-1">{editForm.errors.sigla}</p>}
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Descripción</label>
                         <textarea
                             rows={3}
@@ -152,6 +205,17 @@ export default function AreasShow({ area }: ShowProps) {
                             value={editForm.data.descripcion}
                             onChange={(e) => editForm.setData('descripcion', e.target.value)}
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Estado</label>
+                        <select
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                            value={editForm.data.estado ? '1' : '0'}
+                            onChange={(e) => editForm.setData('estado', e.target.value === '1')}
+                        >
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
                     </div>
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" loading={editForm.processing}>Actualizar</Button>

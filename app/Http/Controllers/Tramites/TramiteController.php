@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Tramites;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tramites\StoreTramiteRequest;
 use App\Http\Requests\Tramites\UpdateEstadoTramiteRequest;
-use App\Http\Resources\PuestoResource;
+use App\Http\Resources\AreaResource;
 use App\Http\Resources\TramiteResource;
 use App\Http\Resources\UserResource;
 use App\Models\Tramite;
-use App\Services\PuestoService;
+use App\Services\AreaService;
+use App\Services\DerivacionService;
 use App\Services\TramiteService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -19,7 +20,8 @@ class TramiteController extends Controller
 {
     public function __construct(
         private readonly TramiteService $tramiteService,
-        private readonly PuestoService $puestoService,
+        private readonly AreaService $areaService,
+        private readonly DerivacionService $derivacionService,
     ) {}
 
     public function index(): Response
@@ -29,18 +31,17 @@ class TramiteController extends Controller
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
                 $this->tramiteService->listar(
-                    request()->only(['search', 'estado', 'puesto_id', 'fecha_desde', 'fecha_hasta', 'vista']),
+                    request()->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'vista']),
                     $usuarioId,
                 )
             ),
-            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Tramites/Create', [
-            'puestos' => $this->puestoService->obtenerTodos(),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 
@@ -67,7 +68,20 @@ class TramiteController extends Controller
 
     public function updateEstado(UpdateEstadoTramiteRequest $request, Tramite $tramite): RedirectResponse
     {
-        $this->tramiteService->cambiarEstado($tramite, $request->input('estado'));
+        $estado = $request->input('estado');
+
+        if ($estado === 'observado') {
+            $this->derivacionService->observar(
+                $tramite,
+                $request->input('derivado_a'),
+                $request->input('glosa_observacion'),
+            );
+
+            return to_route('tramites.show', $tramite)
+                ->with('success', 'Trámite observado y derivado exitosamente.');
+        }
+
+        $this->tramiteService->cambiarEstado($tramite, $estado, $request->only(['glosa_finalizacion']));
 
         return to_route('tramites.show', $tramite)
             ->with('success', "Estado actualizado a: {$tramite->estado}");

@@ -44,6 +44,8 @@ class AreaService
                 $puestoData = [
                     'nombre' => $puesto['nombre'],
                     'descripcion' => $puesto['descripcion'] ?? null,
+                    'sigla' => $puesto['sigla'],
+                    'estado' => $puesto['estado'] ?? true,
                 ];
 
                 if (isset($puesto['id'])) {
@@ -69,7 +71,7 @@ class AreaService
 
     public function obtenerConPuestos(Area $area): Area
     {
-        return $area->load(['puestos' => fn ($q) => $q->withCount('funcionarios')->orderBy('nombre')]);
+        return $area->load(['puestos' => fn ($q) => $q->orderBy('nombre')]);
     }
 
     public function crearPuesto(Area $area, array $data): Puesto

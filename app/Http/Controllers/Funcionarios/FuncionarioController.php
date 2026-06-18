@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Funcionarios;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Funcionarios\StoreFuncionarioRequest;
 use App\Http\Requests\Funcionarios\UpdateFuncionarioRequest;
+use App\Http\Resources\AreaResource;
 use App\Http\Resources\FuncionarioResource;
 use App\Models\Funcionario;
+use App\Services\AreaService;
 use App\Services\FuncionarioService;
-use App\Services\PuestoService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,7 +18,7 @@ class FuncionarioController extends Controller
 {
     public function __construct(
         private readonly FuncionarioService $funcionarioService,
-        private readonly PuestoService $puestoService,
+        private readonly AreaService $areaService,
     ) {}
 
     public function index(): Response
@@ -32,7 +33,7 @@ class FuncionarioController extends Controller
     public function create(): Response
     {
         return Inertia::render('Funcionarios/Create', [
-            'puestos' => $this->puestoService->obtenerTodos()->values()->all(),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 
@@ -47,8 +48,8 @@ class FuncionarioController extends Controller
     public function edit(Funcionario $funcionario): Response
     {
         return Inertia::render('Funcionarios/Edit', [
-            'funcionario' => new FuncionarioResource($funcionario->load('puesto')),
-            'puestos' => $this->puestoService->obtenerTodos()->values()->all(),
+            'funcionario' => new FuncionarioResource($funcionario->load('area')),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 

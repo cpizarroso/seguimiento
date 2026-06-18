@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Contador\ContadorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Derivaciones\DerivacionController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Funcionarios\FuncionarioController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\Tramites\TramiteController;
@@ -36,6 +37,8 @@ Route::middleware('auth')->group(function () {
         ->name('derivaciones.rechazar');
 
     Route::get('reporte', [ReporteController::class, 'index'])->name('reporte.index');
+    Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('areas', AreaController::class);
@@ -55,5 +58,7 @@ Route::middleware('auth')->group(function () {
             ->name('contador.reiniciar');
 
         Route::resource('users', UserController::class);
+        Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])
+            ->name('users.reset-password');
     });
 });

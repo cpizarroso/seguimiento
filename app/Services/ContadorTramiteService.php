@@ -6,12 +6,12 @@ use App\Models\ContadorTramite;
 
 class ContadorTramiteService
 {
-    public function siguienteNumero(int $puestoId, ?int $year = null): int
+    public function siguienteNumero(int $areaId, ?int $year = null): int
     {
         $year = $year ?? now()->year;
 
         $contador = ContadorTramite::firstOrCreate(
-            ['puesto_id' => $puestoId, 'year' => $year],
+            ['area_id' => $areaId, 'year' => $year],
             ['ultimo_numero' => 0]
         );
 
@@ -21,12 +21,12 @@ class ContadorTramiteService
         return $contador->ultimo_numero;
     }
 
-    public function reiniciar(int $puestoId, ?string $glosa = null, ?int $year = null): ContadorTramite
+    public function reiniciar(int $areaId, ?string $glosa = null, ?int $year = null): ContadorTramite
     {
         $year = $year ?? now()->year;
 
         $contador = ContadorTramite::firstOrCreate(
-            ['puesto_id' => $puestoId, 'year' => $year],
+            ['area_id' => $areaId, 'year' => $year],
             ['ultimo_numero' => 0]
         );
 
@@ -39,11 +39,11 @@ class ContadorTramiteService
         return $contador;
     }
 
-    public function obtenerContador(int $puestoId, ?int $year = null): ?ContadorTramite
+    public function obtenerContador(int $areaId, ?int $year = null): ?ContadorTramite
     {
         $year = $year ?? now()->year;
 
-        return ContadorTramite::where('puesto_id', $puestoId)
+        return ContadorTramite::where('area_id', $areaId)
             ->where('year', $year)
             ->first();
     }

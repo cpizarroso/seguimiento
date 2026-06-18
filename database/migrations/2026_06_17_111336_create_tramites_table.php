@@ -12,18 +12,17 @@ return new class extends Migration
             $table->id();
             $table->integer('numero_tramite');
             $table->integer('year');
-            $table->date('fecha');
+            $table->dateTime('fecha');
             $table->text('descripcion');
             $table->string('numero_diamante', 255)->nullable();
-            $table->text('glosa')->nullable();
             $table->string('estado', 50)->default('iniciado');
-            $table->foreignId('puesto_id')->constrained('puestos')->cascadeOnDelete();
+            $table->foreignId('area_id')->constrained('areas')->cascadeOnDelete();
             $table->foreignId('creado_por')->constrained('users')->cascadeOnDelete();
             $table->foreignId('derivado_a')->nullable()->constrained('users')->nullOnDelete();
             $table->text('ultima_respuesta')->nullable();
             $table->timestamps();
 
-            $table->unique(['numero_tramite', 'year', 'puesto_id']);
+            $table->unique(['numero_tramite', 'year', 'area_id']);
         });
     }
 

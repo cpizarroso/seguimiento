@@ -14,7 +14,7 @@ class ReiniciarContadorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'puesto_id' => ['required', 'exists:puestos,id'],
+            'area_id' => ['required', 'exists:areas,id'],
             'glosa' => ['nullable', 'string', 'max:2000'],
         ];
     }

@@ -10,7 +10,7 @@ class ContadorTramite extends Model
     protected $table = 'contador_tramites';
 
     protected $fillable = [
-        'puesto_id',
+        'area_id',
         'year',
         'ultimo_numero',
         'reset_glosa',
@@ -24,8 +24,8 @@ class ContadorTramite extends Model
         ];
     }
 
-    public function puesto(): BelongsTo
+    public function area(): BelongsTo
     {
-        return $this->belongsTo(Puesto::class);
+        return $this->belongsTo(Area::class);
     }
 }

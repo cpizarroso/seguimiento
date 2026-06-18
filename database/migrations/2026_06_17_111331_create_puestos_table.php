@@ -8,17 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('funcionarios', function (Blueprint $table) {
+        Schema::create('puestos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 255);
-            $table->string('email', 255)->nullable();
-            $table->foreignId('puesto_id')->constrained('puestos')->cascadeOnDelete();
+            $table->string('sigla', 10)->nullable()->unique();
+            $table->text('descripcion')->nullable();
+            $table->boolean('estado')->default(true);
+            $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('funcionarios');
+        Schema::dropIfExists('puestos');
     }
 };

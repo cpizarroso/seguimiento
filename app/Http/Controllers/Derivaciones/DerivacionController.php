@@ -30,8 +30,7 @@ class DerivacionController extends Controller
             $request->input('glosa_derivacion'),
         );
 
-        return to_route('tramites.show', $tramite)
-            ->with('success', 'Trámite derivado exitosamente.');
+        return to_route('tramites.show', $tramite);
     }
 
     public function recepcionar(RecepcionarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse

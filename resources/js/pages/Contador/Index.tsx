@@ -2,22 +2,39 @@ import { router, useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { useState } from 'react';
-import type { ContadorInfo } from '@/types/generated/Tramite';
+
+interface AreaItem {
+    id: number;
+    nombre: string;
+    sigla: string;
+}
+
+interface ContadorData {
+    id: number;
+    year: number;
+    ultimo_numero: number;
+    reset_glosa: string | null;
+    ultimo_reset_at: string | null;
+}
+
+interface ContadorRow {
+    area: AreaItem;
+    contador: ContadorData | null;
+}
 
 interface ContadorIndexProps {
-    contadores: ContadorInfo[];
+    contadores: ContadorRow[];
 }
 
 export default function ContadorIndex({ contadores }: ContadorIndexProps) {
-    const [selectedPuesto, setSelectedPuesto] = useState<ContadorInfo | null>(null);
-    const reiniciarForm = useForm({ puesto_id: '', glosa: '' });
+    const [selectedArea, setSelectedArea] = useState<ContadorRow | null>(null);
+    const reiniciarForm = useForm({ area_id: '', glosa: '' });
 
-    const abrirReinicio = (contador: ContadorInfo) => {
-        setSelectedPuesto(contador);
-        reiniciarForm.setData('puesto_id', String(contador.puesto.id));
+    const abrirReinicio = (item: ContadorRow) => {
+        setSelectedArea(item);
+        reiniciarForm.setData('area_id', String(item.area.id));
         reiniciarForm.setData('glosa', '');
     };
 
@@ -26,20 +43,21 @@ export default function ContadorIndex({ contadores }: ContadorIndexProps) {
             <h2 className="text-2xl font-bold text-patuju-green">Administrar Contadores</h2>
 
             <p className="text-sm text-gray-500 dark:text-gray-400">
-                Los contadores se reinician automáticamente cada año. Aquí puedes ver el estado actual
-                y reiniciar manualmente si es necesario.
+                Cada área tiene su propia secuencia numérica. Los contadores se reinician
+                automáticamente cada año.
             </p>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {contadores.map((item) => (
-                    <Card key={item.puesto.id}>
+                    <Card key={item.area.id}>
                         <div className="flex flex-col h-full">
-                            <h3 className="text-lg font-semibold text-patuju-green">{item.puesto.nombre}</h3>
+                            <h3 className="text-lg font-semibold text-patuju-green">{item.area.nombre}</h3>
+                            <p className="text-xs text-gray-400">{item.area.sigla}</p>
 
                             <div className="mt-3 space-y-2 flex-1">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500 dark:text-gray-400">Año:</span>
-                                    <span className="font-medium">{item.contador?.year ?? now()}</span>
+                                    <span className="font-medium">{item.contador?.year ?? new Date().getFullYear()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500 dark:text-gray-400">Último N°:</span>
@@ -79,21 +97,21 @@ export default function ContadorIndex({ contadores }: ContadorIndexProps) {
             {contadores.length === 0 && (
                 <Card>
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-                        No hay puestos registrados. Crea un puesto primero.
+                        No hay áreas registradas.
                     </p>
                 </Card>
             )}
 
             <Modal
-                open={selectedPuesto !== null}
-                onClose={() => setSelectedPuesto(null)}
-                title={`Reiniciar Contador - ${selectedPuesto?.puesto.nombre ?? ''}`}
+                open={selectedArea !== null}
+                onClose={() => setSelectedArea(null)}
+                title={`Reiniciar Contador - ${selectedArea?.area.nombre ?? ''}`}
             >
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
                         reiniciarForm.post('/contador/reiniciar', {
-                            onSuccess: () => setSelectedPuesto(null),
+                            onSuccess: () => setSelectedArea(null),
                         });
                     }}
                     className="space-y-4"
@@ -109,14 +127,10 @@ export default function ContadorIndex({ contadores }: ContadorIndexProps) {
                     </p>
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" loading={reiniciarForm.processing} variant="danger">Reiniciar</Button>
-                        <Button type="button" variant="secondary" onClick={() => setSelectedPuesto(null)}>Cancelar</Button>
+                        <Button type="button" variant="secondary" onClick={() => setSelectedArea(null)}>Cancelar</Button>
                     </div>
                 </form>
             </Modal>
         </div>
     );
-}
-
-function now(): number {
-    return new Date().getFullYear();
 }

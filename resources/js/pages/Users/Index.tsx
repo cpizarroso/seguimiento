@@ -8,15 +8,34 @@ import { Table } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
 import type { PaginatedData } from '@/types/generated/Tramite';
 
+interface AreaInfo {
+    id: number;
+    nombre: string;
+    sigla: string;
+}
+
+interface PuestoInfo {
+    id: number;
+    nombre: string;
+    sigla: string;
+    area_id: number;
+    area: AreaInfo | null;
+}
+
+interface PuestoActivoRow {
+    id: number;
+    puesto_id: number;
+    puesto: PuestoInfo | null;
+}
+
 interface UserRow {
     id: number;
     name: string;
     email: string;
-    username: string | null;
     phone: string | null;
     profesion: string | null;
-    cargo: string | null;
     role: string;
+    puesto_activo?: PuestoActivoRow | null;
 }
 
 interface UsersIndexProps {
@@ -31,16 +50,22 @@ export default function UsersIndex({ users }: UsersIndexProps) {
             key: 'name',
             header: 'Nombre',
             render: (u: UserRow) => (
-                <Link href={`/users/${u.id}/edit`} className="text-patuju-green hover:underline font-medium">
+                <Link href={`/users/${u.id}`} className="text-patuju-green hover:underline font-medium">
                     {u.name}
                 </Link>
             ),
         },
         { key: 'email', header: 'Email' },
-        { key: 'username', header: 'Usuario', render: (u: UserRow) => u.username ?? '—' },
         { key: 'phone', header: 'Teléfono', render: (u: UserRow) => u.phone ?? '—' },
         { key: 'profesion', header: 'Profesión', render: (u: UserRow) => u.profesion ?? '—' },
-        { key: 'cargo', header: 'Cargo', render: (u: UserRow) => u.cargo ?? '—' },
+        {
+            key: 'puesto',
+            header: 'Puesto',
+            render: (u: UserRow) =>
+                u.puesto_activo?.puesto
+                    ? `${u.puesto_activo.puesto.nombre} (${u.puesto_activo.puesto.area?.nombre ?? '—'})`
+                    : '—',
+        },
         {
             key: 'role',
             header: 'Rol',
@@ -77,7 +102,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     <div className="flex-1 max-w-sm">
                         <Input
                             label="Buscar"
-                            placeholder="Buscar por nombre, email o usuario..."
+                            placeholder="Buscar por nombre o email..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && router.get('/users', { search }, { preserveState: true })}

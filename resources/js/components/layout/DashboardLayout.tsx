@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { Toast } from '@/components/ui/Toast';
 import type { ReactNode } from 'react';
 
 interface DashboardLayoutProps {
@@ -9,6 +11,24 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { props } = usePage();
+    const flash = props.flash as { success?: string; error?: string } | undefined;
+
+    const [toast, setToast] = useState<{ type: 'success' | 'error'; title: string } | null>(null);
+    const prevFlash = useRef(flash);
+
+    const closeToast = useCallback(() => setToast(null), []);
+
+    useEffect(() => {
+        if (flash && flash !== prevFlash.current) {
+            if (flash.success && flash.success !== prevFlash.current?.success) {
+                setToast({ type: 'success', title: flash.success });
+            } else if (flash.error && flash.error !== prevFlash.current?.error) {
+                setToast({ type: 'error', title: flash.error });
+            }
+            prevFlash.current = flash;
+        }
+    }, [flash]);
 
     return (
         <div className="flex h-screen bg-patuju-white dark:bg-gray-900">
@@ -27,6 +47,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     {children}
                 </main>
             </div>
+
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    title={toast.title}
+                    onClose={closeToast}
+                />
+            )}
         </div>
     );
 }
+
+

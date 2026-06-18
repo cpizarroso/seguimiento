@@ -13,13 +13,58 @@ class AreaSeeder extends Seeder
         $areas = [
             [
                 'nombre' => 'Administrativa',
+                'sigla' => 'ADM',
                 'descripcion' => 'Gestión administrativa general de la institución',
-                'puestos' => ['Secretaria', 'Profesional', 'Jefe de Área'],
+                'estado' => true,
+                'puestos' => [
+                    ['nombre' => 'Secretaria', 'sigla' => 'ADM-SEC', 'descripcion' => 'Apoyo administrativo y documental', 'estado' => true],
+                    ['nombre' => 'Profesional', 'sigla' => 'ADM-PRO', 'descripcion' => 'Gestión de procesos administrativos', 'estado' => true],
+                    ['nombre' => 'Jefe de Área', 'sigla' => 'ADM-JEF', 'descripcion' => 'Coordinación del área administrativa', 'estado' => true],
+                ],
             ],
             [
                 'nombre' => 'Legal',
+                'sigla' => 'LEG',
                 'descripcion' => 'Asesoría y trámites legales',
-                'puestos' => ['Secretaria', 'Profesional', 'Jefe de Área'],
+                'estado' => true,
+                'puestos' => [
+                    ['nombre' => 'Secretaria', 'sigla' => 'LEG-SEC', 'descripcion' => 'Apoyo administrativo legal', 'estado' => true],
+                    ['nombre' => 'Profesional', 'sigla' => 'LEG-PRO', 'descripcion' => 'Análisis y dictámenes legales', 'estado' => true],
+                    ['nombre' => 'Jefe de Área', 'sigla' => 'LEG-JEF', 'descripcion' => 'Coordinación del área legal', 'estado' => true],
+                ],
+            ],
+            [
+                'nombre' => 'Técnica',
+                'sigla' => 'TEC',
+                'descripcion' => 'Evaluación técnica y certificaciones',
+                'estado' => true,
+                'puestos' => [
+                    ['nombre' => 'Secretaria', 'sigla' => 'TEC-SEC', 'descripcion' => 'Apoyo administrativo técnico', 'estado' => true],
+                    ['nombre' => 'Profesional', 'sigla' => 'TEC-PRO', 'descripcion' => 'Evaluación y certificaciones técnicas', 'estado' => true],
+                    ['nombre' => 'Jefe de Área', 'sigla' => 'TEC-JEF', 'descripcion' => 'Coordinación del área técnica', 'estado' => true],
+                ],
+            ],
+            [
+                'nombre' => 'Financiera',
+                'sigla' => 'FIN',
+                'descripcion' => 'Gestión presupuestaria y financiera',
+                'estado' => true,
+                'puestos' => [
+                    ['nombre' => 'Secretaria', 'sigla' => 'FIN-SEC', 'descripcion' => 'Apoyo administrativo financiero', 'estado' => true],
+                    ['nombre' => 'Profesional', 'sigla' => 'FIN-PRO', 'descripcion' => 'Gestión presupuestaria', 'estado' => true],
+                    ['nombre' => 'Jefe de Área', 'sigla' => 'FIN-JEF', 'descripcion' => 'Coordinación del área financiera', 'estado' => true],
+                ],
+            ],
+            [
+                'nombre' => 'Recursos Humanos',
+                'sigla' => 'RRHH',
+                'descripcion' => 'Gestión del talento humano',
+                'estado' => true,
+                'puestos' => [
+                    ['nombre' => 'Secretaria', 'sigla' => 'RHH-SEC', 'descripcion' => 'Apoyo administrativo de personal', 'estado' => true],
+                    ['nombre' => 'Profesional', 'sigla' => 'RHH-PRO', 'descripcion' => 'Gestión de personal y nóminas', 'estado' => true],
+                    ['nombre' => 'Jefe de Área', 'sigla' => 'RHH-JEF', 'descripcion' => 'Coordinación de recursos humanos', 'estado' => true],
+                ],
             ],
         ];
 
@@ -29,12 +74,9 @@ class AreaSeeder extends Seeder
 
             $area = Area::create($areaData);
 
-            foreach ($puestos as $puestoNombre) {
-                Puesto::create([
-                    'nombre' => $puestoNombre,
-                    'descripcion' => "Puesto de {$puestoNombre} en el área {$area->nombre}",
-                    'area_id' => $area->id,
-                ]);
+            foreach ($puestos as $puestoData) {
+                $puestoData['area_id'] = $area->id;
+                Puesto::create($puestoData);
             }
         }
 

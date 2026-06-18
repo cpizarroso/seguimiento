@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 import { SemanalChart } from '@/components/features/reporte/SemanalChart';
 import { TramitesPorFuncionarioChart } from '@/components/features/reporte/TramitesPorFuncionarioChart';
+import { TramitesPorAreaChart } from '@/components/features/reporte/TramitesPorAreaChart';
 
 interface FuncionarioOption {
     id: number;
@@ -21,6 +22,7 @@ interface DashboardProps {
     iniciados_por_dia: Record<number, number>;
     finalizados_por_dia: Record<number, number>;
     tramites_por_funcionario: FuncionarioTramite[];
+    tramites_por_area: { name: string; total: number }[];
     funcionarios: FuncionarioOption[];
     filtro_funcionario_id: number | null;
 }
@@ -38,6 +40,7 @@ export default function Dashboard({
     iniciados_por_dia,
     finalizados_por_dia,
     tramites_por_funcionario,
+    tramites_por_area,
     funcionarios,
     filtro_funcionario_id,
 }: DashboardProps) {
@@ -98,6 +101,9 @@ export default function Dashboard({
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <TramitesPorFuncionarioChart data={tramites_por_funcionario} />
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <TramitesPorAreaChart data={tramites_por_area} />
             </div>
         </div>
     );

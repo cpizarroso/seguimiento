@@ -8,10 +8,10 @@ export interface Tramite {
     fecha: string;
     descripcion: string;
     numero_diamante: string | null;
-    glosa: string | null;
     estado: string;
     ultima_respuesta: string | null;
-    puesto: Puesto | null;
+    area: Area | null;
+    area_id: number;
     creador: User | null;
     asignado: User | null;
     derivaciones: Derivacion[];
@@ -21,6 +21,8 @@ export interface Area {
     id: number;
     nombre: string;
     descripcion: string | null;
+    sigla: string;
+    estado: boolean;
     puestos_count?: number;
     puestos?: Puesto[];
 }
@@ -29,6 +31,8 @@ export interface Puesto {
     id: number;
     nombre: string;
     descripcion: string | null;
+    sigla: string;
+    estado: boolean;
     area_id: number | null;
     area: Area | null;
     funcionarios_count?: number;
@@ -62,7 +66,7 @@ export interface PaginatedData<T> {
 }
 
 export interface ContadorInfo {
-    puesto: Puesto;
+    area: Area;
     contador: {
         id: number;
         year: number;

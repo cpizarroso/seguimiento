@@ -12,10 +12,22 @@ class Area extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'sigla',
+        'estado',
     ];
 
     public function puestos(): HasMany
     {
         return $this->hasMany(Puesto::class);
+    }
+
+    public function tramites(): HasMany
+    {
+        return $this->hasMany(Tramite::class);
+    }
+
+    public function contadores(): HasMany
+    {
+        return $this->hasMany(ContadorTramite::class);
     }
 }

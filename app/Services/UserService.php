@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Reseteo;
+use App\Models\UserPuesto;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
@@ -10,12 +12,11 @@ class UserService
 {
     public function listar(array $filtros = []): LengthAwarePaginator
     {
-        return User::with('funcionario')
+        return User::with(['funcionario', 'puestoActivo.puesto.area'])
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->where('name', 'like', "%{$v}%")
-                        ->orWhere('email', 'like', "%{$v}%")
-                        ->orWhere('username', 'like', "%{$v}%");
+                        ->orWhere('email', 'like', "%{$v}%");
                 });
             })
             ->orderBy('name')
@@ -24,28 +25,40 @@ class UserService
 
     public function crear(array $data): User
     {
-        return User::create([
+        $puestoId = $data['puesto_id'] ?? null;
+        unset($data['puesto_id']);
+
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'username' => $data['username'] ?? null,
             'phone' => $data['phone'] ?? null,
             'profesion' => $data['profesion'] ?? null,
-            'cargo' => $data['cargo'] ?? null,
             'password' => Hash::make($data['password']),
             'role' => $data['role'] ?? 'user',
             'funcionario_id' => $data['funcionario_id'] ?? null,
         ]);
+
+        if ($puestoId) {
+            UserPuesto::create([
+                'user_id' => $user->id,
+                'puesto_id' => $puestoId,
+                'fecha_inicio' => now()->toDateString(),
+            ]);
+        }
+
+        return $user;
     }
 
     public function actualizar(User $user, array $data): User
     {
+        $puestoId = $data['puesto_id'] ?? null;
+        unset($data['puesto_id']);
+
         $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
-            'username' => $data['username'] ?? $user->username,
             'phone' => $data['phone'] ?? $user->phone,
             'profesion' => $data['profesion'] ?? $user->profesion,
-            'cargo' => $data['cargo'] ?? $user->cargo,
             'role' => $data['role'] ?? $user->role,
             'funcionario_id' => $data['funcionario_id'] ?? $user->funcionario_id,
         ];
@@ -55,6 +68,29 @@ class UserService
         }
 
         $user->update($updateData);
+
+        $puestoActivo = $user->puestoActivo;
+
+        if ($puestoId) {
+            if ($puestoActivo && $puestoActivo->puesto_id !== (int) $puestoId) {
+                $puestoActivo->update(['fecha_fin' => now()->toDateString()]);
+
+                UserPuesto::create([
+                    'user_id' => $user->id,
+                    'puesto_id' => $puestoId,
+                    'fecha_inicio' => now()->toDateString(),
+                ]);
+            } elseif (!$puestoActivo) {
+                UserPuesto::create([
+                    'user_id' => $user->id,
+                    'puesto_id' => $puestoId,
+                    'fecha_inicio' => now()->toDateString(),
+                ]);
+            }
+        } elseif ($puestoActivo) {
+            $puestoActivo->update(['fecha_fin' => now()->toDateString()]);
+        }
+
         return $user;
     }
 
@@ -66,5 +102,19 @@ class UserService
     public function obtenerPorId(int $id): User
     {
         return User::with('funcionario')->findOrFail($id);
+    }
+
+    public function resetPassword(User $user, string $password): void
+    {
+        $user->update([
+            'password' => Hash::make($password),
+        ]);
+
+        Reseteo::create([
+            'user_id' => $user->id,
+            'reset_por' => auth()->id(),
+        ]);
+
+        $user->tokens()->delete();
     }
 }

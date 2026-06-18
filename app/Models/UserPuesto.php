@@ -5,20 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class FuncionarioPuesto extends Model
+class UserPuesto extends Model
 {
-    protected $table = 'funcionario_puesto';
+    protected $table = 'user_puesto';
 
     protected $fillable = [
-        'funcionario_id',
+        'user_id',
         'puesto_id',
         'fecha_inicio',
         'fecha_fin',
     ];
 
-    public function funcionario(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Funcionario::class);
+        return [
+            'fecha_inicio' => 'date',
+            'fecha_fin' => 'date',
+        ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function puesto(): BelongsTo

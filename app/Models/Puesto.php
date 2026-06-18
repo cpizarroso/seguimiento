@@ -13,22 +13,14 @@ class Puesto extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'sigla',
+        'estado',
         'area_id',
     ];
 
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
-    }
-
-    public function funcionarios(): HasMany
-    {
-        return $this->hasMany(Funcionario::class);
-    }
-
-    public function historialFuncionarios(): HasMany
-    {
-        return $this->hasMany(FuncionarioPuesto::class);
     }
 
     public function tramites(): HasMany
@@ -39,5 +31,10 @@ class Puesto extends Model
     public function contador(): HasMany
     {
         return $this->hasMany(ContadorTramite::class);
+    }
+
+    public function usuariosHistorial(): HasMany
+    {
+        return $this->hasMany(UserPuesto::class);
     }
 }

@@ -13,18 +13,19 @@ class Funcionario extends Model
 
     protected $fillable = [
         'nombre',
+        'apellidos',
         'email',
-        'puesto_id',
+        'direccion',
+        'nro_telefono',
+        'cedula_identidad',
+        'tipo_funcionario',
+        'nivel',
+        'area_id',
     ];
 
-    public function puesto(): BelongsTo
+    public function area(): BelongsTo
     {
-        return $this->belongsTo(Puesto::class);
-    }
-
-    public function historialPuestos(): HasMany
-    {
-        return $this->hasMany(FuncionarioPuesto::class);
+        return $this->belongsTo(Area::class);
     }
 
     public function tramitesCreados(): HasMany

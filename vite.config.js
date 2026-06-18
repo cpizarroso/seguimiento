@@ -18,6 +18,10 @@ export default defineConfig({
         },
     },
     server: {
+        host: '0.0.0.0',
+        hmr: {
+            host: '10.80.2.206',
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
