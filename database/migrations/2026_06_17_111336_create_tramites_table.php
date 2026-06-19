@@ -20,6 +20,9 @@ return new class extends Migration
             $table->foreignId('creado_por')->constrained('users')->cascadeOnDelete();
             $table->foreignId('derivado_a')->nullable()->constrained('users')->nullOnDelete();
             $table->text('ultima_respuesta')->nullable();
+            $table->text('glosa_finalizacion')->nullable();
+            $table->dateTime('fecha_finalizacion')->nullable();
+            $table->foreignId('finalizado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['numero_tramite', 'year', 'area_id']);

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('glosa_derivacion')->nullable();
             $table->timestamp('fecha_recepcion')->nullable();
             $table->text('glosa_recepcion')->nullable();
+            $table->text('glosa_observacion')->nullable();
             $table->string('estado', 50)->default('derivado');
             $table->timestamps();
 

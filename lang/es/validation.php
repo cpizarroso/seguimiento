@@ -158,5 +158,13 @@ return [
         'estado' => 'estado',
         'numero_diamante' => 'número diamante',
         'glosa' => 'glosa',
+        'nombre' => 'nombre',
+        'apellidos' => 'apellidos',
+        'nro_telefono' => 'número de teléfono',
+        'cedula_identidad' => 'cédula de identidad',
+        'tipo_funcionario' => 'tipo de funcionario',
+        'nivel' => 'nivel',
+        'fecha_ingreso' => 'fecha de ingreso',
+        'direccion' => 'descripción',
     ],
 ];

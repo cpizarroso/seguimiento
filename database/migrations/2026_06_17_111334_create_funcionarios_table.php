@@ -18,7 +18,11 @@ return new class extends Migration
             $table->string('cedula_identidad', 30)->nullable()->unique();
             $table->string('tipo_funcionario', 20)->default('contrato');
             $table->string('nivel', 50)->nullable();
+            $table->date('fecha_ingreso')->nullable();
+            $table->string('estado', 20)->default('activo');
             $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

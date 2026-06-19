@@ -193,6 +193,7 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
                     to={tramites.meta.to}
                     total={tramites.meta.total}
                     perPage={tramites.meta.per_page}
+                    label="trámites"
                     onPageChange={(page) => router.get('/tramites', { page, search, vista }, { preserveState: true })}
                     onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search, vista }, { preserveState: true })}
                 />

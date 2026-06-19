@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Funcionario extends Model
 {
+    use HasFactory;
+    use SoftDeletes;
+
     protected $table = 'funcionarios';
 
     protected $fillable = [
@@ -21,35 +24,25 @@ class Funcionario extends Model
         'tipo_funcionario',
         'nivel',
         'area_id',
+        'creado_por',
+        'fecha_ingreso',
+        'estado',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'fecha_ingreso' => 'date',
+        ];
+    }
 
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
     }
 
-    public function tramitesCreados(): HasMany
+    public function creadoPor(): BelongsTo
     {
-        return $this->hasMany(Tramite::class, 'creado_por');
-    }
-
-    public function tramitesAsignados(): HasMany
-    {
-        return $this->hasMany(Tramite::class, 'derivado_a');
-    }
-
-    public function derivacionesEnviadas(): HasMany
-    {
-        return $this->hasMany(Derivacion::class, 'derivado_de');
-    }
-
-    public function derivacionesRecibidas(): HasMany
-    {
-        return $this->hasMany(Derivacion::class, 'derivado_a');
-    }
-
-    public function user(): HasOne
-    {
-        return $this->hasOne(User::class);
+        return $this->belongsTo(User::class, 'creado_por');
     }
 }

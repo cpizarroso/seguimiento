@@ -1,4 +1,4 @@
-import type { Tramite } from './Tramite';
+import type { Area } from './Tramite';
 
 export interface Funcionario {
     id: number;
@@ -10,10 +10,11 @@ export interface Funcionario {
     cedula_identidad: string | null;
     tipo_funcionario: string;
     nivel: string | null;
+    fecha_ingreso: string | null;
+    estado: string;
     area_id: number | null;
-    area?: import('./Tramite').Area | null;
-    tramites_count?: number;
-    tramites?: Tramite[];
+    area?: Area | null;
+    creado_por?: { id: number; name: string; email: string } | null;
     created_at: string | null;
     updated_at: string | null;
 }

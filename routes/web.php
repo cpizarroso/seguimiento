@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
         Route::post('areas/{area}/puestos', [AreaController::class, 'storePuesto'])->name('areas.puestos.store');
         Route::put('areas/{area}/puestos/{puesto}', [AreaController::class, 'updatePuesto'])->name('areas.puestos.update');
         Route::delete('areas/{area}/puestos/{puesto}', [AreaController::class, 'destroyPuesto'])->name('areas.puestos.destroy');
-        Route::resource('funcionarios', FuncionarioController::class)->except(['show']);
+        Route::resource('funcionarios', FuncionarioController::class);
 
         Route::post('tramites', [TramiteController::class, 'store'])->name('tramites.store');
         Route::delete('tramites/{tramite}', [TramiteController::class, 'destroy'])->name('tramites.destroy');

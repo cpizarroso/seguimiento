@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 export interface Column<T> {
     key: string;
     header: string;
+    headClassName?: string;
+    cellClassName?: string;
     render?: (item: T) => ReactNode;
 }
 
@@ -28,7 +30,7 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
                 <thead className="bg-patuju-green text-white">
                     <tr>
                         {columns.map((col) => (
-                            <th key={col.key} className="px-4 py-3 text-left font-medium">
+                            <th key={col.key} className={`px-4 py-3 text-left font-medium ${col.headClassName ?? ''}`}>
                                 {col.header}
                             </th>
                         ))}
@@ -38,7 +40,7 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
                     {data.map((item) => (
                         <tr key={keyExtractor(item)} className="hover:bg-patuju-cream/50 dark:hover:bg-gray-700 transition-colors">
                             {columns.map((col) => (
-                                <td key={col.key} className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                <td key={col.key} className={`px-4 py-3 text-gray-700 dark:text-gray-300 ${col.cellClassName ?? ''}`}>
                                     {col.render ? col.render(item) : String(item[col.key as keyof T] ?? '')}
                                 </td>
                             ))}

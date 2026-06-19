@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\Funcionario;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class FuncionarioSeeder extends Seeder
@@ -12,6 +13,7 @@ class FuncionarioSeeder extends Seeder
     {
         $areaAdm = Area::where('sigla', 'ADM')->first()->id;
         $areaLegal = Area::where('sigla', 'LEG')->first()->id;
+        $admin = User::where('email', 'admin@seguimiento.gob.bo')->first();
 
         $funcionarios = [
             ['nombre' => 'Carlos', 'apellidos' => 'Mendoza López', 'email' => 'cmendoza@ejemplo.gob.bo', 'nro_telefono' => '71234567', 'cedula_identidad' => '1234567', 'tipo_funcionario' => 'item', 'nivel' => 'Jefe', 'area_id' => $areaAdm],
@@ -31,8 +33,11 @@ class FuncionarioSeeder extends Seeder
             ['nombre' => 'Patricia', 'apellidos' => 'Nava Zambrana', 'email' => 'pnava@ejemplo.gob.bo', 'nro_telefono' => '71234581', 'cedula_identidad' => '1234581', 'tipo_funcionario' => 'contrato', 'nivel' => 'Asistente', 'area_id' => $areaLegal],
         ];
 
-        foreach ($funcionarios as $funcionario) {
-            Funcionario::create($funcionario);
+        foreach ($funcionarios as $data) {
+            if ($admin && in_array($data['nombre'], ['Carlos', 'Rosa', 'Ana', 'Pedro'])) {
+                $data['creado_por'] = $admin->id;
+            }
+            Funcionario::create($data);
         }
     }
 }

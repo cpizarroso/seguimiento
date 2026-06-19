@@ -1,10 +1,11 @@
 interface PaginationProps {
     currentPage: number;
     lastPage: number;
-    from: number | null;
-    to: number | null;
-    total: number;
-    perPage: number;
+    from?: number | null;
+    to?: number | null;
+    total?: number;
+    perPage?: number;
+    label?: string;
     onPageChange: (page: number) => void;
     onPerPageChange?: (perPage: number) => void;
 }
@@ -27,7 +28,7 @@ function getPageRange(current: number, last: number, siblings: number = 1): (num
 
 const PER_PAGE_OPTIONS = [5, 10];
 
-export function Pagination({ currentPage, lastPage, from, to, total, perPage, onPageChange, onPerPageChange }: PaginationProps) {
+export function Pagination({ currentPage, lastPage, from, to, total = 0, perPage, label = 'registros', onPageChange, onPerPageChange }: PaginationProps) {
     if (lastPage <= 1 && !onPerPageChange) return null;
 
     const pages = getPageRange(currentPage, lastPage);
@@ -35,9 +36,13 @@ export function Pagination({ currentPage, lastPage, from, to, total, perPage, on
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-2">
             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                <span>
-                    Mostrando {from ?? '—'}-{to ?? '—'} de {total} trámites
-                </span>
+                {from != null && to != null ? (
+                    <span>
+                        Mostrando {from}–{to} de {total} {label}
+                    </span>
+                ) : (
+                    <span>{total} {label}</span>
+                )}
                 {onPerPageChange && (
                     <label className="flex items-center gap-1.5">
                         <select

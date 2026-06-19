@@ -9,7 +9,7 @@ class UpdateFuncionarioRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->role === 'admin';
     }
 
     public function rules(): array
@@ -18,17 +18,19 @@ class UpdateFuncionarioRequest extends FormRequest
 
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'apellidos' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['nullable', 'string', 'max:500'],
-            'nro_telefono' => ['nullable', 'string', 'max:30'],
+            'apellidos' => ['required', 'string', 'max:255'],
             'cedula_identidad' => [
-                'nullable', 'string', 'max:30',
+                'required', 'string', 'max:30',
                 Rule::unique('funcionarios', 'cedula_identidad')->ignore($funcionarioId),
             ],
+            'nro_telefono' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
             'tipo_funcionario' => ['nullable', 'string', 'in:contrato,item'],
-            'nivel' => ['nullable', 'string', 'max:50'],
             'area_id' => ['nullable', 'exists:areas,id'],
+            'nivel' => ['nullable', 'string', 'max:50'],
+            'fecha_ingreso' => ['nullable', 'date'],
+            'estado' => ['nullable', 'string', 'in:activo,inactivo,baja'],
+            'direccion' => ['nullable', 'string', 'max:500'],
         ];
     }
 
