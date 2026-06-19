@@ -14,19 +14,18 @@ const allMenuItems: MenuItem[] = [
     { label: 'Funcionarios', href: '/funcionarios', icon: '👥', adminOnly: true },
     { label: 'Áreas y Puestos', href: '/areas', icon: '🗂️', adminOnly: true },
     { label: 'Reporte', href: '/reporte', icon: '📈' },
-];
-
-const configMenuItems: MenuItem[] = [
-    { label: 'Contador', href: '/contador', icon: '🔢', adminOnly: true },
+    { label: 'Configuración', href: '/configuracion', icon: '⚙️' },
     { label: 'Usuarios', href: '/users', icon: '🔐', adminOnly: true },
 ];
 
 interface SidebarProps {
     open: boolean;
     onClose: () => void;
+    collapsed: boolean;
+    onToggleCollapse: () => void;
 }
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
     const { url, props } = usePage();
     const { theme, toggle } = useTheme();
     const role = (props.auth?.user as { role?: string } | null)?.role ?? 'user';
@@ -43,90 +42,119 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed inset-y-0 left-0 z-30 flex w-64 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 ease-in-out ${
+            className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out ${
+                collapsed ? 'w-16' : 'w-64'
+            } ${
                 open ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0`}
         >
-            <div className="flex h-16 items-center justify-between gap-2 px-6 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2">
+            <div className={`flex h-16 items-center border-b border-gray-100 dark:border-gray-700 ${collapsed ? 'justify-center px-0' : 'justify-between gap-2 px-6'}`}>
+                {collapsed ? (
                     <span className="text-2xl">📌</span>
-                    <h1 className="text-lg font-bold text-patuju-green dark:text-patuju-green">Seguimiento</h1>
-                </div>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">📌</span>
+                        <h1 className="text-lg font-bold text-patuju-green dark:text-patuju-green">Seguimiento</h1>
+                    </div>
+                )}
+                <button
+                    onClick={onToggleCollapse}
+                    className="hidden md:flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    title={collapsed ? 'Expandir sidebar' : 'Minimizar sidebar'}
+                >
+                    <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                </button>
                 <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 md:hidden"
+                    className="md:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                     ✕
                 </button>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3 py-4">
+            <nav className="flex-1 space-y-1 px-2 py-4">
                 {menuItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={onClose}
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                            isActive(item.href)
-                                ? 'bg-patuju-green text-white'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green dark:hover:text-patuju-green'
-                        }`}
-                    >
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                    </Link>
-                ))}
-                {role === 'admin' && (
-                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                            Configuración
-                        </p>
-                        {configMenuItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={onClose}
-                                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isActive(item.href)
-                                        ? 'bg-patuju-green text-white'
-                                        : 'text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green dark:hover:text-patuju-green'
-                                }`}
-                            >
-                                <span>{item.icon}</span>
-                                <span>{item.label}</span>
-                            </Link>
-                        ))}
+                    <div key={item.href} className="relative group">
+                        <Link
+                            href={item.href}
+                            onClick={onClose}
+                            className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                collapsed ? 'justify-center' : 'gap-3'
+                            } ${
+                                isActive(item.href)
+                                    ? 'bg-patuju-green text-white'
+                                    : 'text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green dark:hover:text-patuju-green'
+                            }`}
+                        >
+                            <span className="text-lg">{item.icon}</span>
+                            {!collapsed && <span>{item.label}</span>}
+                        </Link>
+                        {collapsed && (
+                            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
+                                {item.label}
+                            </div>
+                        )}
                     </div>
-                )}
+                ))}
+
             </nav>
 
-            <div className="border-t border-gray-100 dark:border-gray-700 p-3 space-y-2">
-                <Link
-                    href="/profile"
-                    onClick={onClose}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors"
-                >
-                    <span>👤</span>
-                    <span>Mi Perfil</span>
-                </Link>
+            <div className={`border-t border-gray-100 dark:border-gray-700 p-2 space-y-1 ${collapsed ? 'items-center' : ''}`}>
+                <div className="relative group">
+                    <Link
+                        href="/profile"
+                        onClick={onClose}
+                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors ${
+                            collapsed ? 'justify-center' : 'gap-3'
+                        }`}
+                    >
+                        <span className="text-lg">👤</span>
+                        {!collapsed && <span>Mi Perfil</span>}
+                    </Link>
+                    {collapsed && (
+                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
+                            Mi Perfil
+                        </div>
+                    )}
+                </div>
 
-                <button
-                    onClick={toggle}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors"
-                >
-                    <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
-                    <span>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>
-                </button>
+                <div className="relative group">
+                    <button
+                        onClick={toggle}
+                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors ${
+                            collapsed ? 'justify-center' : 'gap-3'
+                        }`}
+                    >
+                        <span className="text-lg">{theme === 'dark' ? '☀️' : '🌙'}</span>
+                        {!collapsed && <span>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>}
+                    </button>
+                    {collapsed && (
+                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
+                            {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                        </div>
+                    )}
+                </div>
 
-                <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-red/10 hover:text-patuju-red transition-colors"
-                >
-                    <span>🚪</span>
-                    <span>Cerrar sesión</span>
-                </Link>
+                <div className="relative group">
+                    <Link
+                        href="/logout"
+                        method="post"
+                        as="button"
+                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-red/10 hover:text-patuju-red transition-colors ${
+                            collapsed ? 'justify-center' : 'gap-3'
+                        }`}
+                    >
+                        <span className="text-lg">🚪</span>
+                        {!collapsed && <span>Cerrar sesión</span>}
+                    </Link>
+                    {collapsed && (
+                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
+                            Cerrar sesión
+                        </div>
+                    )}
+                </div>
             </div>
         </aside>
     );

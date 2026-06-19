@@ -12,6 +12,7 @@ use App\Models\Tramite;
 use App\Services\AreaService;
 use App\Services\DerivacionService;
 use App\Services\TramiteService;
+use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,18 +23,18 @@ class TramiteController extends Controller
         private readonly TramiteService $tramiteService,
         private readonly AreaService $areaService,
         private readonly DerivacionService $derivacionService,
+        private readonly UserService $userService,
     ) {}
 
     public function index(): Response
     {
-        $usuarioId = request()->user()?->id;
+        $user = request()->user();
+        $filtros = request()->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'vista']);
+        $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
 
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
-                $this->tramiteService->listar(
-                    request()->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'vista']),
-                    $usuarioId,
-                )
+                $this->tramiteService->listar($filtros, $user?->id)
             ),
         ]);
     }

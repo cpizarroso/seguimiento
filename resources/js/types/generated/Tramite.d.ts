@@ -4,6 +4,7 @@ export interface Tramite {
     id: number;
     numero_tramite: number;
     numero_formateado: string;
+    numero_completo: string;
     year: number;
     fecha: string;
     descripcion: string;

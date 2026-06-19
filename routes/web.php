@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Areas\AreaController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Configuracion\ConfiguracionController;
 use App\Http\Controllers\Contador\ContadorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Derivaciones\DerivacionController;
@@ -39,6 +40,9 @@ Route::middleware('auth')->group(function () {
     Route::get('reporte', [ReporteController::class, 'index'])->name('reporte.index');
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+    Route::put('configuracion/per-page', [ConfiguracionController::class, 'updatePerPage'])->name('configuracion.per-page');
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('areas', AreaController::class);

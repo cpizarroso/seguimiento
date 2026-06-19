@@ -117,4 +117,21 @@ class UserService
 
         $user->tokens()->delete();
     }
+
+    public function getSetting(User $user, string $key, mixed $default = null): mixed
+    {
+        return $user->settings[$key] ?? $default;
+    }
+
+    public function setSetting(User $user, string $key, mixed $value): void
+    {
+        $settings = $user->settings ?? [];
+        $settings[$key] = $value;
+        $user->update(['settings' => $settings]);
+    }
+
+    public function getPerPage(User $user): int
+    {
+        return (int) ($user->settings['per_page'] ?? 10);
+    }
 }

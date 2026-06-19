@@ -11,6 +11,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const { props } = usePage();
     const flash = props.flash as { success?: string; error?: string } | undefined;
 
@@ -39,9 +40,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 />
             )}
 
-            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <Sidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+            />
 
-            <div className="flex flex-1 flex-col overflow-hidden md:ml-64">
+            <div className={`flex flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+                sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+            }`}>
                 <Header onMenuClick={() => setSidebarOpen(true)} />
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6">
                     {children}

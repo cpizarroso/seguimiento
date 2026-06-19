@@ -12,10 +12,10 @@ interface TramitesIndexProps {
 }
 
 const vistas = [
-    { value: 'bandeja', label: 'Bandeja' },
-    { value: 'por_recepcionar', label: 'Por Recepcionar' },
-    { value: 'derivados', label: 'Derivados' },
     { value: 'busqueda', label: 'Búsqueda' },
+    { value: 'por_recepcionar', label: 'Por Recepcionar' },
+    { value: 'bandeja', label: 'Bandeja' },
+    { value: 'derivados', label: 'Derivados' },
 ];
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
@@ -37,55 +37,51 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
     const role = (props.auth?.user as { role?: string } | null)?.role ?? 'user';
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
-    const [vista, setVista] = useState(params.get('vista') ?? 'bandeja');
+    const [vista, setVista] = useState(params.get('vista') ?? 'busqueda');
 
     const buscar = (nuevaVista?: string) => {
         router.get('/tramites', {
             search,
             vista: nuevaVista ?? vista,
+            page: nuevaVista ? 1 : undefined,
         }, { preserveState: true, preserveScroll: true });
     };
 
     const limpiar = () => {
         setSearch('');
-        router.get('/tramites', { vista }, { preserveState: true, preserveScroll: true });
+        router.get('/tramites', { vista, page: 1 }, { preserveState: true, preserveScroll: true });
+    };
+
+    const ACENTOS: Record<string, string> = {
+        a: 'aáàäâã', e: 'eéèëê', i: 'iíìïî',
+        o: 'oóòöôõ', u: 'uúùüû', n: 'nñ',
     };
 
     const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+    const aPattern = (s: string) => {
+        let result = '';
+        for (const c of s.toLowerCase()) {
+            const vars = ACENTOS[c];
+            result += vars ? `[${vars}]` : c;
+        }
+        return result;
+    };
+
     const resaltar = (texto: string | null | undefined): React.ReactNode => {
         if (!texto || !search) return texto ?? '—';
 
-        const marcar = (t: string, s: string) => {
-            const regex = new RegExp(`(${escape(s)})`, 'gi');
-            return t.split(regex).map((parte, i) =>
-                parte.toLowerCase() === s.toLowerCase()
-                    ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-inherit rounded px-0.5">{parte}</mark>
-                    : parte,
-            );
-        };
+        const palabras = search.split(/[/\s]+/).filter(Boolean);
+        if (palabras.length === 0) return texto;
 
-        const exact = marcar(texto, search);
-        if (exact.some(p => typeof p !== 'string')) return exact;
+        const pattern = palabras.map((p) => aPattern(p)).join('|');
+        const regex = new RegExp(`(${pattern})`, 'gi');
 
-        if (search.includes('/')) {
-            const parts = search.split('/').filter(Boolean);
-            let result: (string | React.ReactNode)[] = [texto];
-            for (const part of parts) {
-                const next: (string | React.ReactNode)[] = [];
-                for (const node of result) {
-                    if (typeof node === 'string') {
-                        next.push(...marcar(node, part));
-                    } else {
-                        next.push(node);
-                    }
-                }
-                result = next;
-            }
-            return result;
-        }
-
-        return texto;
+        return texto.split(regex).map((parte, i) =>
+            i % 2 === 1
+                ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-inherit rounded px-0.5">{parte}</mark>
+                : parte,
+        );
     };
 
     const columns = [
@@ -93,8 +89,8 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
             key: 'numero_tramite',
             header: 'N° Trámite',
             render: (t: Tramite) => (
-                <Link href={`/tramites/${t.id}`} className="text-patuju-green hover:underline font-medium">
-                    {resaltar(`${t.numero_formateado}/${t.year}`)}
+                <Link href={`/tramites/${t.id}?vista=${vista}&search=${search}`} className="text-patuju-green hover:underline font-medium whitespace-nowrap">
+                    {resaltar(t.numero_completo)}
                 </Link>
             ),
         },
@@ -174,7 +170,7 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
                             </button>
                         )}
                         <button
-                            onClick={buscar}
+                            onClick={() => buscar()}
                             className="flex-shrink-0 px-5 py-2 mr-1.5 text-sm font-medium text-white bg-patuju-green hover:bg-patuju-green/90 rounded-full transition-colors"
                         >
                             Buscar
@@ -193,7 +189,12 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
                 <Pagination
                     currentPage={tramites.meta.current_page}
                     lastPage={tramites.meta.last_page}
+                    from={tramites.meta.from}
+                    to={tramites.meta.to}
+                    total={tramites.meta.total}
+                    perPage={tramites.meta.per_page}
                     onPageChange={(page) => router.get('/tramites', { page, search, vista }, { preserveState: true })}
+                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search, vista }, { preserveState: true })}
                 />
             </Card>
         </div>

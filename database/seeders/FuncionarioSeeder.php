@@ -12,7 +12,6 @@ class FuncionarioSeeder extends Seeder
     {
         $areaAdm = Area::where('sigla', 'ADM')->first()->id;
         $areaLegal = Area::where('sigla', 'LEG')->first()->id;
-        $areaRrpp = Area::where('sigla', 'RRHH')->first()->id;
 
         $funcionarios = [
             ['nombre' => 'Carlos', 'apellidos' => 'Mendoza López', 'email' => 'cmendoza@ejemplo.gob.bo', 'nro_telefono' => '71234567', 'cedula_identidad' => '1234567', 'tipo_funcionario' => 'item', 'nivel' => 'Jefe', 'area_id' => $areaAdm],

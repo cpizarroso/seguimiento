@@ -33,39 +33,6 @@ class AreaSeeder extends Seeder
                     ['nombre' => 'Jefe de Área', 'sigla' => 'LEG-JEF', 'descripcion' => 'Coordinación del área legal', 'estado' => true],
                 ],
             ],
-            [
-                'nombre' => 'Técnica',
-                'sigla' => 'TEC',
-                'descripcion' => 'Evaluación técnica y certificaciones',
-                'estado' => true,
-                'puestos' => [
-                    ['nombre' => 'Secretaria', 'sigla' => 'TEC-SEC', 'descripcion' => 'Apoyo administrativo técnico', 'estado' => true],
-                    ['nombre' => 'Profesional', 'sigla' => 'TEC-PRO', 'descripcion' => 'Evaluación y certificaciones técnicas', 'estado' => true],
-                    ['nombre' => 'Jefe de Área', 'sigla' => 'TEC-JEF', 'descripcion' => 'Coordinación del área técnica', 'estado' => true],
-                ],
-            ],
-            [
-                'nombre' => 'Financiera',
-                'sigla' => 'FIN',
-                'descripcion' => 'Gestión presupuestaria y financiera',
-                'estado' => true,
-                'puestos' => [
-                    ['nombre' => 'Secretaria', 'sigla' => 'FIN-SEC', 'descripcion' => 'Apoyo administrativo financiero', 'estado' => true],
-                    ['nombre' => 'Profesional', 'sigla' => 'FIN-PRO', 'descripcion' => 'Gestión presupuestaria', 'estado' => true],
-                    ['nombre' => 'Jefe de Área', 'sigla' => 'FIN-JEF', 'descripcion' => 'Coordinación del área financiera', 'estado' => true],
-                ],
-            ],
-            [
-                'nombre' => 'Recursos Humanos',
-                'sigla' => 'RRHH',
-                'descripcion' => 'Gestión del talento humano',
-                'estado' => true,
-                'puestos' => [
-                    ['nombre' => 'Secretaria', 'sigla' => 'RHH-SEC', 'descripcion' => 'Apoyo administrativo de personal', 'estado' => true],
-                    ['nombre' => 'Profesional', 'sigla' => 'RHH-PRO', 'descripcion' => 'Gestión de personal y nóminas', 'estado' => true],
-                    ['nombre' => 'Jefe de Área', 'sigla' => 'RHH-JEF', 'descripcion' => 'Coordinación de recursos humanos', 'estado' => true],
-                ],
-            ],
         ];
 
         foreach ($areas as $areaData) {

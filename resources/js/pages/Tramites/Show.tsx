@@ -46,16 +46,17 @@ const derivacionEstadoLabels: Record<string, string> = {
 export default function TramitesShow({ tramite, usuarios }: ShowProps) {
     const { auth } = usePage().props;
     const usuarioId = auth?.user?.id;
+    const params = new URLSearchParams(window.location.search);
+    const vistaAnterior = params.get('vista') ?? 'bandeja';
+    const busquedaAnterior = params.get('search') ?? '';
     const [derivarOpen, setDerivarOpen] = useState(false);
     const [recepcionarOpen, setRecepcionarOpen] = useState<number | null>(null);
-    const [rechazarOpen, setRechazarOpen] = useState<number | null>(null);
     const [derivarSuccess, setDerivarSuccess] = useState<{ destino: string; glosa?: string } | null>(null);
     const [observarOpen, setObservarOpen] = useState(false);
     const [finalizarOpen, setFinalizarOpen] = useState(false);
 
     const derivarForm = useForm({ derivado_a: '', glosa_derivacion: '' });
     const recepcionarForm = useForm({ glosa_recepcion: '' });
-    const rechazarForm = useForm({ glosa_rechazo: '' });
     const observarForm = useForm({ glosa_observacion: '', derivado_a: '', estado: 'observado' });
     const finalizarForm = useForm({ glosa_finalizacion: '', estado: 'finalizado' });
 
@@ -69,8 +70,6 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
     const puedeObservar = tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
     const puedeFinalizar = ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
     const puedeRecepcionar = ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
-    const puedeRechazar = ultimaDerivacion && ultimaDerivacion.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
-
     const derivacionColumns: Column<Derivacion>[] = [
         {
             key: 'numero_derivacion',
@@ -143,11 +142,6 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                             Recepcionar
                         </Button>
                     )}
-                    {puedeRechazar && (
-                        <Button onClick={() => setRechazarOpen(ultimaDerivacion!.id)} variant="danger">
-                            Rechazar
-                        </Button>
-                    )}
                     {puedeObservar && (
                         <Button variant="secondary" onClick={() => setObservarOpen(true)}>
                             Observar
@@ -158,7 +152,7 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                             Finalizar
                         </Button>
                     )}
-                    <Link href="/tramites">
+                    <Link href={`/tramites?vista=${vistaAnterior}${busquedaAnterior ? `&search=${busquedaAnterior}` : ''}`}>
                         <Button variant="secondary">Volver</Button>
                     </Link>
                 </div>
@@ -312,40 +306,6 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" loading={recepcionarForm.processing}>Recepcionar</Button>
                         <Button type="button" variant="secondary" onClick={() => setRecepcionarOpen(null)}>Cancelar</Button>
-                    </div>
-                </form>
-            </Modal>
-
-            <Modal
-                open={rechazarOpen !== null}
-                onClose={() => setRechazarOpen(null)}
-                title="Rechazar Trámite"
-            >
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        if (rechazarOpen === null) return;
-                        rechazarForm.put(`/derivaciones/${rechazarOpen}/rechazar`, {
-                            onSuccess: () => setRechazarOpen(null),
-                        });
-                    }}
-                    className="space-y-4"
-                >
-                    <div>
-                        <label htmlFor="glosa_rechazo" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">
-                            Motivo del rechazo
-                        </label>
-                        <textarea
-                            id="glosa_rechazo"
-                            rows={3}
-                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm dark:bg-gray-700 dark:text-white"
-                            value={rechazarForm.data.glosa_rechazo}
-                            onChange={(e) => rechazarForm.setData('glosa_rechazo', e.target.value)}
-                        />
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <Button type="submit" loading={rechazarForm.processing} variant="danger">Rechazar</Button>
-                        <Button type="button" variant="secondary" onClick={() => setRechazarOpen(null)}>Cancelar</Button>
                     </div>
                 </form>
             </Modal>

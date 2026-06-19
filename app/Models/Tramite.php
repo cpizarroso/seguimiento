@@ -66,6 +66,11 @@ class Tramite extends Model
         return str_pad((string) $this->numero_tramite, 4, '0', STR_PAD_LEFT);
     }
 
+    public function getNumeroCompletoAttribute(): string
+    {
+        return ($this->area?->sigla ?? '?') . '-' . $this->numero_formateado . '/' . $this->year;
+    }
+
     public function finalizadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'finalizado_por');

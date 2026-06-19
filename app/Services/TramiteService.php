@@ -14,7 +14,7 @@ class TramiteService
 
     public function listar(array $filtros = [], ?int $usuarioId = null): LengthAwarePaginator
     {
-        $vista = $filtros['vista'] ?? 'bandeja';
+        $vista = $filtros['vista'] ?? 'busqueda';
 
         return Tramite::with(['creador', 'asignado', 'area', 'derivaciones' => function ($q) {
             $q->latest()->limit(1);
@@ -41,6 +41,7 @@ class TramiteService
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->whereRaw("CONCAT(LPAD(numero_tramite, 4, '0'), '/', year) LIKE ?", ["%{$v}%"])
+                        ->orWhereRaw("CONCAT((SELECT sigla FROM areas WHERE id = tramites.area_id), '-', LPAD(numero_tramite, 4, '0'), '/', year) LIKE ?", ["%{$v}%"])
                         ->orWhere('numero_tramite', 'like', "%{$v}%")
                         ->orWhere('descripcion', 'like', "%{$v}%")
                         ->orWhere('numero_diamante', 'like', "%{$v}%")
@@ -69,7 +70,7 @@ class TramiteService
             ->when($filtros['fecha_hasta'] ?? null, fn($q, $v) => $q->whereDate('fecha', '<=', $v))
             ->orderByDesc('year')
             ->orderByDesc('numero_tramite')
-            ->paginate(15);
+            ->paginate(min((int) ($filtros['per_page'] ?? 15), 100));
     }
 
     public function crear(array $data, int $creadoPor): Tramite
