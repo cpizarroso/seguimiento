@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Area extends Model
 {
     use HasFactory;
+
     protected $table = 'areas';
 
     protected $fillable = [

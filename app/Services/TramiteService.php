@@ -22,17 +22,17 @@ class TramiteService
             ->when($usuarioId, function ($q) use ($usuarioId, $vista) {
                 if ($vista === 'bandeja') {
                     $q->where('derivado_a', $usuarioId)
-                        ->whereDoesntHave('derivaciones', fn($q) => $q
+                        ->whereDoesntHave('derivaciones', fn ($q) => $q
                             ->where('derivado_a', $usuarioId)
                             ->where('estado', 'derivado')
                         );
                 } elseif ($vista === 'por_recepcionar') {
-                    $q->whereHas('derivaciones', fn($q) => $q
+                    $q->whereHas('derivaciones', fn ($q) => $q
                         ->where('derivado_a', $usuarioId)
                         ->where('estado', 'derivado')
                     );
                 } elseif ($vista === 'derivados') {
-                    $q->whereHas('derivaciones', fn($q) => $q
+                    $q->whereHas('derivaciones', fn ($q) => $q
                         ->where('derivado_de', $usuarioId)
                         ->where('estado', 'derivado')
                     );
@@ -46,16 +46,18 @@ class TramiteService
                         ->orWhere('descripcion', 'like', "%{$v}%")
                         ->orWhere('numero_diamante', 'like', "%{$v}%")
                         ->orWhere('estado', 'like', "%{$v}%")
-                        ->orWhereHas('creador', fn($q) => $q->where('name', 'like', "%{$v}%"))
-                        ->orWhereHas('asignado', fn($q) => $q->where('name', 'like', "%{$v}%"))
-                        ->orWhereHas('area', fn($q) => $q->where('nombre', 'like', "%{$v}%"));
+                        ->orWhereHas('creador', fn ($q) => $q->where('name', 'like', "%{$v}%"))
+                        ->orWhereHas('asignado', fn ($q) => $q->where('name', 'like', "%{$v}%"))
+                        ->orWhereHas('area', fn ($q) => $q->where('nombre', 'like', "%{$v}%"));
 
                     if (str_contains($v, '/')) {
                         $parts = explode('/', $v);
                         $query->orWhere(function ($sub) use ($parts) {
                             foreach ($parts as $part) {
                                 $part = trim($part);
-                                if ($part === '') continue;
+                                if ($part === '') {
+                                    continue;
+                                }
                                 $sub->where(function ($q2) use ($part) {
                                     $q2->where('numero_tramite', 'like', "%{$part}%")
                                         ->orWhere('year', 'like', "%{$part}%");
@@ -65,9 +67,9 @@ class TramiteService
                     }
                 });
             })
-            ->when($filtros['estado'] ?? null, fn($q, $v) => $q->where('estado', $v))
-            ->when($filtros['fecha_desde'] ?? null, fn($q, $v) => $q->whereDate('fecha', '>=', $v))
-            ->when($filtros['fecha_hasta'] ?? null, fn($q, $v) => $q->whereDate('fecha', '<=', $v))
+            ->when($filtros['estado'] ?? null, fn ($q, $v) => $q->where('estado', $v))
+            ->when($filtros['fecha_desde'] ?? null, fn ($q, $v) => $q->whereDate('fecha', '>=', $v))
+            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $v) => $q->whereDate('fecha', '<=', $v))
             ->orderByDesc('year')
             ->orderByDesc('numero_tramite')
             ->paginate(min((int) ($filtros['per_page'] ?? 15), 100));
@@ -101,13 +103,13 @@ class TramiteService
             'asignado',
             'area',
             'finalizadoPor',
-            'derivaciones' => fn($q) => $q->with(['de', 'a'])->orderBy('numero_derivacion'),
+            'derivaciones' => fn ($q) => $q->with(['de', 'a'])->orderBy('numero_derivacion'),
         ])->findOrFail($id);
     }
 
     public function cambiarEstado(Tramite $tramite, string $estado, ?array $data = []): Tramite
     {
-        if (!in_array($estado, Tramite::ESTADOS)) {
+        if (! in_array($estado, Tramite::ESTADOS)) {
             throw new \InvalidArgumentException("Estado inválido: {$estado}");
         }
 

@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Reseteo;
-use App\Models\UserPuesto;
 use App\Models\User;
+use App\Models\UserPuesto;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 
@@ -63,7 +63,7 @@ class UserService
             'funcionario_id' => $data['funcionario_id'] ?? $user->funcionario_id,
         ];
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $updateData['password'] = Hash::make($data['password']);
         }
 
@@ -80,7 +80,7 @@ class UserService
                     'puesto_id' => $puestoId,
                     'fecha_inicio' => now()->toDateString(),
                 ]);
-            } elseif (!$puestoActivo) {
+            } elseif (! $puestoActivo) {
                 UserPuesto::create([
                     'user_id' => $user->id,
                     'puesto_id' => $puestoId,

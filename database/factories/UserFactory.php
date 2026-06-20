@@ -26,7 +26,7 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'email' => fake()->unique()->userName() . '@' . config('app.user_domain'),
+            'email' => fake()->unique()->userName().'@'.config('app.user_domain'),
             'role' => 'user',
             'phone' => fake()->phoneNumber(),
             'profesion' => fake()->jobTitle(),

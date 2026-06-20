@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\Funcionario;
 use App\Models\Area;
-use App\Models\User;
+use App\Models\Funcionario;
 use App\Models\Tramite;
+use App\Models\User;
 
 beforeEach(function () {
     $this->artisan('migrate');

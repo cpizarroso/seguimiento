@@ -37,7 +37,7 @@ class DerivacionFactory extends Factory
             $numero = ($ultima?->numero_derivacion ?? 0) + 1;
             $fechaActual = $fechaActual->copy()->addDays(random_int(3, 15));
 
-            if (!$ultima) {
+            if (! $ultima) {
                 $destino = User::where('id', '!=', $tramite->creado_por)->inRandomOrder()->value('id') ?? User::inRandomOrder()->value('id');
 
                 $tramite->update(['estado' => 'proceso', 'derivado_a' => $destino]);
@@ -63,6 +63,7 @@ class DerivacionFactory extends Factory
                     'fecha_recepcion' => $fechaActual->format('Y-m-d H:i:s'),
                     'glosa_recepcion' => fake()->optional(0.7)->sentence(),
                 ]);
+
                 continue;
             }
 

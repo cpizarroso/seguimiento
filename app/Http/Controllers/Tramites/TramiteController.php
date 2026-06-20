@@ -9,6 +9,7 @@ use App\Http\Resources\AreaResource;
 use App\Http\Resources\TramiteResource;
 use App\Http\Resources\UserResource;
 use App\Models\Tramite;
+use App\Models\User;
 use App\Services\AreaService;
 use App\Services\DerivacionService;
 use App\Services\TramiteService;
@@ -63,7 +64,7 @@ class TramiteController extends Controller
 
         return Inertia::render('Tramites/Show', [
             'tramite' => new TramiteResource($tramite),
-            'usuarios' => UserResource::collection(\App\Models\User::all()),
+            'usuarios' => UserResource::collection(User::all()),
         ]);
     }
 

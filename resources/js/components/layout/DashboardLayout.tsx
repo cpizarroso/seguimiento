@@ -5,13 +5,27 @@ import { Header } from './Header';
 import { Toast } from '@/components/ui/Toast';
 import type { ReactNode } from 'react';
 
+const SIDEBAR_STORAGE_KEY = 'sidebarCollapsed';
+
 interface DashboardLayoutProps {
     children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+            if (stored === 'true') return true;
+            if (stored === 'false') return false;
+        }
+        return false;
+    });
+
+    useEffect(() => {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
+    }, [sidebarCollapsed]);
+
     const { props } = usePage();
     const flash = props.flash as { success?: string; error?: string } | undefined;
 

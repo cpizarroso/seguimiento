@@ -27,14 +27,13 @@ class UserResource extends JsonResource
                 'puesto_id' => $this->puestoActivo->puesto_id,
                 'puesto' => $this->puestoActivo->puesto ? new PuestoResource($this->puestoActivo->puesto) : null,
             ]),
-            'historial_puestos' => $this->whenLoaded('historialPuestos', fn () =>
-                $this->historialPuestos->map(fn ($up) => [
-                    'id' => $up->id,
-                    'puesto_id' => $up->puesto_id,
-                    'puesto' => $up->puesto ? new PuestoResource($up->puesto) : null,
-                    'fecha_inicio' => $up->fecha_inicio?->format('d/m/Y'),
-                    'fecha_fin' => $up->fecha_fin?->format('d/m/Y'),
-                ]),
+            'historial_puestos' => $this->whenLoaded('historialPuestos', fn () => $this->historialPuestos->map(fn ($up) => [
+                'id' => $up->id,
+                'puesto_id' => $up->puesto_id,
+                'puesto' => $up->puesto ? new PuestoResource($up->puesto) : null,
+                'fecha_inicio' => $up->fecha_inicio?->format('d/m/Y'),
+                'fecha_fin' => $up->fecha_fin?->format('d/m/Y'),
+            ]),
             ),
         ];
     }

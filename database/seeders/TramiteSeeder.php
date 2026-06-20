@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Area;
+use App\Models\Derivacion;
 use App\Models\Tramite;
 use App\Models\User;
 use Database\Factories\DerivacionFactory;
@@ -11,7 +12,9 @@ use Illuminate\Database\Seeder;
 class TramiteSeeder extends Seeder
 {
     private string $fechaBase;
+
     private int $year;
+
     private array $usuarios;
 
     public function run(): void
@@ -71,7 +74,7 @@ class TramiteSeeder extends Seeder
 
         $siguienteNumero = [];
         foreach ($tramites as $t) {
-            $key = $t['year'] . '-' . $areaIds[0];
+            $key = $t['year'].'-'.$areaIds[0];
             $siguienteNumero[$key] ??= Tramite::where('year', $t['year'])
                 ->where('area_id', $areaIds[0])
                 ->max('numero_tramite') ?? 0;
@@ -83,7 +86,7 @@ class TramiteSeeder extends Seeder
             $creadoPor = $esAdmin ? 1 : $usuarioIds[array_rand($usuarioIds)];
             $areaId = $areaIds[$i % count($areaIds)];
 
-            $key = $t['year'] . '-' . $areaId;
+            $key = $t['year'].'-'.$areaId;
             $siguienteNumero[$key] ??= Tramite::where('year', $t['year'])
                 ->where('area_id', $areaId)
                 ->max('numero_tramite') ?? 0;
@@ -92,9 +95,9 @@ class TramiteSeeder extends Seeder
             $tramite = Tramite::create([
                 'numero_tramite' => $siguienteNumero[$key],
                 'year' => $t['year'],
-                'fecha' => $t['fecha'] . ' 08:00:00',
+                'fecha' => $t['fecha'].' 08:00:00',
                 'descripcion' => $t['descripcion'],
-                'numero_diamante' => $t['year'] . '-' . str_pad((string) $siguienteNumero[$key], 4, '0', STR_PAD_LEFT),
+                'numero_diamante' => $t['year'].'-'.str_pad((string) $siguienteNumero[$key], 4, '0', STR_PAD_LEFT),
                 'estado' => $t['estado'],
                 'area_id' => $areaId,
                 'creado_por' => $creadoPor,
@@ -112,7 +115,7 @@ class TramiteSeeder extends Seeder
 
         DerivacionFactory::new()->crearCadena($tramite, $numDerivaciones);
 
-        $ultima = \App\Models\Derivacion::where('tramite_id', $tramite->id)
+        $ultima = Derivacion::where('tramite_id', $tramite->id)
             ->orderBy('numero_derivacion', 'desc')
             ->first();
 

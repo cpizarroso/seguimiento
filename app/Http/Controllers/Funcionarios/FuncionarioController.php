@@ -28,13 +28,14 @@ class FuncionarioController extends Controller
     public function index(): Response
     {
         $user = request()->user();
-        $filtros = request()->only(['search', 'estado']);
+        $filtros = request()->only(['search', 'area_id']);
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
 
         return Inertia::render('Funcionarios/Index', [
             'funcionarios' => FuncionarioListResource::collection(
                 $this->funcionarioService->listar($filtros)
             ),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'perPage' => (int) $filtros['per_page'],
         ]);
     }

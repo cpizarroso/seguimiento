@@ -21,7 +21,7 @@ class DerivacionController extends Controller
     {
         $usuarioId = $request->user()?->id;
 
-        abort_if(!$usuarioId || $tramite->derivado_a !== $usuarioId || $tramite->estado === 'finalizado', 403,
+        abort_if(! $usuarioId || $tramite->derivado_a !== $usuarioId || $tramite->estado === 'finalizado', 403,
             'No tienes permiso para derivar este trámite.');
 
         $this->derivacionService->derivar(
@@ -37,7 +37,7 @@ class DerivacionController extends Controller
     {
         $usuarioId = $request->user()?->id;
 
-        abort_if(!$usuarioId || $derivacion->derivado_a !== $usuarioId, 403,
+        abort_if(! $usuarioId || $derivacion->derivado_a !== $usuarioId, 403,
             'No tienes permiso para recepcionar esta derivación.');
 
         $this->derivacionService->recepcionar(
@@ -53,7 +53,7 @@ class DerivacionController extends Controller
     {
         $usuarioId = $request->user()?->id;
 
-        abort_if(!$usuarioId || $derivacion->derivado_a !== $usuarioId, 403,
+        abort_if(! $usuarioId || $derivacion->derivado_a !== $usuarioId, 403,
             'No tienes permiso para rechazar esta derivación.');
 
         $this->derivacionService->rechazar(

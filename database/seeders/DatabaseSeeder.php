@@ -92,7 +92,7 @@ class DatabaseSeeder extends Seeder
 
         $ericka = User::factory()->create([
             'name' => 'Erika Rodriguez',
-            'email' => 'erodriguez@' . config('app.user_domain'),
+            'email' => 'erodriguez@'.config('app.user_domain'),
             'password' => bcrypt('password'),
             'role' => 'user',
         ]);
@@ -108,7 +108,7 @@ class DatabaseSeeder extends Seeder
                 'year' => $year,
                 'fecha' => now()->subDays(10 - $i),
                 'descripcion' => "Trámite {$i} - Erika Rodríguez",
-                'numero_diamante' => "{$year}-" . str_pad((string) ($ultimoNumero + $i), 4, '0', STR_PAD_LEFT),
+                'numero_diamante' => "{$year}-".str_pad((string) ($ultimoNumero + $i), 4, '0', STR_PAD_LEFT),
                 'estado' => 'iniciado',
                 'area_id' => $areaId,
                 'creado_por' => $ericka->id,

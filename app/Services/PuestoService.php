@@ -28,6 +28,7 @@ class PuestoService
     public function actualizar(Puesto $puesto, array $data): Puesto
     {
         $puesto->update($data);
+
         return $puesto;
     }
 

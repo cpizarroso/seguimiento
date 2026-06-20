@@ -54,7 +54,7 @@ class Derivacion extends Model
 
     public function getDiasEnDerivacionAttribute(): int
     {
-        if (!$this->fecha_recepcion) {
+        if (! $this->fecha_recepcion) {
             return now()->diffInDays($this->fecha_derivacion);
         }
 

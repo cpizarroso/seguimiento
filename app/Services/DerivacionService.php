@@ -59,7 +59,7 @@ class DerivacionService
 
     public function recepcionar(Derivacion $derivacion, ?string $glosaRecepcion = null): Derivacion
     {
-        if (!in_array($derivacion->estado, [Derivacion::ESTADOS[0]])) {
+        if (! in_array($derivacion->estado, [Derivacion::ESTADOS[0]])) {
             throw new \InvalidArgumentException("Solo se pueden recepcionar derivaciones en estado 'derivado'.");
         }
 
@@ -78,7 +78,7 @@ class DerivacionService
 
     public function rechazar(Derivacion $derivacion, ?string $glosaRechazo = null): Derivacion
     {
-        if (!in_array($derivacion->estado, ['derivado', 'recepcionado'])) {
+        if (! in_array($derivacion->estado, ['derivado', 'recepcionado'])) {
             throw new \InvalidArgumentException("Solo se pueden rechazar derivaciones en estado 'derivado' o 'recepcionado'.");
         }
 

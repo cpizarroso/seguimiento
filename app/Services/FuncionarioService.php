@@ -11,12 +11,18 @@ class FuncionarioService
     public function listar(array $filtros = []): LengthAwarePaginator
     {
         return Funcionario::with('area')
-            ->when($filtros['search'] ?? null, fn($q, $v) => $q->where(function ($q) use ($v) {
-                $q->where('nombre', 'like', "%{$v}%")
-                    ->orWhere('apellidos', 'like', "%{$v}%")
-                    ->orWhere('cedula_identidad', 'like', "%{$v}%");
+            ->when($filtros['search'] ?? null, fn ($q, $v) => $q->where(function ($q) use ($v) {
+                $palabras = preg_split('/\s+/', trim($v));
+                foreach ($palabras as $palabra) {
+                    $q->where(function ($q) use ($palabra) {
+                        $q->where('nombre', 'like', "%{$palabra}%")
+                            ->orWhere('apellidos', 'like', "%{$palabra}%")
+                            ->orWhere('email', 'like', "%{$palabra}%")
+                            ->orWhere('cedula_identidad', 'like', "%{$palabra}%");
+                    });
+                }
             }))
-            ->when($filtros['estado'] ?? null, fn($q, $v) => $q->where('estado', $v))
+            ->when($filtros['area_id'] ?? null, fn ($q, $v) => $q->where('area_id', $v))
             ->orderBy('nombre')
             ->paginate(min((int) ($filtros['per_page'] ?? 10), 100));
     }
@@ -31,6 +37,7 @@ class FuncionarioService
     public function actualizar(Funcionario $funcionario, array $data): Funcionario
     {
         $funcionario->update($data);
+
         return $funcionario->load('area');
     }
 

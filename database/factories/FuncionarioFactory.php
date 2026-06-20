@@ -26,11 +26,11 @@ class FuncionarioFactory extends Factory
 
     public function activo(): static
     {
-        return $this->state(fn(array $attrs) => ['estado' => 'activo']);
+        return $this->state(fn (array $attrs) => ['estado' => 'activo']);
     }
 
     public function inactivo(): static
     {
-        return $this->state(fn(array $attrs) => ['estado' => 'inactivo']);
+        return $this->state(fn (array $attrs) => ['estado' => 'inactivo']);
     }
 }

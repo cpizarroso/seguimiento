@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,12 +9,13 @@ import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import type { ReactNode } from 'react';
-import type { Funcionario, PaginatedData } from '@/types/generated/Tramite';
+import type { Area, Funcionario, PaginatedData } from '@/types/generated/Tramite';
 
 interface FuncionariosIndexProps {
     funcionarios: PaginatedData<Funcionario>;
+    areas: { data: Area[] };
     perPage?: number;
-    filters?: { search?: string; estado?: string };
+    filters?: { search?: string; area_id?: string };
 }
 
 function SkeletonRow() {
@@ -29,11 +30,12 @@ function SkeletonRow() {
     );
 }
 
-export default function FuncionariosIndex({ funcionarios, perPage: initialPerPage = 10 }: FuncionariosIndexProps) {
+export default function FuncionariosIndex({ funcionarios, areas, perPage: initialPerPage = 10 }: FuncionariosIndexProps) {
     const [search, setSearch] = useState('');
-    const [estado, setEstado] = useState('');
+    const [areaId, setAreaId] = useState('');
     const [loading, setLoading] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Funcionario | null>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
     const perPage = funcionarios.meta.per_page ?? initialPerPage;
 
@@ -43,7 +45,7 @@ export default function FuncionariosIndex({ funcionarios, perPage: initialPerPag
 
     const navigate = (overrides: Record<string, unknown>) => {
         setLoading(true);
-        router.get('/funcionarios', { search, estado, ...overrides }, {
+        router.get('/funcionarios', { search, area_id: areaId, ...overrides }, {
             preserveState: true,
             preserveScroll: true,
             only: ['funcionarios'],
@@ -52,14 +54,18 @@ export default function FuncionariosIndex({ funcionarios, perPage: initialPerPag
     };
 
     useEffect(() => {
-        setLoading(true);
-        router.get('/funcionarios', { search, estado }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['funcionarios'],
-            onSuccess: () => setLoading(false),
-        });
-    }, [search, estado]);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            setLoading(true);
+            router.get('/funcionarios', { search, area_id: areaId }, {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['funcionarios'],
+                onSuccess: () => setLoading(false),
+            });
+        }, 300);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [search, areaId]);
 
     const handleDelete = () => {
         if (!deleteTarget) return;
@@ -181,7 +187,7 @@ export default function FuncionariosIndex({ funcionarios, perPage: initialPerPag
                     <div className="flex-1 max-w-sm">
                         <Input
                             label="Buscar"
-                            placeholder="Buscar por nombre, apellidos o CI..."
+                            placeholder="Buscar por nombre, apellidos, email o CI..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             leftElement={
@@ -198,17 +204,15 @@ export default function FuncionariosIndex({ funcionarios, perPage: initialPerPag
                             ) : undefined}
                         />
                     </div>
-                    <div className="w-40">
+                    <div className="w-48">
                         <Select
-                            label="Estado"
+                            label="Área"
                             options={[
-                                { value: '', label: 'Todos' },
-                                { value: 'activo', label: 'Activo' },
-                                { value: 'inactivo', label: 'Inactivo' },
-                                { value: 'baja', label: 'Baja' },
+                                { value: '', label: 'Todas' },
+                                ...areas.data.map((a) => ({ value: String(a.id), label: a.nombre })),
                             ]}
-                            value={estado}
-                            onChange={(e) => setEstado(e.target.value)}
+                            value={areaId}
+                            onChange={(e) => setAreaId(e.target.value)}
                         />
                     </div>
                 </div>

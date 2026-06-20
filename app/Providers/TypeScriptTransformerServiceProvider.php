@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
+use Spatie\LaravelTypeScriptTransformer\TypeScriptTransformerApplicationServiceProvider as BaseTypeScriptTransformerServiceProvider;
 use Spatie\TypeScriptTransformer\Transformers\AttributedClassTransformer;
 use Spatie\TypeScriptTransformer\Transformers\EnumTransformer;
 use Spatie\TypeScriptTransformer\TypeScriptTransformerConfigFactory;
 use Spatie\TypeScriptTransformer\Writers\ModuleWriter;
-use Spatie\LaravelTypeScriptTransformer\TypeScriptTransformerApplicationServiceProvider as BaseTypeScriptTransformerServiceProvider;
 
 class TypeScriptTransformerServiceProvider extends BaseTypeScriptTransformerServiceProvider
 {
@@ -16,7 +16,7 @@ class TypeScriptTransformerServiceProvider extends BaseTypeScriptTransformerServ
             ->transformer(AttributedClassTransformer::class)
             ->transformer(EnumTransformer::class)
             ->transformDirectories(app_path('Models'))
-            ->writer(new ModuleWriter())
+            ->writer(new ModuleWriter)
             ->outputDirectory(resource_path('js/types/generated'));
     }
 }

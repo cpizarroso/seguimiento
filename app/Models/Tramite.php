@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Tramite extends Model
 {
     use HasFactory;
+
     protected $table = 'tramites';
 
     protected $fillable = [
@@ -70,7 +71,7 @@ class Tramite extends Model
 
     public function getNumeroCompletoAttribute(): string
     {
-        return ($this->area?->sigla ?? '?') . '-' . $this->numero_formateado . '/' . $this->year;
+        return ($this->area?->sigla ?? '?').'-'.$this->numero_formateado.'/'.$this->year;
     }
 
     public function finalizadoPor(): BelongsTo

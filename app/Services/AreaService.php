@@ -11,7 +11,16 @@ class AreaService
     public function listar(array $filtros = []): LengthAwarePaginator
     {
         return Area::withCount('puestos')
-            ->when($filtros['search'] ?? null, fn ($q, $v) => $q->where('nombre', 'like', "%{$v}%"))
+            ->when($filtros['search'] ?? null, fn ($q, $v) => $q->where(function ($q) use ($v) {
+                $palabras = preg_split('/\s+/', trim($v));
+                foreach ($palabras as $palabra) {
+                    $q->where(function ($q) use ($palabra) {
+                        $q->where('nombre', 'like', "%{$palabra}%")
+                            ->orWhere('sigla', 'like', "%{$palabra}%")
+                            ->orWhere('descripcion', 'like', "%{$palabra}%");
+                    });
+                }
+            }))
             ->orderBy('nombre')
             ->paginate(10);
     }
@@ -82,6 +91,7 @@ class AreaService
     public function actualizarPuesto(Puesto $puesto, array $data): Puesto
     {
         $puesto->update($data);
+
         return $puesto;
     }
 
