@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('sigla', 10)->nullable()->unique();
             $table->text('descripcion')->nullable();
             $table->boolean('estado')->default(true);
+            $table->foreignId('parent_id')->nullable()->constrained('areas')->nullOnDelete();
             $table->timestamps();
         });
     }

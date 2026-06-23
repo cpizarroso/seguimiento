@@ -1,129 +1,42 @@
 import { Link, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Table } from '@/components/ui/Table';
-import { Badge } from '@/components/ui/Badge';
-import { Pagination } from '@/components/ui/Pagination';
-import type { ReactNode } from 'react';
-import type { PaginatedData } from '@/types/generated/Tramite';
-
-interface AreaRow {
-    id: number;
-    nombre: string;
-    descripcion: string | null;
-    sigla: string;
-    estado: boolean;
-    puestos_count: number | null;
-}
+import { Modal } from '@/components/ui/Modal';
+import { TreeView } from '@/components/ui/TreeView';
+import type { Area, AreaTreeNode } from '@/types/generated/Tramite';
 
 interface AreasIndexProps {
-    areas: PaginatedData<AreaRow>;
+    areasTree: AreaTreeNode[];
 }
 
-const ACENTOS: Record<string, string> = {
-    a: 'aáàäâã', e: 'eéèëê', i: 'iíìïî',
-    o: 'oóòöôõ', u: 'uúùüû', n: 'nñ',
-};
-
-const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const aPattern = (s: string) => {
-    let result = '';
-    for (const c of s.toLowerCase()) {
-        const vars = ACENTOS[c];
-        result += vars ? `[${vars}]` : c;
-    }
-    return result;
-};
-
-export default function AreasIndex({ areas }: AreasIndexProps) {
+export default function AreasIndex({ areasTree }: AreasIndexProps) {
     const [search, setSearch] = useState('');
-    const [loading, setLoading] = useState(false);
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const [deleteTarget, setDeleteTarget] = useState<AreaTreeNode | null>(null);
 
-    useEffect(() => {
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            setLoading(true);
-            router.get('/areas', { search }, {
-                preserveState: true,
-                preserveScroll: true,
-                only: ['areas'],
-                onSuccess: () => setLoading(false),
-            });
-        }, 300);
-        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-    }, [search]);
-
-    const resaltar = (texto: string | null | undefined): ReactNode => {
-        if (!texto || !search) return texto ?? '—';
-
-        const palabras = search.split(/[/\s]+/).filter(Boolean);
-        if (palabras.length === 0) return texto;
-
-        const pattern = palabras.map((p) => aPattern(p)).join('|');
-        const regex = new RegExp(`(${pattern})`, 'gi');
-
-        return texto.split(regex).map((parte, i) =>
-            i % 2 === 1
-                ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-inherit rounded px-0.5">{parte}</mark>
-                : parte,
-        );
+    const handleDelete = () => {
+        if (!deleteTarget) return;
+        router.delete(`/areas/${deleteTarget.id}`, {
+            onSuccess: () => setDeleteTarget(null),
+        });
     };
 
-    const columns = [
-        {
-            key: 'nombre',
-            header: 'Nombre',
-            render: (a: AreaRow) => (
-                <Link href={`/areas/${a.id}`} className="text-patuju-green hover:underline font-medium">
-                    {resaltar(a.nombre)}
-                </Link>
-            ),
-        },
-        {
-            key: 'sigla',
-            header: 'Sigla',
-            render: (a: AreaRow) => (
-                <span className="font-mono text-sm text-gray-600 dark:text-gray-400">{resaltar(a.sigla)}</span>
-            ),
-        },
-        {
-            key: 'descripcion',
-            header: 'Descripción',
-            render: (a: AreaRow) => resaltar(a.descripcion),
-        },
-        {
-            key: 'estado',
-            header: 'Estado',
-            render: (a: AreaRow) => a.estado
-                ? <Badge variant="success">Activo</Badge>
-                : <Badge variant="danger">Inactivo</Badge>,
-        },
-        {
-            key: 'puestos_count',
-            header: 'Puestos',
-            render: (a: AreaRow) => a.puestos_count?.toString() ?? '0',
-        },
-        {
-            key: 'acciones',
-            header: 'Acciones',
-            render: (a: AreaRow) => (
-                <div className="flex gap-2">
-                    <Link href={`/areas/${a.id}/edit`}>
-                        <Button size="sm" variant="secondary">Editar</Button>
-                    </Link>
-                </div>
-            ),
-        },
-    ];
+    const puestosCount = (items: AreaTreeNode[]): number =>
+        items.reduce((sum, item) => sum + item.puestos.length + puestosCount(item.children), 0);
+
+    const totalAreas = (items: AreaTreeNode[]): number =>
+        items.reduce((sum, item) => sum + 1 + totalAreas(item.children), 0);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-patuju-green">Áreas</h2>
+                <div>
+                    <h2 className="text-2xl font-bold text-patuju-green">Áreas y Puestos</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {totalAreas(areasTree)} áreas · {puestosCount(areasTree)} puestos
+                    </p>
+                </div>
                 <Link href="/areas/create">
                     <Button>Nueva Área</Button>
                 </Link>
@@ -134,7 +47,7 @@ export default function AreasIndex({ areas }: AreasIndexProps) {
                     <div className="flex-1 max-w-sm">
                         <Input
                             label="Buscar"
-                            placeholder="Buscar por nombre..."
+                            placeholder="Buscar por nombre, sigla o descripción..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             leftElement={
@@ -155,41 +68,34 @@ export default function AreasIndex({ areas }: AreasIndexProps) {
             </Card>
 
             <Card>
-                {loading && areas.data.length === 0 ? (
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-800">
-                            <tr>
-                                {[{ name: 'Nombre', align: 'text-left' }, { name: 'Sigla', align: 'text-left' }, { name: 'Descripción', align: 'text-left' }, { name: 'Estado', align: 'text-left' }, { name: 'Puestos', align: 'text-left' }, { name: 'Acciones', align: 'text-right' }].map((h) => (
-                                    <th key={h.name} className={`px-4 py-3 text-xs font-medium uppercase text-gray-500 ${h.align}`}>{h.name}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <tr key={i} className="animate-pulse">
-                                    {Array.from({ length: 6 }).map((_, j) => (
-                                        <td key={j} className="px-4 py-3">
-                                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <Table
-                        columns={columns}
-                        data={areas.data}
-                        keyExtractor={(a) => a.id}
-                        emptyMessage="No hay áreas registradas."
-                    />
-                )}
-                <Pagination
-                    currentPage={areas.meta.current_page}
-                    lastPage={areas.meta.last_page}
-                    onPageChange={(page) => router.get('/areas', { page, search }, { preserveState: true, preserveScroll: true, only: ['areas'] })}
+                <TreeView
+                    items={areasTree}
+                    search={search}
+                    onDelete={setDeleteTarget}
                 />
             </Card>
+
+            <Modal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Confirmar eliminación">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        ¿Estás seguro de eliminar el área <strong>{deleteTarget?.nombre}</strong>?
+                        {(deleteTarget?.puestos?.length ?? 0) > 0 && (
+                            <span className="block mt-2 text-patuju-red">
+                                Esta área tiene {deleteTarget?.puestos.length} puesto(s) asociado(s).
+                            </span>
+                        )}
+                        {(deleteTarget?.children?.length ?? 0) > 0 && (
+                            <span className="block mt-1 text-patuju-red">
+                                También se eliminarán {deleteTarget?.children.length} sub-área(s).
+                            </span>
+                        )}
+                    </p>
+                    <div className="flex gap-3 pt-2">
+                        <Button variant="danger" onClick={handleDelete}>Eliminar</Button>
+                        <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

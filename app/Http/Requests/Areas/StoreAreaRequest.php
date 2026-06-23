@@ -18,6 +18,7 @@ class StoreAreaRequest extends FormRequest
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'sigla' => ['required', 'string', 'max:10', 'unique:areas,sigla'],
             'estado' => ['nullable', 'boolean'],
+            'parent_id' => ['nullable', 'integer', 'exists:areas,id'],
             'puestos' => ['nullable', 'array'],
             'puestos.*.nombre' => ['required', 'string', 'max:255'],
             'puestos.*.descripcion' => ['nullable', 'string', 'max:1000'],

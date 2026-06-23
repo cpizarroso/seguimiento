@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Services\ReporteService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,14 +15,19 @@ class ReporteController extends Controller
 
     public function index(Request $request): Response
     {
-        $funcionarioId = $request->integer('funcionario_id') ?: null;
+        $user = $request->user();
+        $userId = $request->integer('user_id') ?: $user->id;
 
         return Inertia::render('Reporte/Index', [
-            ...$this->reporteService->resumenGeneral(),
-            ...$this->reporteService->tramitesPorDiaSemana($funcionarioId),
-            'tramites_por_funcionario' => $this->reporteService->tramitesPorFuncionario(),
-            'funcionarios' => User::orderBy('name')->get(['id', 'name']),
-            'filtro_funcionario_id' => $funcionarioId,
+            ...$this->reporteService->resumenGeneral($userId),
+            ...$this->reporteService->tramitesPorDiaSemana($userId),
+            'tramites_por_area' => $this->reporteService->tramitesPorArea($userId),
+            'auth_user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role,
+            ],
+            'filtro_user_id' => $userId,
         ]);
     }
 }

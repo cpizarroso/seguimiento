@@ -24,8 +24,17 @@ export interface Area {
     descripcion: string | null;
     sigla: string;
     estado: boolean;
+    parent_id: number | null;
+    parent: Area | null;
+    children?: Area[];
     puestos_count?: number;
     puestos?: Puesto[];
+}
+
+export interface AreaTreeNode extends Omit<Area, 'parent' | 'children' | 'puestos'> {
+    parent: AreaTreeNode | null;
+    children: AreaTreeNode[];
+    puestos: Puesto[];
 }
 
 export interface Puesto {

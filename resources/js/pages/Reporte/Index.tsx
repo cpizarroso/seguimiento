@@ -1,16 +1,8 @@
-import { router } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
-import { Select } from '@/components/ui/Select';
 import { SemanalChart } from '@/components/features/reporte/SemanalChart';
-import { TramitesPorFuncionarioChart } from '@/components/features/reporte/TramitesPorFuncionarioChart';
+import { TramitesPorAreaChart } from '@/components/features/reporte/TramitesPorAreaChart';
 
-interface FuncionarioOption {
-    id: number;
-    name: string;
-}
-
-interface FuncionarioTramite {
-    id: number;
+interface AreaRow {
     name: string;
     total: number;
 }
@@ -20,9 +12,10 @@ interface ReporteProps {
     por_estado: Record<string, number>;
     iniciados_por_dia: Record<number, number>;
     finalizados_por_dia: Record<number, number>;
-    tramites_por_funcionario: FuncionarioTramite[];
-    funcionarios: FuncionarioOption[];
-    filtro_funcionario_id: number | null;
+    tramites_por_area: AreaRow[];
+    auth_user: { id: number; name: string; role: string };
+    filtro_user_id: number;
+    tramites_por_mes: Record<string, number>;
 }
 
 const estadoConfig: Record<string, { label: string; color: string }> = {
@@ -32,39 +25,40 @@ const estadoConfig: Record<string, { label: string; color: string }> = {
     finalizado: { label: 'Finalizados', color: 'text-patuju-green' },
 };
 
+const mesLabels: Record<string, string> = {
+    '01': 'Ene', '02': 'Feb', '03': 'Mar', '04': 'Abr',
+    '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+    '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dic',
+};
+
 export default function Reporte({
     total_tramites,
     por_estado,
     iniciados_por_dia,
     finalizados_por_dia,
-    tramites_por_funcionario,
-    funcionarios,
-    filtro_funcionario_id,
+    tramites_por_area,
+    auth_user,
+    filtro_user_id,
+    tramites_por_mes,
 }: ReporteProps) {
-    const handleFiltroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const value = e.target.value;
-        router.get('/reporte', { funcionario_id: value || undefined }, {
-            preserveState: true,
-            replace: true,
-        });
-    };
-
-    const options = [
-        { value: '', label: 'Todos los usuarios' },
-        ...funcionarios.map((f) => ({ value: String(f.id), label: f.name })),
-    ];
+    const esAdmin = auth_user.role === 'admin';
+    const esMiReporte = filtro_user_id === auth_user.id;
+    const titulo = esAdmin && !esMiReporte
+        ? `Reporte — Usuario #${filtro_user_id}`
+        : 'Mi Reporte';
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Reporte</h2>
-                <div className="w-64">
-                    <Select
-                        label="Filtrar por usuario"
-                        options={options}
-                        value={filtro_funcionario_id ? String(filtro_funcionario_id) : ''}
-                        onChange={handleFiltroChange}
-                    />
+                <div>
+                    <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">
+                        {titulo}
+                    </h2>
+                    {esMiReporte && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Trámites creados por <strong>{auth_user.name}</strong>
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -97,7 +91,33 @@ export default function Reporte({
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <TramitesPorFuncionarioChart data={tramites_por_funcionario} />
+                <TramitesPorAreaChart data={tramites_por_area} />
+                <Card>
+                    <h3 className="text-lg font-semibold text-patuju-green mb-4">
+                        Trámites por Mes
+                    </h3>
+                    <div className="space-y-2">
+                        {Object.entries(tramites_por_mes).slice(-6).map(([mes, total]) => {
+                            const [, mm] = mes.split('-');
+                            return (
+                                <div key={mes} className="flex items-center gap-3">
+                                    <span className="w-20 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                                        {mesLabels[mm] ?? mm} {mes.split('-')[0]}
+                                    </span>
+                                    <div className="flex-1 h-5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-patuju-green rounded-full transition-all"
+                                            style={{ width: `${Math.min((total / Math.max(...Object.values(tramites_por_mes))) * 100, 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold text-patuju-green w-8 text-right">
+                                        {total}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </Card>
             </div>
         </div>
     );

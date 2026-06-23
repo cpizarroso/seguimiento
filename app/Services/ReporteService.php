@@ -7,14 +7,21 @@ use App\Models\User;
 
 class ReporteService
 {
-    public function resumenGeneral(): array
+    public function resumenGeneral(?int $userId = null): array
     {
+        $query = Tramite::query();
+        if ($userId) {
+            $query->where('creado_por', $userId);
+        }
+
         return [
-            'total_tramites' => Tramite::count(),
-            'por_estado' => Tramite::selectRaw('estado, count(*) as total')
+            'total_tramites' => (clone $query)->count(),
+            'por_estado' => (clone $query)
+                ->selectRaw('estado, count(*) as total')
                 ->groupBy('estado')
                 ->pluck('total', 'estado'),
-            'tramites_por_mes' => Tramite::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as mes, count(*) as total")
+            'tramites_por_mes' => (clone $query)
+                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as mes, count(*) as total")
                 ->groupBy('mes')
                 ->orderBy('mes')
                 ->pluck('total', 'mes'),
@@ -55,15 +62,19 @@ class ReporteService
         ];
     }
 
-    public function tramitesPorFuncionario(): array
+    public function tramitesPorFuncionario(?int $userId = null): array
     {
-        return User::query()
+        $query = User::query()
             ->selectRaw('users.id, users.name, COUNT(CASE WHEN tramites.estado != \'finalizado\' THEN 1 END) as total')
             ->leftJoin('tramites', 'tramites.creado_por', '=', 'users.id')
             ->groupBy('users.id', 'users.name')
-            ->orderByDesc('total')
-            ->get()
-            ->toArray();
+            ->orderByDesc('total');
+
+        if ($userId) {
+            $query->where('users.id', $userId);
+        }
+
+        return $query->get()->toArray();
     }
 
     public function tramitesPorArea(?int $funcionarioId = null): array

@@ -7,6 +7,17 @@ import type { Area, Puesto } from '@/types/generated/Tramite';
 
 interface EditProps {
     area: Area;
+    areas?: Area[];
+}
+
+function buildTreeOptions(areaList: Area[], level = 0): { value: string; label: string }[] {
+    return areaList.flatMap((a) => [
+        {
+            value: String(a.id),
+            label: `${'— '.repeat(level)}${a.nombre} (${a.sigla})`,
+        },
+        ...(a.children?.length ? buildTreeOptions(a.children, level + 1) : []),
+    ]);
 }
 
 let puestoKey = 0;
@@ -24,12 +35,13 @@ function initPuestos(area: Area): { _key: number; id?: number; nombre: string; d
     }));
 }
 
-export default function AreasEdit({ area }: EditProps) {
+export default function AreasEdit({ area, areas: allAreas = [] }: EditProps) {
     const { data, setData, put, processing, errors } = useForm({
         nombre: area.nombre,
         descripcion: area.descripcion ?? '',
         sigla: area.sigla,
         estado: area.estado,
+        parent_id: area.parent_id,
         puestos: initPuestos(area),
     });
 
@@ -72,6 +84,19 @@ export default function AreasEdit({ area }: EditProps) {
                             onChange={(e) => setData('sigla', e.target.value)}
                             error={errors.sigla}
                             placeholder="Ej: ADM"
+                        />
+                    </div>
+                    <div className="max-w-lg">
+                        <Select
+                            label="Área padre"
+                            placeholder="Seleccione un área padre"
+                            options={[
+                                { value: '', label: '— Ninguna (área raíz) —' },
+                                ...buildTreeOptions(allAreas.filter((a) => a.id !== area.id)),
+                            ]}
+                            value={String(data.parent_id ?? '')}
+                            onChange={(e) => setData('parent_id', e.target.value ? Number(e.target.value) : null)}
+                            error={errors.parent_id as string}
                         />
                     </div>
                     <div>

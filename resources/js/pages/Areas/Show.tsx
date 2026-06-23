@@ -82,10 +82,22 @@ export default function AreasShow({ area }: ShowProps) {
         {
             key: 'acciones',
             header: 'Acciones',
+            headClassName: 'text-right',
+            cellClassName: 'text-right',
             render: (p: Puesto) => (
-                <div className="flex gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => openEdit(p)}>Editar</Button>
-                    <Button size="sm" variant="danger" onClick={() => setDeletingPuesto(p)}>Eliminar</Button>
+                <div className="flex justify-end gap-1">
+                    <Button size="sm" variant="secondary" className="gap-1 !px-2 !py-1 sm:!px-3" onClick={() => openEdit(p)}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span className="hidden sm:inline">Editar</span>
+                    </Button>
+                    <Button size="sm" variant="danger" className="gap-1 !px-2 !py-1 sm:!px-3" onClick={() => setDeletingPuesto(p)}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span className="hidden sm:inline">Eliminar</span>
+                    </Button>
                 </div>
             ),
         },
@@ -111,6 +123,33 @@ export default function AreasShow({ area }: ShowProps) {
                 <Link href={`/areas/${area.id}/edit`}>
                     <Button variant="secondary">Editar Área</Button>
                 </Link>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {area.parent && (
+                    <Card>
+                        <h3 className="mb-3 text-lg font-semibold text-patuju-green">Área padre</h3>
+                        <Link href={`/areas/${area.parent.id}`} className="text-patuju-green hover:underline font-medium">
+                            {area.parent.nombre}
+                        </Link>
+                        <div className="mt-1 text-sm text-gray-500">{area.parent.sigla}</div>
+                    </Card>
+                )}
+                {area.children && area.children.length > 0 && (
+                    <Card>
+                        <h3 className="mb-3 text-lg font-semibold text-patuju-green">Sub-áreas ({area.children.length})</h3>
+                        <ul className="space-y-2">
+                            {area.children.map((child) => (
+                                <li key={child.id}>
+                                    <Link href={`/areas/${child.id}`} className="text-patuju-green hover:underline font-medium">
+                                        {child.nombre}
+                                    </Link>
+                                    <span className="ml-2 text-sm text-gray-500 font-mono">{child.sigla}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </Card>
+                )}
             </div>
 
             <Card>

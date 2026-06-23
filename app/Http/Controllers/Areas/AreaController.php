@@ -24,13 +24,18 @@ class AreaController extends Controller
     public function index(): Response
     {
         return Inertia::render('Areas/Index', [
-            'areas' => AreaResource::collection($this->areaService->listar(request()->only(['search']))),
+            'areas' => AreaResource::collection($this->areaService->listar(
+                request()->only(['search', 'per_page'])
+            )),
+            'areasTree' => $this->areaService->obtenerArbolCompleto(),
         ]);
     }
 
     public function create(): Response
     {
-        return Inertia::render('Areas/Create');
+        return Inertia::render('Areas/Create', [
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+        ]);
     }
 
     public function store(StoreAreaRequest $request): RedirectResponse
@@ -56,6 +61,7 @@ class AreaController extends Controller
     {
         return Inertia::render('Areas/Edit', [
             'area' => new AreaResource($this->areaService->obtenerConPuestos($area)),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 

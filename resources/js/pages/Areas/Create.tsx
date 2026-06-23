@@ -3,15 +3,31 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
+import type { Area } from '@/types/generated/Tramite';
+
+interface CreateProps {
+    areas?: Area[];
+}
+
+function buildTreeOptions(areaList: Area[], level = 0): { value: string; label: string }[] {
+    return areaList.flatMap((a) => [
+        {
+            value: String(a.id),
+            label: `${'— '.repeat(level)}${a.nombre} (${a.sigla})`,
+        },
+        ...(a.children?.length ? buildTreeOptions(a.children, level + 1) : []),
+    ]);
+}
 
 let puestoKey = 0;
 
-export default function AreasCreate() {
+export default function AreasCreate({ areas: allAreas = [] }: CreateProps) {
     const { data, setData, post, processing, errors } = useForm({
         nombre: '',
         descripcion: '',
         sigla: '',
         estado: true,
+        parent_id: null as number | null,
         puestos: [] as { _key: number; nombre: string; descripcion: string; sigla: string; estado: boolean }[],
     });
 
@@ -54,6 +70,19 @@ export default function AreasCreate() {
                             onChange={(e) => setData('sigla', e.target.value)}
                             error={errors.sigla}
                             placeholder="Ej: ADM"
+                        />
+                    </div>
+                    <div className="max-w-lg">
+                        <Select
+                            label="Área padre"
+                            placeholder="Seleccione un área padre"
+                            options={[
+                                { value: '', label: '— Ninguna (área raíz) —' },
+                                ...buildTreeOptions(allAreas),
+                            ]}
+                            value={String(data.parent_id ?? '')}
+                            onChange={(e) => setData('parent_id', e.target.value ? Number(e.target.value) : null)}
+                            error={errors.parent_id as string}
                         />
                     </div>
                     <div>

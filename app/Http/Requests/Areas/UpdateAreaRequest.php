@@ -27,6 +27,7 @@ class UpdateAreaRequest extends FormRequest
                 Rule::unique('areas', 'sigla')->ignore($areaId),
             ],
             'estado' => ['nullable', 'boolean'],
+            'parent_id' => ['nullable', 'integer', 'exists:areas,id'],
             'puestos' => ['nullable', 'array'],
             'puestos.*.nombre' => ['required', 'string', 'max:255'],
             'puestos.*.descripcion' => ['nullable', 'string', 'max:1000'],
