@@ -28,6 +28,12 @@ interface PuestoActivoRow {
     puesto: PuestoInfo | null;
 }
 
+interface UserRoleRow {
+    id: number;
+    nombre: string;
+    slug: string;
+}
+
 interface UserRow {
     id: number;
     name: string;
@@ -35,6 +41,7 @@ interface UserRow {
     phone: string | null;
     profesion: string | null;
     role: string;
+    roles: UserRoleRow[];
     puesto_activo?: PuestoActivoRow | null;
 }
 
@@ -67,12 +74,15 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     : '—',
         },
         {
-            key: 'role',
-            header: 'Rol',
+            key: 'roles',
+            header: 'Roles',
             render: (u: UserRow) => (
-                <Badge variant={u.role === 'admin' ? 'primary' : 'secondary'}>
-                    {u.role === 'admin' ? 'Admin' : 'Usuario'}
-                </Badge>
+                <div className="flex flex-wrap gap-1">
+                    {(u.roles ?? []).map((r) => (
+                        <Badge key={r.id} variant="primary">{r.nombre}</Badge>
+                    ))}
+                    {(!u.roles || u.roles.length === 0) && <span className="text-xs text-gray-400">—</span>}
+                </div>
             ),
         },
         {

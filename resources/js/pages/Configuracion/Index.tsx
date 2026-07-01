@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useState } from 'react';
 
 interface AreaItem {
@@ -46,9 +47,8 @@ export default function ConfiguracionIndex({ perPage, contadores }: Configuracio
         reiniciarForm.setData('glosa', '');
     };
 
-    const { auth } = usePage().props;
-    const role = (auth?.user as { role?: string } | null)?.role ?? 'user';
-    const esAdmin = role === 'admin';
+    const { can } = usePermissions();
+    const esAdmin = can('areas_puestos', 'consulta');
 
     return (
         <div className="space-y-6">

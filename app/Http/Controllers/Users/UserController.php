@@ -8,7 +8,9 @@ use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\AreaResource;
 use App\Http\Resources\PuestoResource;
+use App\Http\Resources\RolResource;
 use App\Http\Resources\UserResource;
+use App\Models\Rol;
 use App\Models\User;
 use App\Services\AreaService;
 use App\Services\PuestoService;
@@ -28,7 +30,9 @@ class UserController extends Controller
     public function index(): Response
     {
         return Inertia::render('Users/Index', [
-            'users' => UserResource::collection($this->userService->listar(request()->only(['search']))),
+            'users' => UserResource::collection(
+                $this->userService->listar(request()->only(['search']))
+            ),
         ]);
     }
 
@@ -37,6 +41,7 @@ class UserController extends Controller
         return Inertia::render('Users/Create', [
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
+            'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
         ]);
     }
 
@@ -51,16 +56,18 @@ class UserController extends Controller
     public function show(User $user): Response
     {
         return Inertia::render('Users/Show', [
-            'user' => new UserResource($user->load(['funcionario', 'puestoActivo.puesto.area', 'historialPuestos.puesto.area'])),
+            'user' => new UserResource($user->load(['funcionario', 'puestoActivo.puesto.area', 'historialPuestos.puesto.area', 'roles.permisos'])),
         ]);
     }
 
     public function edit(User $user): Response
     {
+        $user->load('puestoActivo.puesto', 'roles');
         return Inertia::render('Users/Edit', [
-            'user' => new UserResource($user->load('puestoActivo.puesto')),
+            'user' => new UserResource($user),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
+            'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
         ]);
     }
 

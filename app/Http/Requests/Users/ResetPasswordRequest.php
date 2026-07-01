@@ -8,7 +8,7 @@ class ResetPasswordRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->role === 'admin';
+        return $this->user()->hasPermission('usuarios', 'edicion');
     }
 
     public function rules(): array

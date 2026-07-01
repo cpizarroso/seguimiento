@@ -8,7 +8,7 @@ class StoreFuncionarioRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return $this->user()?->hasPermission('funcionarios', 'creacion');
     }
 
     public function rules(): array

@@ -6,6 +6,7 @@ import { AlertDialog } from '@/components/ui/AlertDialog';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Table, type Column } from '@/components/ui/Table';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useState } from 'react';
 import type { Tramite, Derivacion } from '@/types/generated/Tramite';
 import type { User } from '@/types/generated/User';
@@ -45,9 +46,12 @@ const derivacionEstadoLabels: Record<string, string> = {
 
 export default function TramitesShow({ tramite, usuarios }: ShowProps) {
     const { auth } = usePage().props;
-    const usuarioId = auth?.user?.id;
+    const usuario = auth?.user as { id: number; role: string; permisos: string[] } | null;
+    const usuarioId = usuario?.id;
+    const { can } = usePermissions();
+    const puedeGestionar = can('tramites', 'edicion');
     const params = new URLSearchParams(window.location.search);
-    const vistaAnterior = params.get('vista') ?? 'bandeja';
+    const vistaAnterior = params.get('vista') ?? 'busqueda';
     const busquedaAnterior = params.get('search') ?? '';
     const [derivarOpen, setDerivarOpen] = useState(false);
     const [recepcionarOpen, setRecepcionarOpen] = useState<number | null>(null);
@@ -66,10 +70,10 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
     const asignadoAMi = tramite.asignado?.id === usuarioId;
     const recepcionadoPorMi = ultimaDerivacion?.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId;
 
-    const puedeDerivar = tramite.estado !== 'finalizado' && asignadoAMi && (tramite.estado === 'iniciado' || recepcionadoPorMi);
-    const puedeObservar = tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
-    const puedeFinalizar = ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
-    const puedeRecepcionar = ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
+    const puedeDerivar = puedeGestionar && tramite.estado !== 'finalizado' && asignadoAMi && (tramite.estado === 'iniciado' || recepcionadoPorMi);
+    const puedeObservar = puedeGestionar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
+    const puedeFinalizar = puedeGestionar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
+    const puedeRecepcionar = puedeGestionar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
     const derivacionColumns: Column<Derivacion>[] = [
         {
             key: 'numero_derivacion',

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
@@ -84,5 +86,35 @@ class User extends Authenticatable
     public function reseteosRealizados(): HasMany
     {
         return $this->hasMany(Reseteo::class, 'reset_por');
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Rol::class, 'role_user');
+    }
+
+    public function permisos(): Collection
+    {
+        return $this->roles->flatMap(fn ($rol) => $rol->permisos);
+    }
+
+    public function hasPermission(string $module, string $action): bool
+    {
+        return $this->permisos()->contains(fn ($permiso) =>
+            $permiso->modulo->slug === $module && $permiso->accion->slug === $action
+        );
+    }
+
+    public function hasAnyRole(array $slugs): bool
+    {
+        return $this->roles->contains(fn ($rol) => in_array($rol->slug, $slugs, true));
+    }
+
+    public function getPermisosSlugAttribute(): array
+    {
+        return $this->permisos()
+            ->map(fn ($p) => "{$p->modulo->slug}.{$p->accion->slug}")
+            ->values()
+            ->toArray();
     }
 }

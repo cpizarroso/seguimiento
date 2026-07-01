@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Rol;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,13 @@ class UserResource extends JsonResource
                 'id' => $this->funcionario->id,
                 'nombre' => $this->funcionario->nombre,
             ]),
+            'role' => $this->role,
+            'roles' => $this->whenLoaded('roles', fn () => $this->roles->map(fn (Rol $r) => [
+                'id' => $r->id,
+                'nombre' => $r->nombre,
+                'slug' => $r->slug,
+                'permiso_ids' => $r->permisos->pluck('id'),
+            ])),
             'puesto_activo' => $this->whenLoaded('puestoActivo', fn () => [
                 'id' => $this->puestoActivo->id,
                 'puesto_id' => $this->puestoActivo->puesto_id,

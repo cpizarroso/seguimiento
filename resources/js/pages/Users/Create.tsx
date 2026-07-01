@@ -18,14 +18,35 @@ interface PuestoOption {
     area_id: number;
 }
 
+interface RolPermiso {
+    id: number;
+    modulo: string;
+    accion: string;
+}
+
+interface RolOption {
+    id: number;
+    nombre: string;
+    slug: string;
+    descripcion: string | null;
+    es_sistema: boolean;
+    permiso_ids: number[];
+    permisos: RolPermiso[];
+}
+
 interface CreateProps {
     areas: { data: AreaOption[] };
     puestos: { data: PuestoOption[] };
+    roles: { data: RolOption[] };
 }
+
+const accionLabels: Record<string, string> = {
+    consulta: 'Consulta', creacion: 'Creación', edicion: 'Edición', baja: 'Baja',
+};
 
 const EMAIL_DOMAIN = '@seguimiento.gob.bo';
 
-export default function UsersCreate({ areas, puestos }: CreateProps) {
+export default function UsersCreate({ areas, puestos, roles }: CreateProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [emailLocal, setEmailLocal] = useState('');
     const { data, setData, post, processing, errors } = useForm({
@@ -34,10 +55,18 @@ export default function UsersCreate({ areas, puestos }: CreateProps) {
         phone: '',
         profesion: '',
         password: '',
-        role: 'user',
+        role_ids: [] as number[],
         area_id: '',
         puesto_id: '',
     });
+
+    const toggleRole = (id: number) => {
+        setData('role_ids',
+            data.role_ids.includes(id)
+                ? data.role_ids.filter((rid) => rid !== id)
+                : [...data.role_ids, id],
+        );
+    };
 
     const generarPassword = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
@@ -101,16 +130,41 @@ export default function UsersCreate({ areas, puestos }: CreateProps) {
                             onChange={(e) => setData('profesion', e.target.value)}
                             error={errors.profesion}
                         />
-                        <Select
-                            label="Rol"
-                            options={[
-                                { value: 'user', label: 'Usuario' },
-                                { value: 'admin', label: 'Administrador' },
-                            ]}
-                            value={data.role}
-                            onChange={(e) => setData('role', e.target.value)}
-                            error={errors.role}
-                        />
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-medium text-patuju-green mb-2">Roles</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {roles.data.map((rol) => (
+                                    <label
+                                        key={rol.id}
+                                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                                            data.role_ids.includes(rol.id)
+                                                ? 'border-patuju-green bg-patuju-green/5'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-patuju-green'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <input
+                                                type="checkbox"
+                                                className="accent-patuju-green"
+                                                checked={data.role_ids.includes(rol.id)}
+                                                onChange={() => toggleRole(rol.id)}
+                                            />
+                                            <span className="font-medium text-sm">{rol.nombre}</span>
+                                        </div>
+                                        <div className="ml-6 flex flex-wrap gap-1">
+                                            {rol.permisos.map((p) => (
+                                                <span key={p.id} className="text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                                                    {p.modulo}.{accionLabels[p.accion] ?? p.accion}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                            {errors.role_ids && (
+                                <p className="text-sm text-patuju-red mt-1">{errors.role_ids}</p>
+                            )}
+                        </div>
                         <div className="flex flex-col justify-end">
                             <label className="block text-sm font-medium text-patuju-green mb-1">Contraseña</label>
                             <div className="flex gap-2">

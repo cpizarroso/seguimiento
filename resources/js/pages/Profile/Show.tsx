@@ -39,6 +39,12 @@ interface FuncionarioData {
     nombre: string;
 }
 
+interface UserRoleData {
+    id: number;
+    nombre: string;
+    slug: string;
+}
+
 interface UserProfile {
     id: number;
     name: string;
@@ -46,6 +52,7 @@ interface UserProfile {
     phone: string | null;
     profesion: string | null;
     role: string;
+    roles: UserRoleData[];
     funcionario: FuncionarioData | null;
     puesto_activo: PuestoActivoData | null;
     historial_puestos: HistorialPuestoRow[] | null;
@@ -132,9 +139,14 @@ export default function ProfileShow({ user }: ProfileProps) {
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Rol</dt>
                         <dd>
-                            <Badge variant={user.role === 'admin' ? 'primary' : 'secondary'}>
-                                {user.role === 'admin' ? 'Admin' : 'Usuario'}
-                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                                {(user.roles ?? []).map((r) => (
+                                    <Badge key={r.id} variant="primary">{r.nombre}</Badge>
+                                ))}
+                                {(!user.roles || user.roles.length === 0) && (
+                                    <Badge variant="secondary">Sin rol</Badge>
+                                )}
+                            </div>
                         </dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">

@@ -82,7 +82,7 @@ class FuncionarioController extends Controller
 
     public function destroy(Request $request, Funcionario $funcionario): RedirectResponse
     {
-        if ($request->user()?->role !== 'admin') {
+        if (! $request->user()?->hasPermission('funcionarios', 'baja')) {
             return back()->with('error', 'No tienes permiso para eliminar funcionarios.');
         }
 

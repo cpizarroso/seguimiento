@@ -78,4 +78,14 @@ class Tramite extends Model
     {
         return $this->belongsTo(User::class, 'finalizado_por');
     }
+
+    public function getDiasTranscurridosAttribute(): int
+    {
+        $desde = $this->fecha ?? $this->created_at;
+        $hasta = $this->estado === 'finalizado' && $this->fecha_finalizacion
+            ? $this->fecha_finalizacion
+            : now();
+
+        return (int) $desde->diffInDays($hasta);
+    }
 }

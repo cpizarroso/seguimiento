@@ -7,13 +7,30 @@ interface AreaRow {
     total: number;
 }
 
+interface UrgenteItem {
+    id: number;
+    numero_completo: string;
+    descripcion: string;
+    dias: number;
+    area_sigla: string;
+    estado: string;
+}
+
+interface UrgentesData {
+    tres_dias: number;
+    cuatro_dias: number;
+    cinco_dias: number;
+    lista: UrgenteItem[];
+}
+
 interface ReporteProps {
     total_tramites: number;
     por_estado: Record<string, number>;
     iniciados_por_dia: Record<number, number>;
     finalizados_por_dia: Record<number, number>;
     tramites_por_area: AreaRow[];
-    auth_user: { id: number; name: string; role: string };
+    tramites_urgentes: UrgentesData;
+    auth_user: { id: number; name: string; role: string; permisos: string[] };
     filtro_user_id: number;
     tramites_por_mes: Record<string, number>;
 }
@@ -37,11 +54,12 @@ export default function Reporte({
     iniciados_por_dia,
     finalizados_por_dia,
     tramites_por_area,
+    tramites_urgentes,
     auth_user,
     filtro_user_id,
     tramites_por_mes,
 }: ReporteProps) {
-    const esAdmin = auth_user.role === 'admin';
+    const esAdmin = auth_user.permisos?.includes('usuarios.consulta') ?? false;
     const esMiReporte = filtro_user_id === auth_user.id;
     const titulo = esAdmin && !esMiReporte
         ? `Reporte — Usuario #${filtro_user_id}`
@@ -76,6 +94,52 @@ export default function Reporte({
                     </Card>
                 ))}
             </div>
+
+            {tramites_urgentes.lista.length > 0 && (
+                <Card>
+                    <h3 className="text-lg font-semibold text-patuju-green mb-4">Trámites Urgentes</h3>
+                    <div className="flex gap-4 mb-4">
+                        <div className="flex-1 text-center p-3 rounded-lg bg-patuju-yellow/10 border border-patuju-yellow/30">
+                            <p className="text-2xl font-bold text-patuju-yellow">{tramites_urgentes.tres_dias}</p>
+                            <p className="text-xs text-gray-600">3+ días</p>
+                        </div>
+                        <div className="flex-1 text-center p-3 rounded-lg bg-patuju-orange/10 border border-patuju-orange/30">
+                            <p className="text-2xl font-bold text-patuju-orange">{tramites_urgentes.cuatro_dias}</p>
+                            <p className="text-xs text-gray-600">4+ días</p>
+                        </div>
+                        <div className="flex-1 text-center p-3 rounded-lg bg-patuju-red/10 border border-patuju-red/30">
+                            <p className="text-2xl font-bold text-patuju-red">{tramites_urgentes.cinco_dias}</p>
+                            <p className="text-xs text-gray-600">5+ días</p>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        {tramites_urgentes.lista.map((item) => (
+                            <a
+                                key={item.id}
+                                href={`/tramites/${item.id}`}
+                                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-patuju-green truncate">{item.numero_completo}</p>
+                                    <p className="text-xs text-gray-500 truncate">{item.descripcion}</p>
+                                </div>
+                                <div className="flex items-center gap-2 ml-3">
+                                    {item.area_sigla && (
+                                        <span className="text-xs text-gray-400">{item.area_sigla}</span>
+                                    )}
+                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                                        item.dias >= 5 ? 'bg-patuju-red/10 text-patuju-red'
+                                        : item.dias >= 4 ? 'bg-patuju-orange/10 text-patuju-orange'
+                                        : 'bg-patuju-yellow/10 text-patuju-yellow'
+                                    }`}>
+                                        {item.dias}
+                                    </span>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                </Card>
+            )}
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <SemanalChart

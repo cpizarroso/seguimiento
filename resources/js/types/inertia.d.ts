@@ -4,6 +4,7 @@ interface AuthUser {
     email: string;
     role: string;
     funcionario_id: number | null;
+    permisos: string[];
 }
 
 declare module '@inertiajs/react' {

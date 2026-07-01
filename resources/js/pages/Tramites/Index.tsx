@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Table } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { Tramite, PaginatedData } from '@/types/generated/Tramite';
 import { useState } from 'react';
 
@@ -33,8 +34,8 @@ const estadoLabels: Record<string, string> = {
 };
 
 export default function TramitesIndex({ tramites }: TramitesIndexProps) {
-    const { url, props } = usePage();
-    const role = (props.auth?.user as { role?: string } | null)?.role ?? 'user';
+    const { url } = usePage();
+    const { can } = usePermissions();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
     const [vista, setVista] = useState(params.get('vista') ?? 'busqueda');
@@ -111,6 +112,23 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
         { key: 'numero_diamante', header: 'Diamante', render: (t: Tramite) => resaltar(t.numero_diamante) },
         { key: 'ultima_respuesta', header: 'Respuesta', render: (t: Tramite) => resaltar(t.ultima_respuesta) },
         {
+            key: 'dias_transcurridos',
+            header: 'Días',
+            cellClassName: 'text-center',
+            render: (t: Tramite) => {
+                const d = t.dias_transcurridos ?? 0;
+                const color = d >= 5 ? 'bg-patuju-red/10 text-patuju-red border-patuju-red'
+                    : d >= 4 ? 'bg-patuju-orange/10 text-patuju-orange border-patuju-orange'
+                    : d >= 3 ? 'bg-patuju-yellow/10 text-patuju-yellow border-patuju-yellow'
+                    : 'text-gray-500';
+                return (
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${color}`}>
+                        {d}
+                    </span>
+                );
+            },
+        },
+        {
             key: 'estado',
             header: 'Estado',
             render: (t: Tramite) => (
@@ -125,7 +143,7 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Trámites</h2>
-                {role === 'admin' && (
+                {can('tramites', 'creacion') && (
                     <Link href="/tramites/create">
                         <Button>Nuevo Trámite</Button>
                     </Link>

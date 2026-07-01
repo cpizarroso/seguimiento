@@ -77,6 +77,35 @@ class ReporteService
         return $query->get()->toArray();
     }
 
+    public function tramitesUrgentes(?int $userId = null): array
+    {
+        $tramites = Tramite::with('area:id,sigla,nombre')
+            ->where('estado', '!=', 'finalizado')
+            ->when($userId, fn ($q) => $q->where('creado_por', $userId))
+            ->get()
+            ->map(fn ($t) => $t->setAttribute('dias', (int) ($t->fecha ?? $t->created_at)->diffInDays(now())));
+
+        $filtrar = fn ($minDias) => $tramites->filter(fn ($t) => $t->dias >= $minDias);
+
+        return [
+            'tres_dias' => $filtrar(3)->count(),
+            'cuatro_dias' => $filtrar(4)->count(),
+            'cinco_dias' => $filtrar(5)->count(),
+            'lista' => $filtrar(3)
+                ->sortByDesc('dias')
+                ->take(10)
+                ->values()
+                ->map(fn ($t) => [
+                    'id' => $t->id,
+                    'numero_completo' => $t->numero_completo,
+                    'descripcion' => \Illuminate\Support\Str::limit($t->descripcion, 80),
+                    'dias' => $t->dias,
+                    'area_sigla' => $t->area?->sigla,
+                    'estado' => $t->estado,
+                ]),
+        ];
+    }
+
     public function tramitesPorArea(?int $funcionarioId = null): array
     {
         return Tramite::selectRaw('areas.nombre as name, COUNT(*) as total')

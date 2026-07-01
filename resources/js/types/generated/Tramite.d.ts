@@ -11,6 +11,7 @@ export interface Tramite {
     numero_diamante: string | null;
     estado: string;
     ultima_respuesta: string | null;
+    dias_transcurridos?: number;
     area: Area | null;
     area_id: number;
     creador: User | null;

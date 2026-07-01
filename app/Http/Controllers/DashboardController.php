@@ -22,6 +22,7 @@ class DashboardController extends Controller
             ...$this->reporteService->tramitesPorDiaSemana($funcionarioId),
             'tramites_por_funcionario' => $this->reporteService->tramitesPorFuncionario(),
             'tramites_por_area' => $this->reporteService->tramitesPorArea($funcionarioId),
+            'tramites_urgentes' => $this->reporteService->tramitesUrgentes($funcionarioId),
             'funcionarios' => User::orderBy('name')->get(['id', 'name']),
             'filtro_funcionario_id' => $funcionarioId,
         ]);

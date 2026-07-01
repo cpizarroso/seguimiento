@@ -31,6 +31,7 @@ class TramiteResource extends JsonResource
             'asignado' => new UserResource($this->whenLoaded('asignado')),
             'derivaciones' => DerivacionResource::collection($this->whenLoaded('derivaciones')),
             'created_at' => $this->created_at?->format('d/m/Y H:i'),
+            'dias_transcurridos' => $this->dias_transcurridos,
         ];
     }
 }

@@ -38,6 +38,7 @@ class TramiteService
                     );
                 }
             })
+            ->when($vista === 'busqueda' && empty($filtros['search']), fn ($q) => $q->whereRaw('0 = 1'))
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->whereRaw("CONCAT(LPAD(numero_tramite, 4, '0'), '/', year) LIKE ?", ["%{$v}%"])

@@ -20,7 +20,8 @@ class UpdateUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'profesion' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:5'],
-            'role' => ['required', 'string', 'in:admin,user'],
+            'role_ids' => ['nullable', 'array'],
+            'role_ids.*' => ['exists:roles,id'],
             'puesto_id' => ['nullable', 'exists:puestos,id'],
         ];
     }

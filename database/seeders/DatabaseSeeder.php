@@ -5,9 +5,11 @@ namespace Database\Seeders;
 use App\Models\Area;
 use App\Models\ContadorTramite;
 use App\Models\Puesto;
+use App\Models\Rol;
 use App\Models\Tramite;
 use App\Models\User;
 use App\Models\UserPuesto;
+use Database\Seeders\RolesYPermisosSeeder;
 use Database\Factories\DerivacionFactory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -25,6 +27,12 @@ class DatabaseSeeder extends Seeder
             'derivaciones',
             'tramites',
             'contador_tramites',
+            'rol_permiso',
+            'role_user',
+            'permisos',
+            'roles',
+            'acciones',
+            'modulos',
 
             'users',
             'funcionarios',
@@ -59,6 +67,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->limpiarTablas();
+
+        $this->call(RolesYPermisosSeeder::class);
 
         $this->call(AreaSeeder::class);
 
@@ -121,7 +131,29 @@ class DatabaseSeeder extends Seeder
 
         $this->call(TramiteSeeder::class);
 
+        $this->sincronizarRoles();
+
         $this->sincronizarContadores();
+    }
+
+    private function sincronizarRoles(): void
+    {
+        $adminRol = Rol::where('slug', 'admin')->first();
+        $userRol = Rol::where('slug', 'user')->first();
+        $secretariaRol = Rol::where('slug', 'secretaria')->first();
+        $jefeRol = Rol::where('slug', 'jefe')->first();
+
+        foreach (User::all() as $u) {
+            $rolId = match ($u->role) {
+                'admin' => $adminRol?->id,
+                'secretaria' => $secretariaRol?->id,
+                'jefe' => $jefeRol?->id,
+                default => $userRol?->id,
+            };
+            if ($rolId) {
+                $u->roles()->sync([$rolId]);
+            }
+        }
     }
 
     private function sincronizarContadores(): void

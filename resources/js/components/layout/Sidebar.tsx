@@ -5,17 +5,18 @@ interface MenuItem {
     label: string;
     href: string;
     icon: string;
-    adminOnly?: boolean;
+    permission?: string;
 }
 
 const allMenuItems: MenuItem[] = [
-    { label: 'Dashboard', href: '/dashboard', icon: '📊' },
-    { label: 'Trámites', href: '/tramites', icon: '📋' },
-    { label: 'Funcionarios', href: '/funcionarios', icon: '👥', adminOnly: true },
-    { label: 'Áreas y Puestos', href: '/areas', icon: '🗂️', adminOnly: true },
-    { label: 'Reporte', href: '/reporte', icon: '📈' },
-    { label: 'Configuración', href: '/configuracion', icon: '⚙️' },
-    { label: 'Usuarios', href: '/users', icon: '🔐', adminOnly: true },
+    { label: 'Dashboard', href: '/dashboard', icon: '📊', permission: 'dashboard' },
+    { label: 'Trámites', href: '/tramites', icon: '📋', permission: 'tramites' },
+    { label: 'Funcionarios', href: '/funcionarios', icon: '👥', permission: 'funcionarios' },
+    { label: 'Áreas y Puestos', href: '/areas', icon: '🗂️', permission: 'areas_puestos' },
+    { label: 'Reporte', href: '/reporte', icon: '📈', permission: 'reporte' },
+    { label: 'Configuración', href: '/configuracion', icon: '⚙️', permission: 'configuracion' },
+    { label: 'Usuarios', href: '/users', icon: '🔐', permission: 'usuarios' },
+    { label: 'Roles', href: '/roles', icon: '🛡️', permission: 'roles' },
 ];
 
 interface SidebarProps {
@@ -28,10 +29,11 @@ interface SidebarProps {
 export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
     const { url, props } = usePage();
     const { theme, toggle } = useTheme();
-    const role = (props.auth?.user as { role?: string } | null)?.role ?? 'user';
+    const authUser = props.auth?.user as { role?: string; permisos?: string[] } | null;
+    const permisos = authUser?.permisos ?? [];
 
     const menuItems = allMenuItems.filter((item) => {
-        if (item.adminOnly) return role === 'admin';
+        if (item.permission) return permisos.includes(`${item.permission}.consulta`);
         return true;
     });
 

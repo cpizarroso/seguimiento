@@ -12,7 +12,7 @@ class UserService
 {
     public function listar(array $filtros = []): LengthAwarePaginator
     {
-        return User::with(['funcionario', 'puestoActivo.puesto.area'])
+        return User::with(['funcionario', 'puestoActivo.puesto.area', 'roles'])
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
                     $query->where('name', 'like', "%{$v}%")
@@ -26,7 +26,8 @@ class UserService
     public function crear(array $data): User
     {
         $puestoId = $data['puesto_id'] ?? null;
-        unset($data['puesto_id']);
+        $roleIds = $data['role_ids'] ?? [];
+        unset($data['puesto_id'], $data['role_ids']);
 
         $user = User::create([
             'name' => $data['name'],
@@ -34,9 +35,13 @@ class UserService
             'phone' => $data['phone'] ?? null,
             'profesion' => $data['profesion'] ?? null,
             'password' => Hash::make($data['password']),
-            'role' => $data['role'] ?? 'user',
+            'role' => 'user',
             'funcionario_id' => $data['funcionario_id'] ?? null,
         ]);
+
+        if (! empty($roleIds)) {
+            $user->roles()->sync($roleIds);
+        }
 
         if ($puestoId) {
             UserPuesto::create([
@@ -52,14 +57,14 @@ class UserService
     public function actualizar(User $user, array $data): User
     {
         $puestoId = $data['puesto_id'] ?? null;
-        unset($data['puesto_id']);
+        $roleIds = $data['role_ids'] ?? [];
+        unset($data['puesto_id'], $data['role_ids']);
 
         $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? $user->phone,
             'profesion' => $data['profesion'] ?? $user->profesion,
-            'role' => $data['role'] ?? $user->role,
             'funcionario_id' => $data['funcionario_id'] ?? $user->funcionario_id,
         ];
 
@@ -68,6 +73,10 @@ class UserService
         }
 
         $user->update($updateData);
+
+        if (isset($roleIds)) {
+            $user->roles()->sync($roleIds);
+        }
 
         $puestoActivo = $user->puestoActivo;
 

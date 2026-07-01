@@ -9,7 +9,7 @@ class UpdateFuncionarioRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return $this->user()?->hasPermission('funcionarios', 'edicion');
     }
 
     public function rules(): array

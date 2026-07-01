@@ -2,12 +2,17 @@
 
 use App\Models\Area;
 use App\Models\Funcionario;
+use App\Models\Rol;
 use App\Models\Tramite;
 use App\Models\User;
+use Database\Seeders\RolesYPermisosSeeder;
 
 beforeEach(function () {
     $this->artisan('migrate');
-    $this->admin = User::factory()->create(['role' => 'admin', 'name' => 'Admin', 'email' => 'admin@test.com']);
+    $this->seed(RolesYPermisosSeeder::class);
+    $this->admin = User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com']);
+    $adminRol = Rol::where('slug', 'admin')->first();
+    $this->admin->roles()->sync([$adminRol->id]);
     $this->actingAs($this->admin);
 });
 
@@ -101,7 +106,9 @@ it('puede eliminar funcionario aunque tenga trámites como creador (relación co
 });
 
 it('no permite acceso a usuarios no admin', function () {
-    $nonAdmin = User::factory()->create(['role' => 'user']);
+    $userRol = Rol::where('slug', 'user')->first();
+    $nonAdmin = User::factory()->create();
+    $nonAdmin->roles()->sync([$userRol->id]);
     $this->actingAs($nonAdmin);
     $funcionario = Funcionario::factory()->create();
 
