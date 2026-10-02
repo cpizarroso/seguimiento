@@ -17,6 +17,7 @@ class StoreTramiteRequest extends FormRequest
             'descripcion' => ['required', 'string', 'max:5000'],
             'numero_diamante' => ['nullable', 'string', 'max:255'],
             'area_id' => ['required', 'exists:areas,id'],
+            'urgente' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -18,6 +18,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public const ROL_ADMIN = 'admin';
+
     protected $fillable = [
         'name',
         'email',
@@ -100,6 +102,10 @@ class User extends Authenticatable
 
     public function hasPermission(string $module, string $action): bool
     {
+        if ($this->hasAnyRole([self::ROL_ADMIN])) {
+            return true;
+        }
+
         return $this->permisos()->contains(fn ($permiso) =>
             $permiso->modulo->slug === $module && $permiso->accion->slug === $action
         );
@@ -112,6 +118,14 @@ class User extends Authenticatable
 
     public function getPermisosSlugAttribute(): array
     {
+        if ($this->hasAnyRole([self::ROL_ADMIN])) {
+            return Permiso::with(['modulo', 'accion'])
+                ->get()
+                ->map(fn ($p) => "{$p->modulo->slug}.{$p->accion->slug}")
+                ->values()
+                ->toArray();
+        }
+
         return $this->permisos()
             ->map(fn ($p) => "{$p->modulo->slug}.{$p->accion->slug}")
             ->values()

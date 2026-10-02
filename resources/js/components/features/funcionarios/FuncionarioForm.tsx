@@ -1,50 +1,66 @@
 import type { UseFormReturn } from '@inertiajs/react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import type { Area } from '@/types/generated/Tramite';
+import type { Area, Puesto } from '@/types/generated/Tramite';
 
 type FormType = ReturnType<UseFormReturn<Record<string, string>>>;
 
 interface FuncionarioFormProps {
     form: FormType;
-    areas: { data: Area[] };
+    areas?: { data: Area[] };
+    puestos?: { data: Puesto[] };
     isEditing?: boolean;
     submitUrl: string;
+    onSuccess?: () => void;
+    onCancel?: () => void;
 }
 
-export function FuncionarioForm({ form, areas, isEditing, submitUrl }: FuncionarioFormProps) {
+export function FuncionarioForm({ form, areas, puestos, isEditing, submitUrl, onSuccess, onCancel }: FuncionarioFormProps) {
     const { data, setData, post, put, processing, errors } = form;
     const method = isEditing ? put : post;
 
+    const puestosFiltrados = useMemo(
+        () => (data.area_id ? (puestos?.data ?? []).filter((p) => p.area_id === Number(data.area_id)) : (puestos?.data ?? [])),
+        [data.area_id, puestos?.data],
+    );
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        method(submitUrl);
+        method(submitUrl, onSuccess ? { onSuccess } : undefined);
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                Los campos marcados con <span className="text-patuju-red font-semibold">*</span> son obligatorios.
+            </p>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input
+                    label="Cédula de Identidad"
+                    required
+                    value={data.cedula_identidad}
+                    onChange={(e) => setData('cedula_identidad', e.target.value)}
+                    error={errors.cedula_identidad}
+                />
+                <Input
                     label="Nombre"
+                    required
                     value={data.nombre}
                     onChange={(e) => setData('nombre', e.target.value)}
                     error={errors.nombre}
-                />
-                <Input
-                    label="Apellidos"
-                    value={data.apellidos}
-                    onChange={(e) => setData('apellidos', e.target.value)}
-                    error={errors.apellidos}
                 />
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input
-                    label="Cédula de Identidad xxx"
-                    value={data.cedula_identidad}
-                    onChange={(e) => setData('cedula_identidad', e.target.value)}
-                    error={errors.cedula_identidad}
+                    label="Apellidos"
+                    required
+                    value={data.apellidos}
+                    onChange={(e) => setData('apellidos', e.target.value)}
+                    error={errors.apellidos}
                 />
                 <Input
                     label="Nro. Teléfono"
@@ -77,45 +93,29 @@ export function FuncionarioForm({ form, areas, isEditing, submitUrl }: Funcionar
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Select
                     label="Área"
+                    required
                     placeholder="Seleccione un área"
-                    options={(areas.data ?? []).map((a) => ({ value: String(a.id), label: a.nombre }))}
+                    options={(areas?.data ?? []).map((a) => ({ value: String(a.id), label: a.nombre }))}
                     value={data.area_id}
                     onChange={(e) => setData('area_id', e.target.value)}
                     error={errors.area_id}
                 />
-                <Input
-                    label="Nivel"
-                    value={data.nivel}
-                    onChange={(e) => setData('nivel', e.target.value)}
-                    error={errors.nivel}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                    label="Fecha de Ingreso"
-                    type="date"
-                    value={data.fecha_ingreso}
-                    onChange={(e) => setData('fecha_ingreso', e.target.value)}
-                    error={errors.fecha_ingreso}
-                />
                 <Select
-                    label="Estado"
-                    options={[
-                        { value: 'activo', label: 'Activo' },
-                        { value: 'inactivo', label: 'Inactivo' },
-                        { value: 'baja', label: 'Baja' },
-                    ]}
-                    value={data.estado}
-                    onChange={(e) => setData('estado', e.target.value)}
-                    error={errors.estado}
+                    label="Puesto"
+                    required
+                    placeholder={data.area_id ? 'Seleccione un puesto' : 'Seleccione un área primero'}
+                    options={puestosFiltrados.map((p) => ({ value: String(p.id), label: `${p.nombre} (${p.sigla})` }))}
+                    value={data.puesto_id}
+                    onChange={(e) => setData('puesto_id', e.target.value)}
+                    error={errors.puesto_id}
+                    disabled={!data.area_id}
                 />
             </div>
 
             <div>
-                <label htmlFor="descripcion" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Descripción</label>
+                <label htmlFor="direccion" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Dirección</label>
                 <textarea
-                    id="descripcion"
+                    id="direccion"
                     rows={2}
                     className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
                     value={data.direccion}
@@ -128,7 +128,7 @@ export function FuncionarioForm({ form, areas, isEditing, submitUrl }: Funcionar
                 <Button type="submit" loading={processing}>
                     {isEditing ? 'Actualizar' : 'Guardar'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => window.history.back()}>
+                <Button type="button" variant="secondary" onClick={() => (onCancel ? onCancel() : window.history.back())}>
                     Cancelar
                 </Button>
             </div>

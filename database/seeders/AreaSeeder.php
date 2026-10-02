@@ -11,62 +11,72 @@ class AreaSeeder extends Seeder
     public function run(): void
     {
         $sempla = Area::create([
-            'nombre' => 'Secretaria Municipal de Planificación',
+            'nombre' => 'SECRETARIA MUNICIPAL DE PLANIFICACION',
             'sigla' => 'SEMPLA',
-            'descripcion' => 'Órgano encargado de la planificación municipal, coordinación de políticas públicas y gestión del desarrollo institucional',
+            'codigo' => 'SMPL',
+            'descripcion' => 'Entidad encargada de la planificación del desarrollo municipal, la formulación de políticas, planes y programas, así como de la coordinación y seguimiento de la gestión pública local',
             'estado' => true,
         ]);
 
-        $adm = Area::create([
-            'nombre' => 'Administración',
-            'sigla' => 'ADM',
-            'descripcion' => 'Gestión administrativa, recursos humanos y servicios generales',
-            'estado' => true,
-            'parent_id' => $sempla->id,
-        ]);
-
-        $legal = Area::create([
-            'nombre' => 'Legal',
-            'sigla' => 'LEG',
-            'descripcion' => 'Asesoría jurídica, procesos legales y normativa interna',
-            'estado' => true,
-            'parent_id' => $sempla->id,
-        ]);
-
-        $dot = Area::create([
-            'nombre' => 'Dirección de Ordenamiento Territorial',
-            'sigla' => 'DOT',
-            'descripcion' => 'Planificación y gestión del ordenamiento territorial municipal',
-            'estado' => true,
-            'parent_id' => $sempla->id,
-        ]);
-
-        $puestos = [
-            'SEMPLA' => [
-                ['nombre' => 'Secretaria', 'sigla' => 'SEM-SEC', 'descripcion' => 'Apoyo administrativo y documental', 'estado' => true],
-                ['nombre' => 'Profesional', 'sigla' => 'SEM-PRO', 'descripcion' => 'Gestión de procesos técnicos', 'estado' => true],
-                ['nombre' => 'Jefe de Área', 'sigla' => 'SEM-JEF', 'descripcion' => 'Coordinación de planificación', 'estado' => true],
+        $direcciones = [
+            [
+                'nombre' => 'DIRECCION LEGAL Y ADMINISTRATIVA',
+                'sigla' => 'DLA',
+                'codigo' => 'DLA',
+                'descripcion' => 'Encargada del asesoramiento jurídico, la gestión administrativa, financiera y de recursos humanos de la secretaría',
             ],
-            'ADM' => [
-                ['nombre' => 'Secretaria', 'sigla' => 'ADM-SEC', 'descripcion' => 'Apoyo administrativo', 'estado' => true],
-                ['nombre' => 'Profesional', 'sigla' => 'ADM-PRO', 'descripcion' => 'Gestión de procesos administrativos', 'estado' => true],
-                ['nombre' => 'Jefe de Área', 'sigla' => 'ADM-JEF', 'descripcion' => 'Coordinación del área administrativa', 'estado' => true],
+            [
+                'nombre' => 'DIRECCION DE ORDENAMIENTO TERRITORIAL',
+                'sigla' => 'DOT',
+                'codigo' => 'DOT',
+                'descripcion' => 'Encargada de la planificación, regulación y control del uso del suelo y del ordenamiento territorial del municipio',
             ],
-            'LEG' => [
-                ['nombre' => 'Secretaria', 'sigla' => 'LEG-SEC', 'descripcion' => 'Apoyo administrativo legal', 'estado' => true],
-                ['nombre' => 'Profesional', 'sigla' => 'LEG-PRO', 'descripcion' => 'Análisis y dictámenes legales', 'estado' => true],
-                ['nombre' => 'Jefe de Área', 'sigla' => 'LEG-JEF', 'descripcion' => 'Coordinación del área legal', 'estado' => true],
+            [
+                'nombre' => 'DIRECCION DE REGULACION URBANA',
+                'sigla' => 'DRU',
+                'codigo' => 'DRU',
+                'descripcion' => 'Encargada de la regulación, autorización y fiscalización de las edificaciones y actividades urbanas',
             ],
-            'DOT' => [
-                ['nombre' => 'Departamento de Cartografía', 'sigla' => 'DOT-CAR', 'descripcion' => 'Elaboración y actualización de cartografía municipal', 'estado' => true],
-                ['nombre' => 'Departamento de Topografía', 'sigla' => 'DOT-TOP', 'descripcion' => 'Levantamientos topográficos y georreferenciación', 'estado' => true],
+            [
+                'nombre' => 'DIRECCION DE PROYECTOS INTEGRALES',
+                'sigla' => 'DPI',
+                'codigo' => 'DPI',
+                'descripcion' => 'Encargada de la formulación, evaluación y seguimiento de los proyectos integrales de inversión municipal',
             ],
         ];
 
-        foreach ([$sempla, $adm, $legal, $dot] as $area) {
-            foreach ($puestos[$area->sigla] as $puestoData) {
-                $puestoData['area_id'] = $area->id;
-                Puesto::create($puestoData);
+        $puestosBase = [
+            ['nombre' => 'Secretaria', 'sufijo' => 'SEC', 'descripcion' => 'Apoyo administrativo, atención al público y gestión documental'],
+            ['nombre' => 'Profesional', 'sufijo' => 'PRO', 'descripcion' => 'Análisis, elaboración de informes y gestión de procesos técnicos'],
+            ['nombre' => 'Mensajero', 'sufijo' => 'MEN', 'descripcion' => 'Distribución de correspondencia y apoyo logístico'],
+            ['nombre' => 'Jefe', 'sufijo' => 'JEF', 'descripcion' => 'Dirección, coordinación y supervisión del personal y actividades'],
+            ['nombre' => 'Asistente', 'sufijo' => 'ASI', 'descripcion' => 'Apoyo operativo y asistencia en las tareas del área'],
+        ];
+
+        $areas = [$sempla];
+
+        foreach ($direcciones as $direccion) {
+            $areas[] = Area::create([
+                'nombre' => $direccion['nombre'],
+                'sigla' => $direccion['sigla'],
+                'codigo' => $direccion['codigo'],
+                'descripcion' => $direccion['descripcion'],
+                'estado' => true,
+                'parent_id' => $sempla->id,
+            ]);
+        }
+
+        foreach ($areas as $area) {
+            $n = 1;
+            foreach ($puestosBase as $puesto) {
+                Puesto::create([
+                    'nombre' => $puesto['nombre'],
+                    'sigla' => "{$area->sigla}-{$puesto['sufijo']}",
+                    'codigo' => sprintf('%s-%02d', $area->codigo, $n++),
+                    'descripcion' => $puesto['descripcion'],
+                    'estado' => true,
+                    'area_id' => $area->id,
+                ]);
             }
         }
 

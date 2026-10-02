@@ -1,9 +1,11 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
+import { RolForm, type PermisoOption } from '@/components/features/roles/RolForm';
 import type { PaginatedData } from '@/types/generated/Tramite';
 
 interface RolPermiso {
@@ -23,6 +25,7 @@ interface RolRow {
 
 interface RolesIndexProps {
     roles: { data: RolRow[] };
+    permisos_agrupados?: Record<string, PermisoOption[]>;
 }
 
 const accionLabels: Record<string, string> = {
@@ -32,9 +35,17 @@ const accionLabels: Record<string, string> = {
     baja: 'Baja',
 };
 
-export default function RolesIndex({ roles }: RolesIndexProps) {
+export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProps) {
     const [deleting, setDeleting] = useState<number | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
     const data = Array.isArray(roles) ? roles : roles.data ?? [];
+
+    const createForm = useForm({
+        nombre: '',
+        slug: '',
+        descripcion: '',
+        permiso_ids: [] as number[],
+    });
 
     const handleDelete = (id: number) => {
         if (!confirm('¿Eliminar este rol? Los usuarios con este rol perderán sus permisos.')) return;
@@ -108,9 +119,7 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-patuju-green">Roles</h2>
-                <Link href="/roles/create">
-                    <Button>Nuevo Rol</Button>
-                </Link>
+                <Button onClick={() => setCreateOpen(true)}>Nuevo Rol</Button>
             </div>
 
             <Card>
@@ -121,6 +130,19 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
                     emptyMessage="No hay roles registrados."
                 />
             </Card>
+
+            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo Rol">
+                <RolForm
+                    form={createForm}
+                    permisosAgrupados={permisos_agrupados}
+                    submitUrl="/roles"
+                    onSuccess={() => {
+                        setCreateOpen(false);
+                        createForm.reset();
+                    }}
+                    onCancel={() => setCreateOpen(false)}
+                />
+            </Modal>
         </div>
     );
 }

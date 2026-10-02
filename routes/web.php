@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Actuaciones\ActuacionController;
 use App\Http\Controllers\Areas\AreaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Configuracion\ConfiguracionController;
@@ -35,6 +36,8 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
         Route::get('tramites/{tramite}', [TramiteController::class, 'show'])->name('tramites.show');
 
         Route::middleware('permission:tramites,edicion')->group(function () {
+            Route::get('tramites/{tramite}/edit', [TramiteController::class, 'edit'])->name('tramites.edit');
+            Route::put('tramites/{tramite}', [TramiteController::class, 'update'])->name('tramites.update');
             Route::put('tramites/{tramite}/estado', [TramiteController::class, 'updateEstado'])
                 ->name('tramites.update-estado');
             Route::post('tramites/{tramite}/derivar', [DerivacionController::class, 'derivar'])
@@ -43,6 +46,10 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
                 ->name('derivaciones.recepcionar');
             Route::put('derivaciones/{derivacion}/rechazar', [DerivacionController::class, 'rechazar'])
                 ->name('derivaciones.rechazar');
+            Route::post('tramites/{tramite}/actuaciones', [ActuacionController::class, 'store'])
+                ->name('actuaciones.store');
+            Route::delete('actuaciones/{actuacion}', [ActuacionController::class, 'destroy'])
+                ->name('actuaciones.destroy');
         });
 
         Route::middleware('permission:tramites,baja')->group(function () {
@@ -65,6 +72,8 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
 
         Route::middleware('permission:funcionarios')->group(function () {
             Route::resource('funcionarios', FuncionarioController::class);
+            Route::put('funcionarios/{funcionario}/puesto', [FuncionarioController::class, 'cambiarPuesto'])
+                ->name('funcionarios.puesto.update');
         });
 
         Route::middleware('permission:usuarios')->group(function () {

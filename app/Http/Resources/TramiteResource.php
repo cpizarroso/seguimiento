@@ -21,6 +21,7 @@ class TramiteResource extends JsonResource
             'descripcion' => $this->descripcion,
             'numero_diamante' => $this->numero_diamante,
             'estado' => $this->estado,
+            'urgente' => (bool) $this->urgente,
             'ultima_respuesta' => $this->ultima_respuesta,
             'glosa_finalizacion' => $this->glosa_finalizacion,
             'fecha_finalizacion' => $this->fecha_finalizacion?->format('d/m/Y H:i'),
@@ -30,6 +31,7 @@ class TramiteResource extends JsonResource
             'creador' => new UserResource($this->whenLoaded('creador')),
             'asignado' => new UserResource($this->whenLoaded('asignado')),
             'derivaciones' => DerivacionResource::collection($this->whenLoaded('derivaciones')),
+            'actuaciones' => ActuacionResource::collection($this->whenLoaded('actuaciones')),
             'created_at' => $this->created_at?->format('d/m/Y H:i'),
             'dias_transcurridos' => $this->dias_transcurridos,
         ];

@@ -46,7 +46,7 @@ class AreaController extends Controller
 
         $area = $this->areaService->crear($data, $puestos);
 
-        return to_route('areas.show', $area)
+        return to_route('areas.index')
             ->with('success', 'Área y puestos creados exitosamente.');
     }
 
@@ -91,6 +91,7 @@ class AreaController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'sigla' => ['required', 'string', 'max:10', 'unique:puestos,sigla'],
+            'codigo' => ['nullable', 'string', 'max:20', 'unique:puestos,codigo'],
             'estado' => ['nullable', 'boolean'],
         ]);
 
@@ -110,6 +111,7 @@ class AreaController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'sigla' => ['required', 'string', 'max:10', Rule::unique('puestos', 'sigla')->ignore($puesto->id)],
+            'codigo' => ['nullable', 'string', 'max:20', Rule::unique('puestos', 'codigo')->ignore($puesto->id)],
             'estado' => ['nullable', 'boolean'],
         ]);
 

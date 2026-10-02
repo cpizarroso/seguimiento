@@ -1,21 +1,23 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Table } from '@/components/ui/Table';
+import { FuncionarioForm } from '@/components/features/funcionarios/FuncionarioForm';
 
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import type { ReactNode } from 'react';
-import type { Area, Funcionario, PaginatedData } from '@/types/generated/Tramite';
+import type { Area, Funcionario, PaginatedData, Puesto } from '@/types/generated/Tramite';
 
 interface FuncionariosIndexProps {
     funcionarios: PaginatedData<Funcionario>;
-    areas: { data: Area[] };
+    areas?: { data: Area[] };
+    puestos?: { data: Puesto[] };
     perPage?: number;
-    filters?: { search?: string; area_id?: string };
+    filters?: { search?: string; area_id?: string; estado?: string };
 }
 
 function SkeletonRow() {
@@ -30,12 +32,32 @@ function SkeletonRow() {
     );
 }
 
-export default function FuncionariosIndex({ funcionarios, areas, perPage: initialPerPage = 10 }: FuncionariosIndexProps) {
+export default function FuncionariosIndex({ funcionarios, areas = { data: [] }, puestos = { data: [] }, perPage: initialPerPage = 10 }: FuncionariosIndexProps) {
     const [search, setSearch] = useState('');
     const [areaId, setAreaId] = useState('');
+    const [estado, setEstado] = useState('');
     const [loading, setLoading] = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Funcionario | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+    const createForm = useForm({
+        nombre: '',
+        apellidos: '',
+        email: '',
+        direccion: '',
+        nro_telefono: '',
+        cedula_identidad: '',
+        tipo_funcionario: 'contrato',
+        area_id: '',
+        puesto_id: '',
+    });
+
+    useEffect(() => {
+        if (createOpen) {
+            createForm.clearErrors();
+        }
+    }, [createOpen]);
 
     const perPage = funcionarios.meta.per_page ?? initialPerPage;
 
@@ -45,7 +67,7 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
 
     const navigate = (overrides: Record<string, unknown>) => {
         setLoading(true);
-        router.get('/funcionarios', { search, area_id: areaId, ...overrides }, {
+        router.get('/funcionarios', { search, area_id: areaId, estado, ...overrides }, {
             preserveState: true,
             preserveScroll: true,
             only: ['funcionarios'],
@@ -57,7 +79,7 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
             setLoading(true);
-            router.get('/funcionarios', { search, area_id: areaId }, {
+            router.get('/funcionarios', { search, area_id: areaId, estado }, {
                 preserveState: true,
                 preserveScroll: true,
                 only: ['funcionarios'],
@@ -65,7 +87,7 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
             });
         }, 300);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-    }, [search, areaId]);
+    }, [search, areaId, estado]);
 
     const handleDelete = () => {
         if (!deleteTarget) return;
@@ -106,13 +128,13 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
         );
     };
 
-    const estadoBadge = (estado: string) => {
-        const variants: Record<string, string> = {
+    const estadoBadge = (value: string) => {
+        const variants: Record<string, 'success' | 'warning' | 'danger'> = {
             activo: 'success',
             inactivo: 'warning',
             baja: 'danger',
         };
-        return <Badge variant={(variants[estado] ?? 'default') as any}>{estado}</Badge>;
+        return <Badge variant={variants[value] ?? 'default'}>{value}</Badge>;
     };
 
     const columns = [
@@ -176,9 +198,7 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <Link href="/funcionarios/create">
-                        <Button>Nuevo Funcionario</Button>
-                    </Link>
+                    <Button onClick={() => setCreateOpen(true)}>Nuevo Funcionario</Button>
                 </div>
             </div>
 
@@ -213,6 +233,19 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
                             ]}
                             value={areaId}
                             onChange={(e) => setAreaId(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-40">
+                        <Select
+                            label="Estado"
+                            options={[
+                                { value: '', label: 'Todos' },
+                                { value: 'activo', label: 'Activo' },
+                                { value: 'inactivo', label: 'Inactivo' },
+                                { value: 'baja', label: 'Baja' },
+                            ]}
+                            value={estado}
+                            onChange={(e) => setEstado(e.target.value)}
                         />
                     </div>
                 </div>
@@ -292,6 +325,20 @@ export default function FuncionariosIndex({ funcionarios, areas, perPage: initia
                     </div>
                 </div>
             </Card>
+
+            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo Funcionario">
+                <FuncionarioForm
+                    form={createForm}
+                    areas={areas}
+                    puestos={puestos}
+                    submitUrl="/funcionarios"
+                    onSuccess={() => {
+                        setCreateOpen(false);
+                        createForm.reset();
+                    }}
+                    onCancel={() => setCreateOpen(false)}
+                />
+            </Modal>
 
             <Modal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Confirmar eliminación">
                 <div className="space-y-4">

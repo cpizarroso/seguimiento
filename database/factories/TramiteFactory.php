@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Puesto;
+use App\Models\Area;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -57,7 +57,6 @@ class TramiteFactory extends Factory
                 'Registro de función de teatro',
             ]),
             'numero_diamante' => fake()->optional(0.3)->bothify('DIA-####'),
-            'glosa' => fake()->optional(0.5)->sentence(),
             'estado' => fake()->randomElement([
                 'iniciado',
                 'proceso',
@@ -65,9 +64,10 @@ class TramiteFactory extends Factory
                 'observado',
                 'finalizado',
             ]),
-            'puesto_id' => Puesto::inRandomOrder()->value('id'),
-            'creado_por' => User::inRandomOrder()->value('id'),
-            'derivado_a' => User::inRandomOrder()->value('id'),
+            'urgente' => fake()->boolean(20),
+            'area_id' => fn () => Area::inRandomOrder()->value('id') ?? Area::factory()->create()->id,
+            'creado_por' => fn () => User::inRandomOrder()->value('id') ?? User::factory()->create()->id,
+            'derivado_a' => fn () => User::inRandomOrder()->value('id') ?? User::factory()->create()->id,
         ];
     }
 

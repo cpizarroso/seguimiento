@@ -1,11 +1,12 @@
-import { Link, router } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { TreeView } from '@/components/ui/TreeView';
-import type { Area, AreaTreeNode } from '@/types/generated/Tramite';
+import { AreaForm } from '@/components/features/areas/AreaForm';
+import type { AreaTreeNode } from '@/types/generated/Tramite';
 
 interface AreasIndexProps {
     areasTree: AreaTreeNode[];
@@ -13,7 +14,18 @@ interface AreasIndexProps {
 
 export default function AreasIndex({ areasTree }: AreasIndexProps) {
     const [search, setSearch] = useState('');
+    const [createOpen, setCreateOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<AreaTreeNode | null>(null);
+
+    const createForm = useForm({
+        nombre: '',
+        descripcion: '',
+        sigla: '',
+        codigo: '',
+        estado: true,
+        parent_id: null as number | null,
+        puestos: [] as { _key: number; nombre: string; descripcion: string; sigla: string; codigo: string; estado: boolean }[],
+    });
 
     const handleDelete = () => {
         if (!deleteTarget) return;
@@ -37,9 +49,7 @@ export default function AreasIndex({ areasTree }: AreasIndexProps) {
                         {totalAreas(areasTree)} áreas · {puestosCount(areasTree)} puestos
                     </p>
                 </div>
-                <Link href="/areas/create">
-                    <Button>Nueva Área</Button>
-                </Link>
+                <Button onClick={() => setCreateOpen(true)}>Nueva Área</Button>
             </div>
 
             <Card padding="sm">
@@ -74,6 +84,19 @@ export default function AreasIndex({ areasTree }: AreasIndexProps) {
                     onDelete={setDeleteTarget}
                 />
             </Card>
+
+            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nueva Área">
+                <AreaForm
+                    form={createForm}
+                    areas={areasTree}
+                    submitUrl="/areas"
+                    onSuccess={() => {
+                        setCreateOpen(false);
+                        createForm.reset();
+                    }}
+                    onCancel={() => setCreateOpen(false)}
+                />
+            </Modal>
 
             <Modal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Confirmar eliminación">
                 <div className="space-y-4">

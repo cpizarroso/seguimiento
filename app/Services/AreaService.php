@@ -56,6 +56,7 @@ class AreaService
                     'nombre' => $puesto['nombre'],
                     'descripcion' => $puesto['descripcion'] ?? null,
                     'sigla' => $puesto['sigla'],
+                    'codigo' => $puesto['codigo'] ?? null,
                     'estado' => $puesto['estado'] ?? true,
                 ];
 
@@ -109,6 +110,7 @@ class AreaService
                     'nombre' => $p->nombre,
                     'descripcion' => $p->descripcion,
                     'sigla' => $p->sigla,
+                    'codigo' => $p->codigo,
                     'estado' => $p->estado,
                     'area_id' => $p->area_id,
                 ])->values()->toArray(),

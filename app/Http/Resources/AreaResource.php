@@ -20,6 +20,7 @@ class AreaResource extends JsonResource
             'nombre' => $this->nombre,
             'descripcion' => $this->descripcion,
             'sigla' => $this->sigla,
+            'codigo' => $this->codigo,
             'estado' => $this->estado,
             'parent_id' => $this->parent_id,
             'parent' => $this->whenLoaded('parent') ? new AreaResource($this->parent) : null,

@@ -1,11 +1,13 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
+import { UserForm, type AreaOption, type FuncionarioOption, type PuestoOption, type RolOption } from '@/components/features/users/UserForm';
 import type { PaginatedData } from '@/types/generated/Tramite';
 
 interface AreaInfo {
@@ -47,10 +49,27 @@ interface UserRow {
 
 interface UsersIndexProps {
     users: PaginatedData<UserRow>;
+    areas?: { data: AreaOption[] };
+    puestos?: { data: PuestoOption[] };
+    roles?: { data: RolOption[] };
+    funcionarios?: { data: FuncionarioOption[] };
 }
 
-export default function UsersIndex({ users }: UsersIndexProps) {
+export default function UsersIndex({ users, areas, puestos, roles, funcionarios }: UsersIndexProps) {
     const [search, setSearch] = useState('');
+    const [createOpen, setCreateOpen] = useState(false);
+
+    const createForm = useForm({
+        name: '',
+        email: '',
+        phone: '',
+        profesion: '',
+        password: '',
+        funcionario_id: '',
+        role_ids: [] as number[],
+        area_id: '',
+        puesto_id: '',
+    });
 
     const columns = [
         {
@@ -102,9 +121,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-patuju-green">Usuarios</h2>
-                <Link href="/users/create">
-                    <Button>Nuevo Usuario</Button>
-                </Link>
+                <Button onClick={() => setCreateOpen(true)}>Nuevo Usuario</Button>
             </div>
 
             <Card padding="sm">
@@ -135,6 +152,22 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     onPageChange={(page) => router.get('/users', { page, search }, { preserveState: true })}
                 />
             </Card>
+
+            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo Usuario">
+                <UserForm
+                    form={createForm}
+                    areas={areas}
+                    puestos={puestos}
+                    roles={roles}
+                    funcionarios={funcionarios}
+                    submitUrl="/users"
+                    onSuccess={() => {
+                        setCreateOpen(false);
+                        createForm.reset();
+                    }}
+                    onCancel={() => setCreateOpen(false)}
+                />
+            </Modal>
         </div>
     );
 }

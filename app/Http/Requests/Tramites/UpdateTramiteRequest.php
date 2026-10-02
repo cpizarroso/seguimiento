@@ -3,25 +3,29 @@
 namespace App\Http\Requests\Tramites;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateTramiteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasPermission('tramites', 'edicion');
     }
 
     public function rules(): array
     {
         return [
-            'codigo' => ['required', 'string', 'max:50', Rule::unique('tramites', 'codigo')->ignore($this->route('tramite'))],
-            'titulo' => ['required', 'string', 'max:255'],
-            'descripcion' => ['nullable', 'string'],
-            'estado' => ['required', 'string', 'in:pendiente,en_progreso,completado,cancelado'],
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
-            'funcionario_id' => ['nullable', 'exists:funcionarios,id'],
+            'descripcion' => ['required', 'string', 'max:5000'],
+            'numero_diamante' => ['nullable', 'string', 'max:255'],
+            'area_id' => ['required', 'integer', 'exists:areas,id'],
+            'urgente' => ['nullable', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'area_id.required' => 'Debe seleccionar un área.',
+            'descripcion.required' => 'La descripción es obligatoria.',
         ];
     }
 }

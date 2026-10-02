@@ -7,12 +7,14 @@ use App\Http\Requests\Users\ResetPasswordRequest;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\AreaResource;
+use App\Http\Resources\FuncionarioListResource;
 use App\Http\Resources\PuestoResource;
 use App\Http\Resources\RolResource;
 use App\Http\Resources\UserResource;
 use App\Models\Rol;
 use App\Models\User;
 use App\Services\AreaService;
+use App\Services\FuncionarioService;
 use App\Services\PuestoService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +27,7 @@ class UserController extends Controller
         private readonly UserService $userService,
         private readonly AreaService $areaService,
         private readonly PuestoService $puestoService,
+        private readonly FuncionarioService $funcionarioService,
     ) {}
 
     public function index(): Response
@@ -33,6 +36,10 @@ class UserController extends Controller
             'users' => UserResource::collection(
                 $this->userService->listar(request()->only(['search']))
             ),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
+            'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
+            'funcionarios' => FuncionarioListResource::collection($this->funcionarioService->obtenerTodos()),
         ]);
     }
 
@@ -42,6 +49,7 @@ class UserController extends Controller
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
+            'funcionarios' => FuncionarioListResource::collection($this->funcionarioService->obtenerTodos()),
         ]);
     }
 
@@ -62,12 +70,13 @@ class UserController extends Controller
 
     public function edit(User $user): Response
     {
-        $user->load('puestoActivo.puesto', 'roles');
+        $user->load('funcionario', 'puestoActivo.puesto', 'roles');
         return Inertia::render('Users/Edit', [
             'user' => new UserResource($user),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
+            'funcionarios' => FuncionarioListResource::collection($this->funcionarioService->obtenerTodos()),
         ]);
     }
 

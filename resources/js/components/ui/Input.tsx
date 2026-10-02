@@ -8,7 +8,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     append?: string;
 }
 
-export function Input({ label, error, leftElement, rightElement, append, className = '', id, ...props }: InputProps) {
+export function Input({ label, error, leftElement, rightElement, append, className = '', id, required, ...props }: InputProps) {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -16,6 +16,7 @@ export function Input({ label, error, leftElement, rightElement, append, classNa
             {label && (
                 <label htmlFor={inputId} className="block text-sm font-medium text-patuju-green dark:text-patuju-green mb-1">
                     {label}
+                    {required && <span className="text-patuju-red ml-0.5" aria-hidden="true">*</span>}
                 </label>
             )}
             <div className={`relative ${append ? 'flex rounded-lg shadow-sm' : ''}`}>
@@ -26,6 +27,7 @@ export function Input({ label, error, leftElement, rightElement, append, classNa
                 )}
                 <input
                     id={inputId}
+                    required={required}
                     className={`block w-full border px-3 py-2 text-sm shadow-sm transition-colors focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white ${leftElement && !append ? 'pl-10' : ''} ${rightElement && !append ? 'pr-10' : ''} ${append ? 'rounded-l-lg' : 'rounded-lg'} ${error ? 'border-patuju-red' : 'border-gray-300 dark:border-gray-600'} ${className}`}
                     {...props}
                 />

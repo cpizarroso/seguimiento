@@ -17,8 +17,8 @@ export default function AreasShow({ area }: ShowProps) {
     const [editingPuesto, setEditingPuesto] = useState<Puesto | null>(null);
     const [deletingPuesto, setDeletingPuesto] = useState<Puesto | null>(null);
 
-    const createForm = useForm({ nombre: '', descripcion: '', sigla: '', estado: true });
-    const editForm = useForm({ nombre: '', descripcion: '', sigla: '', estado: true });
+    const createForm = useForm({ nombre: '', descripcion: '', sigla: '', codigo: '', estado: true });
+    const editForm = useForm({ nombre: '', descripcion: '', sigla: '', codigo: '', estado: true });
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,6 +37,7 @@ export default function AreasShow({ area }: ShowProps) {
             nombre: puesto.nombre,
             descripcion: puesto.descripcion ?? '',
             sigla: puesto.sigla,
+            codigo: puesto.codigo ?? '',
             estado: puesto.estado,
         });
     };
@@ -65,6 +66,13 @@ export default function AreasShow({ area }: ShowProps) {
             header: 'Sigla',
             render: (p: Puesto) => (
                 <span className="font-mono text-sm text-gray-600 dark:text-gray-400">{p.sigla}</span>
+            ),
+        },
+        {
+            key: 'codigo',
+            header: 'Código',
+            render: (p: Puesto) => (
+                <span className="font-mono text-sm text-gray-600 dark:text-gray-400">{p.codigo ?? '—'}</span>
             ),
         },
         {
@@ -111,6 +119,9 @@ export default function AreasShow({ area }: ShowProps) {
                     <h2 className="text-2xl font-bold text-patuju-green mt-1">{area.nombre}</h2>
                     <div className="flex items-center gap-3 mt-1">
                         <span className="font-mono text-sm text-gray-500 dark:text-gray-400">{area.sigla}</span>
+                        {area.codigo && (
+                            <span className="font-mono text-sm text-gray-500 dark:text-gray-400">· {area.codigo}</span>
+                        )}
                         {area.estado
                             ? <Badge variant="success">Activo</Badge>
                             : <Badge variant="danger">Inactivo</Badge>
@@ -188,6 +199,16 @@ export default function AreasShow({ area }: ShowProps) {
                         {createForm.errors.sigla && <p className="text-xs text-patuju-red mt-1">{createForm.errors.sigla}</p>}
                     </div>
                     <div>
+                        <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Código</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                            value={createForm.data.codigo}
+                            onChange={(e) => createForm.setData('codigo', e.target.value)}
+                        />
+                        {createForm.errors.codigo && <p className="text-xs text-patuju-red mt-1">{createForm.errors.codigo}</p>}
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Descripción</label>
                         <textarea
                             rows={3}
@@ -235,6 +256,16 @@ export default function AreasShow({ area }: ShowProps) {
                             onChange={(e) => editForm.setData('sigla', e.target.value)}
                         />
                         {editForm.errors.sigla && <p className="text-xs text-patuju-red mt-1">{editForm.errors.sigla}</p>}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Código</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                            value={editForm.data.codigo}
+                            onChange={(e) => editForm.setData('codigo', e.target.value)}
+                        />
+                        {editForm.errors.codigo && <p className="text-xs text-patuju-red mt-1">{editForm.errors.codigo}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-patuju-green dark:text-patuju-green">Descripción</label>

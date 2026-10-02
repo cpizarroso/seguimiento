@@ -1,19 +1,12 @@
 <?php
 
-namespace Tests\Feature;
+use App\Models\User;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+it('redirige la raiz al listado de tramites', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user)->get('/')->assertRedirect(route('tramites.index'));
+});
 
-class ExampleTest extends TestCase
-{
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
-    {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
-    }
-}
+it('redirige la raiz al login cuando no hay sesion', function () {
+    $this->get('/')->assertRedirect(route('login'));
+});

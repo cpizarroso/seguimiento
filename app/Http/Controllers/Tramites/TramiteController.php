@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Tramites;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tramites\StoreTramiteRequest;
 use App\Http\Requests\Tramites\UpdateEstadoTramiteRequest;
+use App\Http\Requests\Tramites\UpdateTramiteRequest;
 use App\Http\Resources\AreaResource;
+use App\Http\Resources\FuncionarioResource;
 use App\Http\Resources\TramiteResource;
 use App\Http\Resources\UserResource;
 use App\Models\Tramite;
 use App\Models\User;
 use App\Services\AreaService;
 use App\Services\DerivacionService;
+use App\Services\FuncionarioService;
 use App\Services\TramiteService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -25,18 +28,20 @@ class TramiteController extends Controller
         private readonly AreaService $areaService,
         private readonly DerivacionService $derivacionService,
         private readonly UserService $userService,
+        private readonly FuncionarioService $funcionarioService,
     ) {}
 
     public function index(): Response
     {
         $user = request()->user();
-        $filtros = request()->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'vista']);
+        $filtros = request()->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'urgente']);
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
 
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
-                $this->tramiteService->listar($filtros, $user?->id)
+                $this->tramiteService->listar($filtros)
             ),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 
@@ -65,7 +70,25 @@ class TramiteController extends Controller
         return Inertia::render('Tramites/Show', [
             'tramite' => new TramiteResource($tramite),
             'usuarios' => UserResource::collection(User::all()),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'funcionarios' => FuncionarioResource::collection($this->funcionarioService->obtenerTodos()),
         ]);
+    }
+
+    public function edit(Tramite $tramite): Response
+    {
+        return Inertia::render('Tramites/Edit', [
+            'tramite' => new TramiteResource($this->tramiteService->obtenerPorId($tramite->id)),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+        ]);
+    }
+
+    public function update(UpdateTramiteRequest $request, Tramite $tramite): RedirectResponse
+    {
+        $this->tramiteService->actualizar($tramite, $request->validated());
+
+        return to_route('tramites.show', $tramite)
+            ->with('success', "Trámite N° {$tramite->numero_formateado}/{$tramite->year} actualizado exitosamente.");
     }
 
     public function updateEstado(UpdateEstadoTramiteRequest $request, Tramite $tramite): RedirectResponse

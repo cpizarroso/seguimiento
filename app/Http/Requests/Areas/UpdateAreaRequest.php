@@ -26,12 +26,17 @@ class UpdateAreaRequest extends FormRequest
                 'required', 'string', 'max:10',
                 Rule::unique('areas', 'sigla')->ignore($areaId),
             ],
+            'codigo' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('areas', 'codigo')->ignore($areaId),
+            ],
             'estado' => ['nullable', 'boolean'],
             'parent_id' => ['nullable', 'integer', 'exists:areas,id'],
             'puestos' => ['nullable', 'array'],
             'puestos.*.nombre' => ['required', 'string', 'max:255'],
             'puestos.*.descripcion' => ['nullable', 'string', 'max:1000'],
             'puestos.*.sigla' => ['required', 'string', 'max:10', 'distinct:strict'],
+            'puestos.*.codigo' => ['nullable', 'string', 'max:20', 'distinct:strict'],
             'puestos.*.estado' => ['nullable', 'boolean'],
         ];
     }

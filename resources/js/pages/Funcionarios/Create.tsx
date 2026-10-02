@@ -1,13 +1,14 @@
 import { useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { FuncionarioForm } from '@/components/features/funcionarios/FuncionarioForm';
-import type { Area } from '@/types/generated/Tramite';
+import type { Area, Puesto } from '@/types/generated/Tramite';
 
 interface CreateProps {
     areas: { data: Area[] };
+    puestos: { data: Puesto[] };
 }
 
-export default function FuncionariosCreate({ areas }: CreateProps) {
+export default function FuncionariosCreate({ areas, puestos }: CreateProps) {
     const form = useForm({
         nombre: '',
         apellidos: '',
@@ -16,17 +17,15 @@ export default function FuncionariosCreate({ areas }: CreateProps) {
         nro_telefono: '',
         cedula_identidad: '',
         tipo_funcionario: 'contrato',
-        nivel: '',
-        fecha_ingreso: '',
-        estado: 'activo',
         area_id: '',
+        puesto_id: '',
     });
 
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Nuevo Funcionario</h2>
             <Card>
-                <FuncionarioForm form={form} areas={areas} submitUrl="/funcionarios" />
+                <FuncionarioForm form={form} areas={areas} puestos={puestos} submitUrl="/funcionarios" />
             </Card>
         </div>
     );

@@ -26,6 +26,13 @@ class FuncionarioListResource extends JsonResource
             'estado' => $this->estado,
             'area_id' => $this->area_id,
             'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,
+            'puesto_id' => $this->puesto_id,
+            'puesto' => $this->whenLoaded('puesto', fn () => $this->puesto ? [
+                'id' => $this->puesto->id,
+                'nombre' => $this->puesto->nombre,
+                'sigla' => $this->puesto->sigla,
+                'codigo' => $this->puesto->codigo,
+            ] : null),
             'creado_por' => $this->whenLoaded('creadoPor') ? new UserResource($this->creadoPor) : null,
         ];
     }

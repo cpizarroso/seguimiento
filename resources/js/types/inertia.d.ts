@@ -4,6 +4,7 @@ interface AuthUser {
     email: string;
     role: string;
     funcionario_id: number | null;
+    puesto?: string | null;
     permisos: string[];
 }
 

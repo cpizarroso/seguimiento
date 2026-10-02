@@ -23,9 +23,16 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-patuju-green text-white text-sm font-medium">
                     {auth.user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {auth.user?.name || 'Usuario'}
-                </span>
+                <div className="flex flex-col leading-tight">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {auth.user?.name || 'Usuario'}
+                    </span>
+                    {auth.user?.puesto && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {auth.user.puesto}
+                        </span>
+                    )}
+                </div>
             </div>
         </header>
     );

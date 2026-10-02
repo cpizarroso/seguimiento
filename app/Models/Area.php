@@ -17,6 +17,7 @@ class Area extends Model
         'nombre',
         'descripcion',
         'sigla',
+        'codigo',
         'estado',
         'parent_id',
     ];

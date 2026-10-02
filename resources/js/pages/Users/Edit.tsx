@@ -39,6 +39,7 @@ interface UserEdit {
     profesion: string | null;
     role: string;
     roles: UserRole[];
+    funcionario: { id: number; nombre: string } | null;
     puesto_activo?: PuestoActivo | null;
 }
 
@@ -58,11 +59,19 @@ interface RolOption {
     permisos: RolPermiso[];
 }
 
+interface FuncionarioOption {
+    id: number;
+    nombre: string;
+    apellidos: string;
+    email: string;
+}
+
 interface EditProps {
     user: UserEdit;
     areas: { data: AreaOption[] };
     puestos: { data: PuestoOption[] };
     roles: { data: RolOption[] };
+    funcionarios: { data: FuncionarioOption[] };
 }
 
 const accionLabels: Record<string, string> = {
@@ -71,7 +80,7 @@ const accionLabels: Record<string, string> = {
 
 const EMAIL_DOMAIN = '@seguimiento.gob.bo';
 
-export default function UsersEdit({ user, areas, puestos, roles }: EditProps) {
+export default function UsersEdit({ user, areas, puestos, roles, funcionarios }: EditProps) {
     const initialPuesto = user.puesto_activo?.puesto;
     const initialAreaId = user.puesto_activo?.puesto?.area_id ?? '';
 
@@ -83,6 +92,7 @@ export default function UsersEdit({ user, areas, puestos, roles }: EditProps) {
         phone: user.phone ?? '',
         profesion: user.profesion ?? '',
         password: '',
+        funcionario_id: String(user.funcionario?.id ?? ''),
         role_ids: (user.roles ?? []).map((r) => r.id),
         area_id: String(initialAreaId),
         puesto_id: String(user.puesto_activo?.puesto_id ?? ''),
@@ -155,6 +165,14 @@ export default function UsersEdit({ user, areas, puestos, roles }: EditProps) {
                             value={data.profesion}
                             onChange={(e) => setData('profesion', e.target.value)}
                             error={errors.profesion}
+                        />
+                        <Select
+                            label="Funcionario"
+                            placeholder="Seleccione un funcionario"
+                            options={(funcionarios?.data ?? []).map((f) => ({ value: String(f.id), label: `${f.nombre} ${f.apellidos}` }))}
+                            value={data.funcionario_id}
+                            onChange={(e) => setData('funcionario_id', e.target.value)}
+                            error={errors.funcionario_id}
                         />
                         <div className="sm:col-span-2">
                             <label className="block text-sm font-medium text-patuju-green mb-2">Roles</label>

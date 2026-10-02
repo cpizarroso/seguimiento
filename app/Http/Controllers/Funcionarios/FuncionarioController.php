@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Funcionarios;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Funcionarios\CambiarPuestoRequest;
 use App\Http\Requests\Funcionarios\StoreFuncionarioRequest;
 use App\Http\Requests\Funcionarios\UpdateFuncionarioRequest;
 use App\Http\Resources\AreaResource;
 use App\Http\Resources\FuncionarioListResource;
+use App\Http\Resources\FuncionarioPuestoResource;
 use App\Http\Resources\FuncionarioResource;
+use App\Http\Resources\PuestoResource;
 use App\Models\Funcionario;
 use App\Services\AreaService;
 use App\Services\FuncionarioService;
+use App\Services\PuestoService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,13 +26,14 @@ class FuncionarioController extends Controller
     public function __construct(
         private readonly FuncionarioService $funcionarioService,
         private readonly AreaService $areaService,
+        private readonly PuestoService $puestoService,
         private readonly UserService $userService,
     ) {}
 
     public function index(): Response
     {
         $user = request()->user();
-        $filtros = request()->only(['search', 'area_id']);
+        $filtros = request()->only(['search', 'area_id', 'estado']);
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
 
         return Inertia::render('Funcionarios/Index', [
@@ -36,6 +41,7 @@ class FuncionarioController extends Controller
                 $this->funcionarioService->listar($filtros)
             ),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
             'perPage' => (int) $filtros['per_page'],
         ]);
     }
@@ -44,14 +50,15 @@ class FuncionarioController extends Controller
     {
         return Inertia::render('Funcionarios/Create', [
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
         ]);
     }
 
     public function store(StoreFuncionarioRequest $request): RedirectResponse
     {
-        $this->funcionarioService->crear($request->validated(), $request->user());
+        $funcionario = $this->funcionarioService->crear($request->validated(), $request->user());
 
-        return to_route('funcionarios.index')
+        return to_route('funcionarios.show', $funcionario)
             ->with('success', 'Funcionario creado exitosamente.');
     }
 
@@ -61,22 +68,39 @@ class FuncionarioController extends Controller
             'funcionario' => new FuncionarioResource(
                 $this->funcionarioService->obtenerPorId($funcionario->id)
             ),
+            'historial_puestos' => FuncionarioPuestoResource::collection(
+                $this->funcionarioService->historialPuestos($funcionario)
+            ),
+            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
         ]);
+    }
+
+    public function cambiarPuesto(CambiarPuestoRequest $request, Funcionario $funcionario): RedirectResponse
+    {
+        $this->funcionarioService->cambiarPuesto(
+            $funcionario,
+            (int) $request->validated('puesto_id'),
+            $request->user(),
+        );
+
+        return back()
+            ->with('success', 'Puesto actualizado exitosamente.');
     }
 
     public function edit(Funcionario $funcionario): Response
     {
         return Inertia::render('Funcionarios/Edit', [
-            'funcionario' => new FuncionarioResource($funcionario->load('area')),
+            'funcionario' => new FuncionarioResource($funcionario->load(['area', 'puesto'])),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
         ]);
     }
 
     public function update(UpdateFuncionarioRequest $request, Funcionario $funcionario): RedirectResponse
     {
-        $this->funcionarioService->actualizar($funcionario, $request->validated());
+        $funcionario = $this->funcionarioService->actualizar($funcionario, $request->validated(), $request->user());
 
-        return to_route('funcionarios.index')
+        return to_route('funcionarios.show', $funcionario)
             ->with('success', 'Funcionario actualizado exitosamente.');
     }
 

@@ -29,8 +29,21 @@ class FuncionarioResource extends JsonResource
             'estado' => $this->estado,
             'area_id' => $this->area_id,
             'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,
+            'puesto_id' => $this->puesto_id,
+            'puesto' => $this->whenLoaded('puesto', fn () => $this->puesto ? [
+                'id' => $this->puesto->id,
+                'nombre' => $this->puesto->nombre,
+                'sigla' => $this->puesto->sigla,
+                'codigo' => $this->puesto->codigo,
+            ] : null),
             'creado_por' => $this->whenLoaded('creadoPor') ? new UserResource($this->creadoPor) : null,
+            'usuario' => $this->whenLoaded('usuario', fn () => [
+                'id' => $this->usuario->id,
+                'name' => $this->usuario->name,
+                'email' => $this->usuario->email,
+            ]),
             'created_at' => $this->created_at?->format('d/m/Y H:i'),
+            'updated_at' => $this->updated_at?->format('d/m/Y H:i'),
         ];
     }
 }

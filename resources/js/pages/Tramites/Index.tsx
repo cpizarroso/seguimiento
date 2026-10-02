@@ -1,23 +1,19 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
+import { TramiteForm } from '@/components/features/tramites/TramiteForm';
 import { usePermissions } from '@/hooks/usePermissions';
-import type { Tramite, PaginatedData } from '@/types/generated/Tramite';
-import { useState } from 'react';
+import type { Tramite, PaginatedData, Area } from '@/types/generated/Tramite';
+import { useEffect, useRef, useState } from 'react';
 
 interface TramitesIndexProps {
     tramites: PaginatedData<Tramite>;
+    areas: { data: Area[] };
 }
-
-const vistas = [
-    { value: 'busqueda', label: 'Búsqueda' },
-    { value: 'por_recepcionar', label: 'Por Recepcionar' },
-    { value: 'bandeja', label: 'Bandeja' },
-    { value: 'derivados', label: 'Derivados' },
-];
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
     iniciado: 'info',
@@ -33,32 +29,53 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
-export default function TramitesIndex({ tramites }: TramitesIndexProps) {
+export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
     const { url } = usePage();
     const { can } = usePermissions();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
-    const [vista, setVista] = useState(params.get('vista') ?? 'busqueda');
+    const [soloUrgentes, setSoloUrgentes] = useState(params.get('urgente') === '1');
+    const [createOpen, setCreateOpen] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
-    const buscar = (nuevaVista?: string) => {
+    const createForm = useForm({
+        descripcion: '',
+        numero_diamante: '',
+        area_id: '',
+        urgente: false as boolean,
+    });
+
+    useEffect(() => {
+        if (!createOpen) {
+            searchInputRef.current?.focus();
+        }
+    }, [createOpen]);
+
+    const buscar = (urgenteOverride?: boolean) => {
+        const urgente = urgenteOverride ?? soloUrgentes;
         router.get('/tramites', {
-            search,
-            vista: nuevaVista ?? vista,
-            page: nuevaVista ? 1 : undefined,
+            search: search || undefined,
+            urgente: urgente ? '1' : undefined,
+            page: undefined,
         }, { preserveState: true, preserveScroll: true });
     };
 
     const limpiar = () => {
         setSearch('');
-        router.get('/tramites', { vista, page: 1 }, { preserveState: true, preserveScroll: true });
+        router.get('/tramites', { urgente: soloUrgentes ? '1' : undefined, page: 1 }, { preserveState: true, preserveScroll: true });
+        searchInputRef.current?.focus();
+    };
+
+    const toggleUrgentes = () => {
+        const next = !soloUrgentes;
+        setSoloUrgentes(next);
+        buscar(next);
     };
 
     const ACENTOS: Record<string, string> = {
         a: 'aáàäâã', e: 'eéèëê', i: 'iíìïî',
         o: 'oóòöôõ', u: 'uúùüû', n: 'nñ',
     };
-
-    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     const aPattern = (s: string) => {
         let result = '';
@@ -90,9 +107,14 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
             key: 'numero_tramite',
             header: 'N° Trámite',
             render: (t: Tramite) => (
-                <Link href={`/tramites/${t.id}?vista=${vista}&search=${search}`} className="text-patuju-green hover:underline font-medium whitespace-nowrap">
-                    {resaltar(t.numero_completo)}
-                </Link>
+                <span className="whitespace-nowrap">
+                    <Link href={`/tramites/${t.id}?search=${encodeURIComponent(search)}${soloUrgentes ? '&urgente=1' : ''}`} className="text-patuju-green hover:underline font-medium">
+                        {resaltar(t.numero_completo)}
+                    </Link>
+                    {t.urgente && (
+                        <Badge variant="danger" className="ml-2">Urgente</Badge>
+                    )}
+                </span>
             ),
         },
         { key: 'fecha', header: 'Gestión', render: (t: Tramite) => resaltar(t.fecha) },
@@ -103,6 +125,33 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
             render: (t: Tramite) => (
                 <span className="line-clamp-2 max-w-xs">{resaltar(t.descripcion)}</span>
             ),
+        },
+        {
+            key: 'ultima_actuacion',
+            header: 'Última actuación',
+            render: (t: Tramite) => {
+                const actuacion = t.actuaciones?.[0];
+
+                if (!actuacion) {
+                    return <span className="text-xs text-gray-400 dark:text-gray-500">Sin actuaciones</span>;
+                }
+
+                const autor = actuacion.funcionario
+                    ? `${actuacion.funcionario.nombre} ${actuacion.funcionario.apellidos ?? ''}`.trim()
+                    : actuacion.area?.sigla;
+
+                return (
+                    <div className="max-w-[240px]">
+                        <div className="text-xs font-medium text-patuju-green dark:text-patuju-green">
+                            {actuacion.fecha_actuacion}
+                        </div>
+                        <div className="line-clamp-2 text-sm">{resaltar(actuacion.glosa)}</div>
+                        {autor && (
+                            <div className="truncate text-xs text-gray-500 dark:text-gray-400">{autor}</div>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             key: 'asignado',
@@ -144,33 +193,16 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Trámites</h2>
                 {can('tramites', 'creacion') && (
-                    <Link href="/tramites/create">
-                        <Button>Nuevo Trámite</Button>
-                    </Link>
+                    <Button onClick={() => setCreateOpen(true)}>Nuevo Trámite</Button>
                 )}
             </div>
 
-            <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
-                {vistas.map((v) => (
-                    <button
-                        key={v.value}
-                        onClick={() => { setVista(v.value); buscar(v.value); }}
-                        className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                            vista === v.value
-                                ? 'border-patuju-green text-patuju-green'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                        }`}
-                    >
-                        {v.label}
-                    </button>
-                ))}
-            </div>
-
             <Card padding="sm">
-                <div className="flex items-center gap-4 w-full max-w-2xl mx-auto">
+                <div className="flex flex-col items-center gap-3 w-full max-w-2xl mx-auto">
                     <div className="flex items-center w-full border border-gray-300 dark:border-gray-600 rounded-full shadow-sm hover:shadow-md focus-within:shadow-md focus-within:border-patuju-green dark:focus-within:border-patuju-green transition-all bg-white dark:bg-gray-700">
                         <span className="pl-4 text-gray-400 dark:text-gray-500 flex-shrink-0">🔍</span>
                         <input
+                            ref={searchInputRef}
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -194,6 +226,15 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
                             Buscar
                         </button>
                     </div>
+                    <label className="flex cursor-pointer items-center gap-2 self-start text-sm text-gray-600 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={soloUrgentes}
+                            onChange={toggleUrgentes}
+                            className="h-4 w-4 rounded accent-[#C1121F]"
+                        />
+                        Solo urgentes
+                    </label>
                 </div>
             </Card>
 
@@ -212,10 +253,23 @@ export default function TramitesIndex({ tramites }: TramitesIndexProps) {
                     total={tramites.meta.total}
                     perPage={tramites.meta.per_page}
                     label="trámites"
-                    onPageChange={(page) => router.get('/tramites', { page, search, vista }, { preserveState: true })}
-                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search, vista }, { preserveState: true })}
+                    onPageChange={(page) => router.get('/tramites', { page, search: search || undefined, urgente: soloUrgentes ? '1' : undefined }, { preserveState: true })}
+                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search: search || undefined, urgente: soloUrgentes ? '1' : undefined }, { preserveState: true })}
                 />
             </Card>
+
+            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo Trámite">
+                <TramiteForm
+                    form={createForm}
+                    areas={areas?.data ?? []}
+                    submitUrl="/tramites"
+                    onSuccess={() => {
+                        setCreateOpen(false);
+                        createForm.reset();
+                    }}
+                    onCancel={() => setCreateOpen(false)}
+                />
+            </Modal>
         </div>
     );
 }

@@ -17,12 +17,14 @@ class StoreAreaRequest extends FormRequest
             'nombre' => ['required', 'string', 'max:255', 'unique:areas,nombre'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'sigla' => ['required', 'string', 'max:10', 'unique:areas,sigla'],
+            'codigo' => ['nullable', 'string', 'max:20', 'unique:areas,codigo'],
             'estado' => ['nullable', 'boolean'],
             'parent_id' => ['nullable', 'integer', 'exists:areas,id'],
             'puestos' => ['nullable', 'array'],
             'puestos.*.nombre' => ['required', 'string', 'max:255'],
             'puestos.*.descripcion' => ['nullable', 'string', 'max:1000'],
             'puestos.*.sigla' => ['required', 'string', 'max:10', 'distinct:strict'],
+            'puestos.*.codigo' => ['nullable', 'string', 'max:20', 'distinct:strict'],
             'puestos.*.estado' => ['nullable', 'boolean'],
         ];
     }

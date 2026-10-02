@@ -7,7 +7,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
     placeholder?: string;
 }
 
-export function Select({ label, error, options, placeholder, className = '', id, ...props }: SelectProps) {
+export function Select({ label, error, options, placeholder, className = '', id, required, ...props }: SelectProps) {
     const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -15,10 +15,12 @@ export function Select({ label, error, options, placeholder, className = '', id,
             {label && (
                 <label htmlFor={selectId} className="block text-sm font-medium text-patuju-green">
                     {label}
+                    {required && <span className="text-patuju-red ml-0.5" aria-hidden="true">*</span>}
                 </label>
             )}
             <select
                 id={selectId}
+                required={required}
                 className={`block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white ${error ? 'border-patuju-red' : 'border-gray-300 dark:border-gray-600'} ${className}`}
                 {...props}
             >

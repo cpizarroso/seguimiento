@@ -22,7 +22,7 @@ function buildTreeOptions(areaList: Area[], level = 0): { value: string; label: 
 
 let puestoKey = 0;
 
-function initPuestos(area: Area): { _key: number; id?: number; nombre: string; descripcion: string; sigla: string; estado: boolean }[] {
+function initPuestos(area: Area): { _key: number; id?: number; nombre: string; descripcion: string; sigla: string; codigo: string; estado: boolean }[] {
     const max = area.puestos?.reduce((m, p) => Math.max(m, p.id), 0) ?? 0;
     puestoKey = max;
     return (area.puestos ?? []).map((p) => ({
@@ -31,6 +31,7 @@ function initPuestos(area: Area): { _key: number; id?: number; nombre: string; d
         nombre: p.nombre,
         descripcion: p.descripcion ?? '',
         sigla: p.sigla,
+        codigo: p.codigo ?? '',
         estado: p.estado,
     }));
 }
@@ -40,20 +41,21 @@ export default function AreasEdit({ area, areas: allAreas = [] }: EditProps) {
         nombre: area.nombre,
         descripcion: area.descripcion ?? '',
         sigla: area.sigla,
+        codigo: area.codigo ?? '',
         estado: area.estado,
         parent_id: area.parent_id,
         puestos: initPuestos(area),
     });
 
     const addPuesto = () => {
-        setData('puestos', [...data.puestos, { _key: ++puestoKey, nombre: '', descripcion: '', sigla: '', estado: true }]);
+        setData('puestos', [...data.puestos, { _key: ++puestoKey, nombre: '', descripcion: '', sigla: '', codigo: '', estado: true }]);
     };
 
     const removePuesto = (key: number) => {
         setData('puestos', data.puestos.filter((p) => p._key !== key));
     };
 
-    const updatePuesto = (key: number, field: 'nombre' | 'descripcion' | 'sigla' | 'estado', value: string | boolean) => {
+    const updatePuesto = (key: number, field: 'nombre' | 'descripcion' | 'sigla' | 'codigo' | 'estado', value: string | boolean) => {
         setData(
             'puestos',
             data.puestos.map((p) => (p._key === key ? { ...p, [field]: value } : p)),
@@ -83,6 +85,13 @@ export default function AreasEdit({ area, areas: allAreas = [] }: EditProps) {
                             value={data.sigla}
                             onChange={(e) => setData('sigla', e.target.value)}
                             error={errors.sigla}
+                            placeholder="Ej: ADM"
+                        />
+                        <Input
+                            label="Código"
+                            value={data.codigo}
+                            onChange={(e) => setData('codigo', e.target.value)}
+                            error={errors.codigo}
                             placeholder="Ej: ADM"
                         />
                     </div>
@@ -167,6 +176,18 @@ export default function AreasEdit({ area, areas: allAreas = [] }: EditProps) {
                                         />
                                         {errors[`puestos.${idx}.sigla`] && (
                                             <p className="text-xs text-patuju-red mt-1">{errors[`puestos.${idx}.sigla`]}</p>
+                                        )}
+                                    </div>
+                                    <div className="w-28 space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Código"
+                                            className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green dark:bg-gray-700 dark:text-white"
+                                            value={puesto.codigo}
+                                            onChange={(e) => updatePuesto(puesto._key, 'codigo', e.target.value)}
+                                        />
+                                        {errors[`puestos.${idx}.codigo`] && (
+                                            <p className="text-xs text-patuju-red mt-1">{errors[`puestos.${idx}.codigo`]}</p>
                                         )}
                                     </div>
                                     <div className="w-28 space-y-2">

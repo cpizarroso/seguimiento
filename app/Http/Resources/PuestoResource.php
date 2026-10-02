@@ -20,6 +20,7 @@ class PuestoResource extends JsonResource
             'nombre' => $this->nombre,
             'descripcion' => $this->descripcion,
             'sigla' => $this->sigla,
+            'codigo' => $this->codigo,
             'estado' => $this->estado,
             'area_id' => $this->area_id,
             'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,

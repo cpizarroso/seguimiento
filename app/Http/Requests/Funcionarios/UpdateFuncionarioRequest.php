@@ -17,19 +17,21 @@ class UpdateFuncionarioRequest extends FormRequest
         $funcionarioId = $this->route('funcionario')->id ?? $this->route('funcionario');
 
         return [
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellidos' => ['required', 'string', 'max:255'],
             'cedula_identidad' => [
                 'required', 'string', 'max:30',
                 Rule::unique('funcionarios', 'cedula_identidad')->ignore($funcionarioId),
             ],
+            'nombre' => ['required', 'string', 'max:255'],
+            'apellidos' => ['required', 'string', 'max:255'],
             'nro_telefono' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'tipo_funcionario' => ['nullable', 'string', 'in:contrato,item'],
-            'area_id' => ['nullable', 'exists:areas,id'],
-            'nivel' => ['nullable', 'string', 'max:50'],
-            'fecha_ingreso' => ['nullable', 'date'],
-            'estado' => ['nullable', 'string', 'in:activo,inactivo,baja'],
+            'area_id' => ['required', 'integer', 'exists:areas,id'],
+            'puesto_id' => [
+                'required',
+                'integer',
+                Rule::exists('puestos', 'id')->where('area_id', $this->input('area_id')),
+            ],
             'direccion' => ['nullable', 'string', 'max:500'],
         ];
     }
@@ -39,6 +41,9 @@ class UpdateFuncionarioRequest extends FormRequest
         return [
             'cedula_identidad.unique' => 'La cédula de identidad ya está registrada.',
             'tipo_funcionario.in' => 'El tipo de funcionario debe ser "contrato" o "item".',
+            'area_id.required' => 'Debe seleccionar un área.',
+            'puesto_id.required' => 'Debe seleccionar un puesto.',
+            'puesto_id.exists' => 'El puesto seleccionado no pertenece al área indicada.',
         ];
     }
 }

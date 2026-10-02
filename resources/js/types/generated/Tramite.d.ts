@@ -10,6 +10,7 @@ export interface Tramite {
     descripcion: string;
     numero_diamante: string | null;
     estado: string;
+    urgente: boolean;
     ultima_respuesta: string | null;
     dias_transcurridos?: number;
     area: Area | null;
@@ -17,6 +18,7 @@ export interface Tramite {
     creador: User | null;
     asignado: User | null;
     derivaciones: Derivacion[];
+    actuaciones: Actuacion[];
 }
 
 export interface Area {
@@ -24,6 +26,7 @@ export interface Area {
     nombre: string;
     descripcion: string | null;
     sigla: string;
+    codigo: string | null;
     estado: boolean;
     parent_id: number | null;
     parent: Area | null;
@@ -43,6 +46,7 @@ export interface Puesto {
     nombre: string;
     descripcion: string | null;
     sigla: string;
+    codigo: string | null;
     estado: boolean;
     area_id: number | null;
     area: Area | null;
@@ -60,6 +64,28 @@ export interface Derivacion {
     glosa_recepcion: string | null;
     estado: string;
     dias_en_derivacion: number;
+}
+
+export interface Actuacion {
+    id: number;
+    tramite_id: number;
+    glosa: string;
+    fecha_actuacion: string;
+    dias_transcurridos: number;
+    area: Area | null;
+    area_id: number | null;
+    funcionario: FuncionarioListItem | null;
+    funcionario_id: number | null;
+    created_at: string;
+}
+
+export interface FuncionarioListItem {
+    id: number;
+    nombre: string;
+    apellidos: string;
+    email: string;
+    area_id: number | null;
+    area: Area | null;
 }
 
 export interface PaginationMeta {

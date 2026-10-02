@@ -18,22 +18,28 @@ class RolController extends Controller
     {
         return Inertia::render('Roles/Index', [
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
+            'permisos_agrupados' => $this->permisosAgrupados(),
         ]);
     }
 
     public function create(): Response
     {
-        $permisos = Permiso::with('modulo', 'accion')->get()->groupBy(fn ($p) => $p->modulo->nombre);
-
         return Inertia::render('Roles/Create', [
-            'permisos_agrupados' => $permisos->map(fn ($items, $modulo) => $items->map(fn ($p) => [
+            'permisos_agrupados' => $this->permisosAgrupados(),
+        ]);
+    }
+
+    private function permisosAgrupados(): array
+    {
+        return Permiso::with('modulo', 'accion')->get()->groupBy(fn ($p) => $p->modulo->nombre)
+            ->map(fn ($items) => $items->map(fn ($p) => [
                 'id' => $p->id,
                 'modulo' => $p->modulo->slug,
                 'modulo_nombre' => $p->modulo->nombre,
                 'accion' => $p->accion->slug,
                 'accion_nombre' => $p->accion->nombre,
-            ])->values()),
-        ]);
+            ])->values()->toArray())
+            ->toArray();
     }
 
     public function store(StoreRolRequest $request): RedirectResponse
@@ -51,8 +57,6 @@ class RolController extends Controller
 
     public function edit(Rol $role): Response
     {
-        $permisos = Permiso::with('modulo', 'accion')->get()->groupBy(fn ($p) => $p->modulo->nombre);
-
         $role->load('permisos.modulo', 'permisos.accion');
 
         return Inertia::render('Roles/Edit', [
@@ -69,13 +73,7 @@ class RolController extends Controller
                     'accion' => $p->accion->slug,
                 ])->toArray(),
             ],
-            'permisos_agrupados' => $permisos->map(fn ($items, $modulo) => $items->map(fn ($p) => [
-                'id' => $p->id,
-                'modulo' => $p->modulo->slug,
-                'modulo_nombre' => $p->modulo->nombre,
-                'accion' => $p->accion->slug,
-                'accion_nombre' => $p->accion->nombre,
-            ])->values()->toArray()),
+            'permisos_agrupados' => $this->permisosAgrupados(),
         ]);
     }
 

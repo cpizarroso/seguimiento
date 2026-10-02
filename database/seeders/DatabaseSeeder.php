@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\ContadorTramite;
+use App\Models\Funcionario;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Tramite;
@@ -25,6 +26,7 @@ class DatabaseSeeder extends Seeder
 
         $tablas = [
             'derivaciones',
+            'actuaciones',
             'tramites',
             'contador_tramites',
             'rol_permiso',
@@ -108,7 +110,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $this->asignarPuesto($ericka);
 
-        $areaId = Area::where('nombre', 'Administrativa')->value('id') ?? 1;
+        $areaId = Area::where('sigla', 'DLA')->value('id') ?? 1;
         $ultimoNumero = Tramite::where('area_id', $areaId)->max('numero_tramite') ?? 0;
         $year = now()->year;
 
@@ -131,9 +133,24 @@ class DatabaseSeeder extends Seeder
 
         $this->call(TramiteSeeder::class);
 
+        $this->vincularUsuariosSinFuncionario();
+
         $this->sincronizarRoles();
 
         $this->sincronizarContadores();
+    }
+
+    private function vincularUsuariosSinFuncionario(): void
+    {
+        $libres = Funcionario::whereDoesntHave('usuario')->orderBy('id')->pluck('id');
+
+        foreach (User::whereNull('funcionario_id')->orderBy('id')->get() as $u) {
+            $fid = $libres->shift();
+            if ($fid === null) {
+                break;
+            }
+            $u->update(['funcionario_id' => $fid]);
+        }
     }
 
     private function sincronizarRoles(): void

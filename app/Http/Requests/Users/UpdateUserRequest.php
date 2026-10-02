@@ -20,6 +20,7 @@ class UpdateUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'profesion' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:5'],
+            'funcionario_id' => ['required', 'exists:funcionarios,id', Rule::unique('users', 'funcionario_id')->ignore($this->route('user'))],
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
             'puesto_id' => ['nullable', 'exists:puestos,id'],

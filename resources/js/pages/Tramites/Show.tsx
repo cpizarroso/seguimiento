@@ -1,19 +1,27 @@
-import { Link, router, useForm, usePage } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { AlertDialog } from '@/components/ui/AlertDialog';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Table, type Column } from '@/components/ui/Table';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useState } from 'react';
-import type { Tramite, Derivacion } from '@/types/generated/Tramite';
+import type { Tramite, Actuacion, Area } from '@/types/generated/Tramite';
 import type { User } from '@/types/generated/User';
 
 interface ShowProps {
     tramite: Tramite;
     usuarios: { data: User[] };
+    areas: { data: Area[] };
+    funcionarios: { data: FuncionarioOption[] };
+}
+
+interface FuncionarioOption {
+    id: number;
+    nombre: string;
+    apellidos: string;
+    area_id: number | null;
 }
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
@@ -30,36 +38,26 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
-const derivacionEstadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
-    derivado: 'warning',
-    recepcionado: 'success',
-    rechazado: 'danger',
-    historico: 'default',
-};
-
-const derivacionEstadoLabels: Record<string, string> = {
-    derivado: 'Derivado',
-    recepcionado: 'Recepcionado',
-    rechazado: 'Rechazado',
-    historico: 'Histórico',
-};
-
-export default function TramitesShow({ tramite, usuarios }: ShowProps) {
+export default function TramitesShow({ tramite, usuarios, areas, funcionarios }: ShowProps) {
     const { auth } = usePage().props;
     const usuario = auth?.user as { id: number; role: string; permisos: string[] } | null;
     const usuarioId = usuario?.id;
     const { can } = usePermissions();
     const puedeGestionar = can('tramites', 'edicion');
     const params = new URLSearchParams(window.location.search);
-    const vistaAnterior = params.get('vista') ?? 'busqueda';
     const busquedaAnterior = params.get('search') ?? '';
-    const [derivarOpen, setDerivarOpen] = useState(false);
+    const urgenteAnterior = params.get('urgente') === '1';
+    const volverQuery = [
+        busquedaAnterior ? `search=${encodeURIComponent(busquedaAnterior)}` : '',
+        urgenteAnterior ? 'urgente=1' : '',
+    ].filter(Boolean).join('&');
+    const volverHref = volverQuery ? `/tramites?${volverQuery}` : '/tramites';
     const [recepcionarOpen, setRecepcionarOpen] = useState<number | null>(null);
-    const [derivarSuccess, setDerivarSuccess] = useState<{ destino: string; glosa?: string } | null>(null);
     const [observarOpen, setObservarOpen] = useState(false);
     const [finalizarOpen, setFinalizarOpen] = useState(false);
+    const [actuacionOpen, setActuacionOpen] = useState(false);
 
-    const derivarForm = useForm({ derivado_a: '', glosa_derivacion: '' });
+    const actuacionForm = useForm({ area_id: '', funcionario_id: '', glosa: '' });
     const recepcionarForm = useForm({ glosa_recepcion: '' });
     const observarForm = useForm({ glosa_observacion: '', derivado_a: '', estado: 'observado' });
     const finalizarForm = useForm({ glosa_finalizacion: '', estado: 'finalizado' });
@@ -70,60 +68,39 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
     const asignadoAMi = tramite.asignado?.id === usuarioId;
     const recepcionadoPorMi = ultimaDerivacion?.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId;
 
-    const puedeDerivar = puedeGestionar && tramite.estado !== 'finalizado' && asignadoAMi && (tramite.estado === 'iniciado' || recepcionadoPorMi);
     const puedeObservar = puedeGestionar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
     const puedeFinalizar = puedeGestionar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
     const puedeRecepcionar = puedeGestionar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
-    const derivacionColumns: Column<Derivacion>[] = [
+    const puedeActuar = puedeGestionar && tramite.estado !== 'finalizado';
+    const actuacionColumns: Column<Actuacion>[] = [
         {
-            key: 'numero_derivacion',
-            header: 'Derivacion',
-            render: (d) => <span className="font-medium">#{d.numero_derivacion}</span>,
+            key: 'fecha_actuacion',
+            header: 'Fecha',
+            render: (a) => <span className="whitespace-nowrap font-medium">{a.fecha_actuacion}</span>,
         },
         {
-            key: 'derivado_de',
-            header: 'De:',
-            render: (d) => d.derivado_de?.name ?? '—',
+            key: 'area',
+            header: 'Área',
+            render: (a) => a.area ? `${a.area.nombre} (${a.area.sigla})` : '—',
         },
         {
-            key: 'fecha_derivacion',
-            header: 'Derivado:',
-            render: (d) => d.fecha_derivacion,
+            key: 'funcionario',
+            header: 'Funcionario',
+            render: (a) => a.funcionario ? `${a.funcionario.nombre} ${a.funcionario.apellidos}` : '—',
         },
         {
-            key: 'dias_en_derivacion',
-            header: 'Dias:',
-            render: (d) => `${d.dias_en_derivacion} días`,
+            key: 'glosa',
+            header: 'Glosa',
+            render: (a) => <span className="whitespace-pre-wrap">{a.glosa}</span>,
         },
         {
-            key: 'glosa_derivacion',
-            header: 'Glosa de Derivacion:',
-            render: (d) => d.glosa_derivacion ?? '—',
-        },
-        {
-            key: 'glosa_recepcion',
-            header: 'Glosa Recep./Rech.:',
-            render: (d) => d.glosa_recepcion ?? '—',
-        },
-        {
-            key: 'derivado_a',
-            header: 'A:',
-            render: (d) => d.derivado_a?.name ?? '—',
-        },
-        {
-            key: 'fecha_recepcion',
-            header: 'Recepcionado:',
-            render: (d) => d.fecha_recepcion
-                ? d.fecha_recepcion
-                : (d.estado === 'rechazado' ? 'Rechazado' : '—'),
-        },
-        {
-            key: 'estado',
-            header: 'ESTADO',
-            render: (d) => (
-                <Badge variant={derivacionEstadoColors[d.estado] ?? 'default'}>
-                    {derivacionEstadoLabels[d.estado] ?? d.estado}
-                </Badge>
+            key: 'dias_transcurridos',
+            header: 'Días',
+            cellClassName: 'text-center',
+            render: (a) => (
+                <span className="inline-flex items-center justify-center min-w-8 h-8 rounded-full px-2 text-sm font-semibold bg-patuju-green/10 text-patuju-green">
+                    {a.dias_transcurridos}
+                </span>
             ),
         },
     ];
@@ -136,10 +113,20 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                     <Badge variant={estadoColors[tramite.estado] ?? 'default'} className="text-base px-4 py-1">
                         {estadoLabels[tramite.estado] ?? tramite.estado}
                     </Badge>
+                    {tramite.urgente && (
+                        <Badge variant="danger" className="text-base px-4 py-1">Urgente</Badge>
+                    )}
+                    {typeof tramite.dias_transcurridos === 'number' && (
+                        <Badge variant="warning" className="text-base px-4 py-1">
+                            {tramite.dias_transcurridos} {tramite.dias_transcurridos === 1 ? 'día' : 'días'}
+                        </Badge>
+                    )}
                 </h2>
                 <div className="flex gap-2">
-                    {puedeDerivar && (
-                        <Button onClick={() => setDerivarOpen(true)}>Derivar</Button>
+                    {puedeGestionar && (
+                        <Link href={`/tramites/${tramite.id}/edit`}>
+                            <Button>Editar</Button>
+                        </Link>
                     )}
                     {puedeRecepcionar && (
                         <Button onClick={() => setRecepcionarOpen(ultimaDerivacion!.id)} variant="secondary">
@@ -156,7 +143,7 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                             Finalizar
                         </Button>
                     )}
-                    <Link href={`/tramites?vista=${vistaAnterior}${busquedaAnterior ? `&search=${busquedaAnterior}` : ''}`}>
+                    <Link href={volverHref}>
                         <Button variant="secondary">Volver</Button>
                     </Link>
                 </div>
@@ -164,7 +151,7 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
 
             <Card>
                 <h3 className="mb-4 text-lg font-semibold text-patuju-green dark:text-patuju-green">Detalles del Trámite</h3>
-                <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">N° Trámite</dt>
                         <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{tramite.numero_formateado}/{tramite.year}</dd>
@@ -175,10 +162,13 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                     </div>
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Estado</dt>
-                        <dd>
+                        <dd className="flex flex-wrap items-center gap-2">
                             <Badge variant={estadoColors[tramite.estado] ?? 'default'} className="text-base px-5 py-2 font-bold">
                                 {estadoLabels[tramite.estado] ?? tramite.estado}
                             </Badge>
+                            {tramite.urgente && (
+                                <Badge variant="danger" className="text-base px-5 py-2 font-bold">Urgente</Badge>
+                            )}
                         </dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
@@ -193,12 +183,6 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Creado por</dt>
                         <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{tramite.creador?.name ?? '—'}</dd>
                     </div>
-                    {tramite.asignado && (
-                        <div className="flex justify-between sm:flex-col">
-                            <dt className="text-sm text-gray-500 dark:text-gray-400">Derivado a</dt>
-                            <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{tramite.asignado.name}</dd>
-                        </div>
-                    )}
                 </dl>
                 {tramite.descripcion && (
                     <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -208,77 +192,74 @@ export default function TramitesShow({ tramite, usuarios }: ShowProps) {
                 )}
             </Card>
 
-            {tramite.derivaciones && tramite.derivaciones.length > 0 ? (
-                <Table
-                    columns={derivacionColumns}
-                    data={tramite.derivaciones}
-                    keyExtractor={(d) => d.id}
-                />
-            ) : (
-                <Card>
+            <Card>
+                <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-patuju-green dark:text-patuju-green">Actuaciones</h3>
+                    {puedeActuar && (
+                        <Button onClick={() => setActuacionOpen(true)}>Registrar actuación</Button>
+                    )}
+                </div>
+                {tramite.actuaciones && tramite.actuaciones.length > 0 ? (
+                    <Table
+                        columns={actuacionColumns}
+                        data={tramite.actuaciones}
+                        keyExtractor={(a) => a.id}
+                    />
+                ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                        Este trámite aún no tiene derivaciones registradas.
+                        Este trámite aún no tiene actuaciones registradas.
                     </p>
-                </Card>
-            )}
+                )}
+            </Card>
 
-            <Modal open={derivarOpen} onClose={() => setDerivarOpen(false)} title="Derivar Trámite">
+            <Modal open={actuacionOpen} onClose={() => setActuacionOpen(false)} title="Registrar actuación">
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        derivarForm.post(`/tramites/${tramite.id}/derivar`, {
+                        actuacionForm.post(`/tramites/${tramite.id}/actuaciones`, {
                             onSuccess: () => {
-                                setDerivarOpen(false);
-                                const destino = usuarios.data.find((u) => String(u.id) === derivarForm.data.derivado_a);
-                                setDerivarSuccess({
-                                    destino: destino?.name ?? '—',
-                                    glosa: derivarForm.data.glosa_derivacion || undefined,
-                                });
+                                setActuacionOpen(false);
+                                actuacionForm.reset();
                             },
                         });
                     }}
                     className="space-y-4"
                 >
                     <Select
-                        label="Derivar a"
-                        placeholder="Seleccione funcionario"
-                        options={otrosUsuarios.map((u) => ({ value: String(u.id), label: u.name }))}
-                        value={derivarForm.data.derivado_a}
-                        onChange={(e) => derivarForm.setData('derivado_a', e.target.value)}
-                        error={derivarForm.errors.derivado_a}
+                        label="Área"
+                        placeholder="Seleccione un área"
+                        options={(areas?.data ?? []).map((a) => ({ value: String(a.id), label: `${a.nombre} (${a.sigla})` }))}
+                        value={actuacionForm.data.area_id}
+                        onChange={(e) => actuacionForm.setData('area_id', e.target.value)}
+                        error={actuacionForm.errors.area_id}
+                    />
+                    <Select
+                        label="Funcionario"
+                        placeholder="Seleccione un funcionario"
+                        options={(funcionarios?.data ?? []).map((f) => ({ value: String(f.id), label: `${f.nombre} ${f.apellidos}` }))}
+                        value={actuacionForm.data.funcionario_id}
+                        onChange={(e) => actuacionForm.setData('funcionario_id', e.target.value)}
+                        error={actuacionForm.errors.funcionario_id}
                     />
                     <div>
-                        <label htmlFor="glosa_derivacion" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">
-                            Glosa de derivación
+                        <label htmlFor="glosa" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">
+                            Glosa
                         </label>
                         <textarea
-                            id="glosa_derivacion"
+                            id="glosa"
                             rows={3}
                             className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm dark:bg-gray-700 dark:text-white"
-                            value={derivarForm.data.glosa_derivacion}
-                            onChange={(e) => derivarForm.setData('glosa_derivacion', e.target.value)}
+                            value={actuacionForm.data.glosa}
+                            onChange={(e) => actuacionForm.setData('glosa', e.target.value)}
                         />
+                        {actuacionForm.errors.glosa && <p className="text-xs text-patuju-red">{actuacionForm.errors.glosa}</p>}
                     </div>
                     <div className="flex gap-3 pt-2">
-                        <Button type="submit" loading={derivarForm.processing}>Derivar</Button>
-                        <Button type="button" variant="secondary" onClick={() => setDerivarOpen(false)}>Cancelar</Button>
+                        <Button type="submit" loading={actuacionForm.processing}>Guardar</Button>
+                        <Button type="button" variant="secondary" onClick={() => setActuacionOpen(false)}>Cancelar</Button>
                     </div>
                 </form>
             </Modal>
-
-            <AlertDialog
-                open={derivarSuccess !== null}
-                onClose={() => setDerivarSuccess(null)}
-                icon="✓"
-                title="Trámite Derivado"
-                description={`Derivado exitosamente a ${derivarSuccess?.destino ?? '—'}`}
-            >
-                {derivarSuccess?.glosa && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Glosa: {derivarSuccess.glosa}
-                    </p>
-                )}
-            </AlertDialog>
 
             <Modal
                 open={recepcionarOpen !== null}

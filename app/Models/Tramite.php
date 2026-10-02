@@ -20,6 +20,7 @@ class Tramite extends Model
         'descripcion',
         'numero_diamante',
         'estado',
+        'urgente',
         'area_id',
         'creado_por',
         'derivado_a',
@@ -41,6 +42,7 @@ class Tramite extends Model
         return [
             'fecha' => 'datetime',
             'fecha_finalizacion' => 'datetime',
+            'urgente' => 'boolean',
         ];
     }
 
@@ -62,6 +64,11 @@ class Tramite extends Model
     public function derivaciones(): HasMany
     {
         return $this->hasMany(Derivacion::class)->orderBy('numero_derivacion');
+    }
+
+    public function actuaciones(): HasMany
+    {
+        return $this->hasMany(Actuacion::class)->orderBy('fecha_actuacion');
     }
 
     public function getNumeroFormateadoAttribute(): string
