@@ -3,16 +3,24 @@
 namespace App\Services;
 
 use App\Models\Actuacion;
-use App\Models\Tramite;
+use App\Models\Derivacion;
+use InvalidArgumentException;
 
 class ActuacionService
 {
-    public function crear(Tramite $tramite, array $data): Actuacion
+    public function crear(Derivacion $derivacion, array $data, int $actorId): Actuacion
     {
+        if ($derivacion->estado !== 'recepcionado' || $derivacion->derivado_a !== $actorId) {
+            throw new InvalidArgumentException('Solo puedes registrar actuaciones en derivaciones recepcionadas por ti.');
+        }
+
+        // El área es la del trámite y el funcionario el del usuario que lo tiene asignado.
+        $tramite = $derivacion->tramite;
+
         $actuacion = Actuacion::create([
-            'tramite_id' => $tramite->id,
-            'area_id' => $data['area_id'],
-            'funcionario_id' => $data['funcionario_id'],
+            'derivacion_id' => $derivacion->id,
+            'area_id' => $tramite->area_id,
+            'funcionario_id' => $tramite->asignado?->funcionario_id,
             'glosa' => $data['glosa'],
             'fecha_actuacion' => now(),
         ]);

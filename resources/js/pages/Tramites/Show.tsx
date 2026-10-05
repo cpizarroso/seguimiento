@@ -6,7 +6,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Table, type Column } from '@/components/ui/Table';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useState } from 'react';
+import { TramiteTimeline } from '@/components/features/tramites/TramiteTimeline';
+import { useEffect, useState } from 'react';
 import type { Tramite, Actuacion, Area } from '@/types/generated/Tramite';
 import type { User } from '@/types/generated/User';
 
@@ -57,7 +58,7 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
     const [finalizarOpen, setFinalizarOpen] = useState(false);
     const [actuacionOpen, setActuacionOpen] = useState(false);
 
-    const actuacionForm = useForm({ area_id: '', funcionario_id: '', glosa: '' });
+    const actuacionForm = useForm({ glosa: '' });
     const recepcionarForm = useForm({ glosa_recepcion: '' });
     const observarForm = useForm({ glosa_observacion: '', derivado_a: '', estado: 'observado' });
     const finalizarForm = useForm({ glosa_finalizacion: '', estado: 'finalizado' });
@@ -71,7 +72,24 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
     const puedeObservar = puedeGestionar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
     const puedeFinalizar = puedeGestionar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
     const puedeRecepcionar = puedeGestionar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
-    const puedeActuar = puedeGestionar && tramite.estado !== 'finalizado';
+
+    const derivaciones = tramite.derivaciones ?? [];
+    const [derivacionSeleccionadaId, setDerivacionSeleccionadaId] = useState<number | null>(
+        derivaciones.at(-1)?.id ?? null,
+    );
+
+    useEffect(() => {
+        setDerivacionSeleccionadaId(derivaciones.at(-1)?.id ?? null);
+    }, [tramite.id]);
+
+    const derivacionSeleccionada = derivaciones.find((d) => d.id === derivacionSeleccionadaId)
+        ?? derivaciones.at(-1);
+    const actuacionesVisibles = derivacionSeleccionada?.actuaciones ?? [];
+    const puedeActuar = puedeGestionar
+        && tramite.estado !== 'finalizado'
+        && !!derivacionSeleccionada
+        && derivacionSeleccionada.estado === 'recepcionado'
+        && derivacionSeleccionada.derivado_a?.id === usuarioId;
     const actuacionColumns: Column<Actuacion>[] = [
         {
             key: 'fecha_actuacion',
@@ -109,7 +127,7 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
         <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green flex items-center gap-3">
-                    Trámite N° {tramite.numero_formateado}/{tramite.year}
+                    Trámite N° {tramite.numero_completo}
                     <Badge variant={estadoColors[tramite.estado] ?? 'default'} className="text-base px-4 py-1">
                         {estadoLabels[tramite.estado] ?? tramite.estado}
                     </Badge>
@@ -154,7 +172,7 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">N° Trámite</dt>
-                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{tramite.numero_formateado}/{tramite.year}</dd>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{tramite.numero_completo}</dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Fecha</dt>
@@ -193,21 +211,47 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
             </Card>
 
             <Card>
-                <div className="mb-4 flex items-center justify-between">
+                <h3 className="mb-4 text-lg font-semibold text-patuju-green dark:text-patuju-green">Historial de derivaciones</h3>
+                <TramiteTimeline derivaciones={tramite.derivaciones ?? []} />
+            </Card>
+
+            <Card>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <h3 className="text-lg font-semibold text-patuju-green dark:text-patuju-green">Actuaciones</h3>
-                    {puedeActuar && (
-                        <Button onClick={() => setActuacionOpen(true)}>Registrar actuación</Button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-3">
+                        {derivaciones.length > 0 && (
+                            <Select
+                                aria-label="Derivación"
+                                className="w-64"
+                                value={derivacionSeleccionada ? String(derivacionSeleccionada.id) : ''}
+                                onChange={(e) => setDerivacionSeleccionadaId(e.target.value ? Number(e.target.value) : null)}
+                                options={derivaciones.map((d) => ({
+                                    value: String(d.id),
+                                    label: `N° ${d.numero_derivacion} · ${d.estado} · → ${d.derivado_a?.name ?? '—'}`,
+                                }))}
+                            />
+                        )}
+                        {puedeActuar && (
+                            <Button onClick={() => setActuacionOpen(true)}>Registrar actuación</Button>
+                        )}
+                    </div>
                 </div>
-                {tramite.actuaciones && tramite.actuaciones.length > 0 ? (
+                {actuacionesVisibles.length > 0 ? (
                     <Table
                         columns={actuacionColumns}
-                        data={tramite.actuaciones}
+                        data={actuacionesVisibles}
                         keyExtractor={(a) => a.id}
                     />
                 ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                        Este trámite aún no tiene actuaciones registradas.
+                        {derivaciones.length === 0
+                            ? 'Este trámite aún no tiene derivaciones registradas.'
+                            : 'La derivación seleccionada aún no tiene actuaciones registradas.'}
+                    </p>
+                )}
+                {!puedeActuar && derivaciones.length > 0 && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                        Solo puedes registrar actuaciones en derivaciones recepcionadas por ti.
                     </p>
                 )}
             </Card>
@@ -216,7 +260,8 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        actuacionForm.post(`/tramites/${tramite.id}/actuaciones`, {
+                        if (!derivacionSeleccionada) return;
+                        actuacionForm.post(`/derivaciones/${derivacionSeleccionada.id}/actuaciones`, {
                             onSuccess: () => {
                                 setActuacionOpen(false);
                                 actuacionForm.reset();
@@ -225,22 +270,11 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                     }}
                     className="space-y-4"
                 >
-                    <Select
-                        label="Área"
-                        placeholder="Seleccione un área"
-                        options={(areas?.data ?? []).map((a) => ({ value: String(a.id), label: `${a.nombre} (${a.sigla})` }))}
-                        value={actuacionForm.data.area_id}
-                        onChange={(e) => actuacionForm.setData('area_id', e.target.value)}
-                        error={actuacionForm.errors.area_id}
-                    />
-                    <Select
-                        label="Funcionario"
-                        placeholder="Seleccione un funcionario"
-                        options={(funcionarios?.data ?? []).map((f) => ({ value: String(f.id), label: `${f.nombre} ${f.apellidos}` }))}
-                        value={actuacionForm.data.funcionario_id}
-                        onChange={(e) => actuacionForm.setData('funcionario_id', e.target.value)}
-                        error={actuacionForm.errors.funcionario_id}
-                    />
+                    <div className="rounded-lg bg-patuju-cream/60 dark:bg-gray-700/50 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
+                        Área: <span className="font-medium">{tramite.area?.nombre ?? '—'}</span>
+                        {' · '}Responsable: <span className="font-medium">{derivacionSeleccionada?.derivado_a?.name ?? '—'}</span>
+                        <span className="block mt-0.5 text-gray-500 dark:text-gray-400">Se asignan automáticamente desde el trámite.</span>
+                    </div>
                     <div>
                         <label htmlFor="glosa" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">
                             Glosa

@@ -64,11 +64,12 @@ export interface Derivacion {
     glosa_recepcion: string | null;
     estado: string;
     dias_en_derivacion: number;
+    actuaciones: Actuacion[];
 }
 
 export interface Actuacion {
     id: number;
-    tramite_id: number;
+    derivacion_id: number;
     glosa: string;
     fecha_actuacion: string;
     dias_transcurridos: number;

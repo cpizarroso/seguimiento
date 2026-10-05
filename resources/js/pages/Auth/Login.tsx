@@ -20,6 +20,11 @@ export default function Login() {
         <div className="flex min-h-screen items-center justify-center bg-patuju-white dark:bg-gray-900">
             <Card padding="lg" className="w-full max-w-md">
                 <div className="mb-6 text-center">
+                    <img
+                        src="/favicon_io/android-chrome-192x192.png"
+                        alt="Seguimiento de Trámites"
+                        className="mx-auto mb-3 h-16 w-16"
+                    />
                     <h1 className="text-2xl font-bold text-patuju-green">Seguimiento de Trámites</h1>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Inicia sesión para continuar</p>
                 </div>

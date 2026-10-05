@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Actuacion extends Model
 {
+    use HasFactory;
+
     protected $table = 'actuaciones';
 
     protected $fillable = [
-        'tramite_id',
+        'derivacion_id',
         'area_id',
         'funcionario_id',
         'glosa',
@@ -24,9 +27,9 @@ class Actuacion extends Model
         ];
     }
 
-    public function tramite(): BelongsTo
+    public function derivacion(): BelongsTo
     {
-        return $this->belongsTo(Tramite::class);
+        return $this->belongsTo(Derivacion::class);
     }
 
     public function area(): BelongsTo

@@ -46,7 +46,7 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
                 ->name('derivaciones.recepcionar');
             Route::put('derivaciones/{derivacion}/rechazar', [DerivacionController::class, 'rechazar'])
                 ->name('derivaciones.rechazar');
-            Route::post('tramites/{tramite}/actuaciones', [ActuacionController::class, 'store'])
+            Route::post('derivaciones/{derivacion}/actuaciones', [ActuacionController::class, 'store'])
                 ->name('actuaciones.store');
             Route::delete('actuaciones/{actuacion}', [ActuacionController::class, 'destroy'])
                 ->name('actuaciones.destroy');

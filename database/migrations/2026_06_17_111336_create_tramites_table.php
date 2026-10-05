@@ -12,10 +12,12 @@ return new class extends Migration
             $table->id();
             $table->integer('numero_tramite');
             $table->integer('year');
+            $table->string('numero_completo', 30)->nullable()->unique();
             $table->dateTime('fecha');
             $table->text('descripcion');
             $table->string('numero_diamante', 255)->nullable();
             $table->string('estado', 50)->default('iniciado');
+            $table->boolean('urgente')->default(false);
             $table->foreignId('area_id')->constrained('areas')->cascadeOnDelete();
             $table->foreignId('creado_por')->constrained('users')->cascadeOnDelete();
             $table->foreignId('derivado_a')->nullable()->constrained('users')->nullOnDelete();

@@ -27,8 +27,7 @@ class TramiteService
         ])
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
-                    $query->whereRaw("CONCAT(LPAD(numero_tramite, 4, '0'), '/', year) LIKE ?", ["%{$v}%"])
-                        ->orWhereRaw("CONCAT((SELECT sigla FROM areas WHERE id = tramites.area_id), '-', LPAD(numero_tramite, 4, '0'), '/', year) LIKE ?", ["%{$v}%"])
+                    $query->where('numero_completo', 'like', "%{$v}%")
                         ->orWhere('numero_tramite', 'like', "%{$v}%")
                         ->orWhere('descripcion', 'like', "%{$v}%")
                         ->orWhere('numero_diamante', 'like', "%{$v}%")
@@ -107,7 +106,11 @@ class TramiteService
             'asignado',
             'area',
             'finalizadoPor',
-            'derivaciones' => fn ($q) => $q->with(['de', 'a'])->orderBy('numero_derivacion'),
+            'derivaciones' => fn ($q) => $q->with([
+                'de',
+                'a',
+                'actuaciones' => fn ($qa) => $qa->with(['area', 'funcionario'])->orderBy('fecha_actuacion'),
+            ])->orderBy('numero_derivacion'),
             'actuaciones' => fn ($q) => $q->with(['area', 'funcionario'])->orderBy('fecha_actuacion'),
         ])->findOrFail($id);
     }

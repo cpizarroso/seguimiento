@@ -14,8 +14,6 @@ class StoreActuacionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'area_id' => ['required', 'exists:areas,id'],
-            'funcionario_id' => ['required', 'exists:funcionarios,id'],
             'glosa' => ['required', 'string', 'max:5000'],
         ];
     }

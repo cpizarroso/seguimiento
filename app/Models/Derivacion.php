@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Derivacion extends Model
 {
@@ -50,6 +51,11 @@ class Derivacion extends Model
     public function a(): BelongsTo
     {
         return $this->belongsTo(User::class, 'derivado_a');
+    }
+
+    public function actuaciones(): HasMany
+    {
+        return $this->hasMany(Actuacion::class)->orderBy('fecha_actuacion');
     }
 
     public function getDiasEnDerivacionAttribute(): int

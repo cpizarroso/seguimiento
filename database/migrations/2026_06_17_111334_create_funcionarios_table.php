@@ -21,14 +21,28 @@ return new class extends Migration
             $table->date('fecha_ingreso')->nullable();
             $table->string('estado', 20)->default('activo');
             $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
+            $table->foreignId('puesto_id')->nullable()->constrained('puestos')->nullOnDelete();
             $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->softDeletes();
             $table->timestamps();
+        });
+
+        // Relación 1a1 users.funcionario_id -> funcionarios.id (circular, por eso se añade aquí
+        // cuando ambas tablas ya existen; equivale a 2026_10_02_000003_funcionario_usuario_1a1).
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('funcionario_id', 'users_funcionario_id_foreign')
+                ->references('id')
+                ->on('funcionarios')
+                ->restrictOnDelete();
         });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign('users_funcionario_id_foreign');
+        });
+
         Schema::dropIfExists('funcionarios');
     }
 };

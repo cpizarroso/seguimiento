@@ -17,7 +17,7 @@ class ActuacionResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'tramite_id' => $this->tramite_id,
+            'derivacion_id' => $this->derivacion_id,
             'glosa' => $this->glosa,
             'fecha_actuacion' => $this->fecha_actuacion?->format('d/m/Y H:i'),
             'dias_transcurridos' => $this->dias_transcurridos,

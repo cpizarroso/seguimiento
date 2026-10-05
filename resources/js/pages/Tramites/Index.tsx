@@ -34,7 +34,6 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
     const { can } = usePermissions();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
-    const [soloUrgentes, setSoloUrgentes] = useState(params.get('urgente') === '1');
     const [createOpen, setCreateOpen] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,25 +50,17 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         }
     }, [createOpen]);
 
-    const buscar = (urgenteOverride?: boolean) => {
-        const urgente = urgenteOverride ?? soloUrgentes;
+    const buscar = () => {
         router.get('/tramites', {
             search: search || undefined,
-            urgente: urgente ? '1' : undefined,
             page: undefined,
         }, { preserveState: true, preserveScroll: true });
     };
 
     const limpiar = () => {
         setSearch('');
-        router.get('/tramites', { urgente: soloUrgentes ? '1' : undefined, page: 1 }, { preserveState: true, preserveScroll: true });
+        router.get('/tramites', { page: 1 }, { preserveState: true, preserveScroll: true });
         searchInputRef.current?.focus();
-    };
-
-    const toggleUrgentes = () => {
-        const next = !soloUrgentes;
-        setSoloUrgentes(next);
-        buscar(next);
     };
 
     const ACENTOS: Record<string, string> = {
@@ -108,7 +99,7 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
             header: 'N° Trámite',
             render: (t: Tramite) => (
                 <span className="whitespace-nowrap">
-                    <Link href={`/tramites/${t.id}?search=${encodeURIComponent(search)}${soloUrgentes ? '&urgente=1' : ''}`} className="text-patuju-green hover:underline font-medium">
+                    <Link href={`/tramites/${t.id}?search=${encodeURIComponent(search)}`} className="text-patuju-green hover:underline font-medium">
                         {resaltar(t.numero_completo)}
                     </Link>
                     {t.urgente && (
@@ -226,15 +217,6 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                             Buscar
                         </button>
                     </div>
-                    <label className="flex cursor-pointer items-center gap-2 self-start text-sm text-gray-600 dark:text-gray-300">
-                        <input
-                            type="checkbox"
-                            checked={soloUrgentes}
-                            onChange={toggleUrgentes}
-                            className="h-4 w-4 rounded accent-[#C1121F]"
-                        />
-                        Solo urgentes
-                    </label>
                 </div>
             </Card>
 
@@ -253,8 +235,8 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                     total={tramites.meta.total}
                     perPage={tramites.meta.per_page}
                     label="trámites"
-                    onPageChange={(page) => router.get('/tramites', { page, search: search || undefined, urgente: soloUrgentes ? '1' : undefined }, { preserveState: true })}
-                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search: search || undefined, urgente: soloUrgentes ? '1' : undefined }, { preserveState: true })}
+                    onPageChange={(page) => router.get('/tramites', { page, search: search || undefined }, { preserveState: true })}
+                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search: search || undefined }, { preserveState: true })}
                 />
             </Card>
 

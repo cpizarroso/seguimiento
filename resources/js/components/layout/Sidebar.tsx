@@ -52,10 +52,10 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
         >
             <div className={`flex h-16 items-center border-b border-gray-100 dark:border-gray-700 ${collapsed ? 'justify-center px-0' : 'justify-between gap-2 px-6'}`}>
                 {collapsed ? (
-                    <span className="text-2xl">📌</span>
+                    <img src="/favicon_io/favicon-32x32.png" alt="Seguimiento" className="h-8 w-8" />
                 ) : (
                     <div className="flex items-center gap-2">
-                        <span className="text-2xl">📌</span>
+                        <img src="/favicon_io/favicon-32x32.png" alt="Seguimiento" className="h-8 w-8" />
                         <h1 className="text-lg font-bold text-patuju-green dark:text-patuju-green">Seguimiento</h1>
                     </div>
                 )}

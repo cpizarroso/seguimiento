@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('phone', 20)->nullable();
             $table->string('profesion', 255)->nullable();
             $table->string('cargo', 255)->nullable();
-            $table->foreignId('funcionario_id')->nullable()->index();
+            $table->foreignId('funcionario_id')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

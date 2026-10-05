@@ -27,6 +27,7 @@ class DerivacionResource extends JsonResource
             'glosa_observacion' => $this->glosa_observacion,
             'estado' => $this->estado,
             'dias_en_derivacion' => $this->dias_en_derivacion,
+            'actuaciones' => ActuacionResource::collection($this->whenLoaded('actuaciones')),
         ];
     }
 }

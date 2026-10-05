@@ -5,11 +5,9 @@ namespace Database\Seeders;
 use App\Models\Area;
 use App\Models\ContadorTramite;
 use App\Models\Funcionario;
-use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Tramite;
 use App\Models\User;
-use App\Models\UserPuesto;
 use Database\Seeders\RolesYPermisosSeeder;
 use Database\Factories\DerivacionFactory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -35,7 +33,7 @@ class DatabaseSeeder extends Seeder
             'roles',
             'acciones',
             'modulos',
-
+            'user_puesto',
             'users',
             'funcionarios',
             'puestos',
@@ -57,15 +55,6 @@ class DatabaseSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
-    private function asignarPuesto(User $user): void
-    {
-        UserPuesto::create([
-            'user_id' => $user->id,
-            'puesto_id' => Puesto::inRandomOrder()->value('id'),
-            'fecha_inicio' => now()->toDateString(),
-        ]);
-    }
-
     public function run(): void
     {
         $this->limpiarTablas();
@@ -74,64 +63,17 @@ class DatabaseSeeder extends Seeder
 
         $this->call(AreaSeeder::class);
 
-        $admin1 = User::create([
-            'name' => 'Admin',
-            'email' => 'admin@seguimiento.gob.bo',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
-        $this->asignarPuesto($admin1);
-
-        $admin2 = User::create([
-            'name' => 'Alfredo Montoya Calderón',
-            'email' => 'amontoya@seguimiento.gob.bo',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
-        $this->asignarPuesto($admin2);
-
-        $admin3 = User::create([
-            'name' => 'Cristian Marcelo Pizarroso Peredo',
-            'email' => 'cpizarroso@seguimiento.gob.bo',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
-        $this->asignarPuesto($admin3);
+        $this->call(AdminUserSeeder::class);
 
         $this->call(FuncionarioSeeder::class);
 
         $this->call(UserSeeder::class);
 
-        $ericka = User::factory()->create([
-            'name' => 'Erika Rodriguez',
-            'email' => 'erodriguez@'.config('app.user_domain'),
-            'password' => bcrypt('password'),
-            'role' => 'user',
-        ]);
-        $this->asignarPuesto($ericka);
-
-        $areaId = Area::where('sigla', 'DLA')->value('id') ?? 1;
-        $ultimoNumero = Tramite::where('area_id', $areaId)->max('numero_tramite') ?? 0;
-        $year = now()->year;
-
-        foreach (range(1, 10) as $i) {
-            $tramite = Tramite::create([
-                'numero_tramite' => $ultimoNumero + $i,
-                'year' => $year,
-                'fecha' => now()->subDays(10 - $i),
-                'descripcion' => "Trámite {$i} - Erika Rodríguez",
-                'numero_diamante' => "{$year}-".str_pad((string) ($ultimoNumero + $i), 4, '0', STR_PAD_LEFT),
-                'estado' => 'iniciado',
-                'area_id' => $areaId,
-                'creado_por' => $ericka->id,
-                'derivado_a' => null,
-                'ultima_respuesta' => null,
-            ]);
-
-            DerivacionFactory::new()->crearCadena($tramite, random_int(3, 8));
-        }
+        $this->call(UserSecretariaSeeder::class);
 
         $this->call(TramiteSeeder::class);
+
+        $this->call(ActuacionSeeder::class);
 
         $this->vincularUsuariosSinFuncionario();
 

@@ -60,7 +60,7 @@ class TramiteController extends Controller
         );
 
         return to_route('tramites.show', $tramite)
-            ->with('success', "Trámite N° {$tramite->numero_formateado}/{$tramite->year} creado exitosamente.");
+            ->with('success', "Trámite N° {$tramite->numero_completo} creado exitosamente.");
     }
 
     public function show(Tramite $tramite): Response
@@ -88,7 +88,7 @@ class TramiteController extends Controller
         $this->tramiteService->actualizar($tramite, $request->validated());
 
         return to_route('tramites.show', $tramite)
-            ->with('success', "Trámite N° {$tramite->numero_formateado}/{$tramite->year} actualizado exitosamente.");
+            ->with('success', "Trámite N° {$tramite->numero_completo} actualizado exitosamente.");
     }
 
     public function updateEstado(UpdateEstadoTramiteRequest $request, Tramite $tramite): RedirectResponse

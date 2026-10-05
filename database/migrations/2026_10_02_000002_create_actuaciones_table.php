@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('actuaciones', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tramite_id')->constrained('tramites')->cascadeOnDelete();
+            $table->foreignId('derivacion_id')->constrained('derivaciones')->cascadeOnDelete();
             $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
             $table->foreignId('funcionario_id')->nullable()->constrained('funcionarios')->nullOnDelete();
             $table->text('glosa');

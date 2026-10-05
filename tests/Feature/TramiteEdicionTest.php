@@ -115,9 +115,10 @@ it('exige descripcion y area al editar un tramite', function () {
 it('el indice entrega la ultima actuacion de cada tramite', function () {
     $funcionario = Funcionario::factory()->create();
     $tramite = Tramite::factory()->create();
+    $derivacion = $tramite->crearPrimeraDerivacion();
 
     Actuacion::create([
-        'tramite_id' => $tramite->id,
+        'derivacion_id' => $derivacion->id,
         'area_id' => $tramite->area_id,
         'funcionario_id' => $funcionario->id,
         'glosa' => 'Primera actuación',
@@ -125,7 +126,7 @@ it('el indice entrega la ultima actuacion de cada tramite', function () {
     ]);
 
     $ultima = Actuacion::create([
-        'tramite_id' => $tramite->id,
+        'derivacion_id' => $derivacion->id,
         'area_id' => $tramite->area_id,
         'funcionario_id' => $funcionario->id,
         'glosa' => 'Actuación más reciente',
