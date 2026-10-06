@@ -4,10 +4,55 @@ namespace App\Services;
 
 use App\Models\Tramite;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ReporteService
 {
+    public const PER_PAGE_DOCUMENTO = 15;
+
+    /**
+     * Trámites del área del usuario en un rango de fechas.
+     * El filtro usa created_at (fecha de ingreso al sistema).
+     * Sin área, el reporte queda vacío.
+     *
+     * @param  array{fecha_desde?: ?string, fecha_hasta?: ?string}  $filtros
+     */
+    public function ingresadosQuery(?int $areaId, array $filtros = []): Builder
+    {
+        $query = Tramite::with('creador:id,name');
+
+        if ($areaId === null) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query
+            ->where('area_id', $areaId)
+            ->when($filtros['fecha_desde'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
+            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
+            ->orderBy('numero_tramite')
+            ->orderBy('id');
+    }
+
+    /**
+     * @param  array{fecha_desde?: ?string, fecha_hasta?: ?string, per_page?: ?int}  $filtros
+     */
+    public function ingresadosPaginados(?int $areaId, array $filtros = []): LengthAwarePaginator
+    {
+        $perPage = min(max((int) ($filtros['per_page'] ?? self::PER_PAGE_DOCUMENTO), 1), 100);
+
+        return $this->ingresadosQuery($areaId, $filtros)->paginate($perPage);
+    }
+
+    /**
+     * @param  array{fecha_desde?: ?string, fecha_hasta?: ?string}  $filtros
+     */
+    public function ingresadosColeccion(?int $areaId, array $filtros = []): Collection
+    {
+        return $this->ingresadosQuery($areaId, $filtros)->get();
+    }
     public function resumenGeneral(?int $userId = null): array
     {
         $query = Tramite::query();

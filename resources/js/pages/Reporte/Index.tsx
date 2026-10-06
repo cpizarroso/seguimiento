@@ -1,188 +1,168 @@
+import { useRef } from 'react';
+import { useReporte } from '@/hooks/useReporte';
+import type { ReporteFiltros as FiltrosParams } from '@/services/reporteService';
+import { ReporteFiltros } from '@/components/features/reporte/ReporteFiltros';
+import { ReporteHistorial, type ReporteGuardado } from '@/components/features/reporte/ReporteHistorial';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { SemanalChart } from '@/components/features/reporte/SemanalChart';
-import { TramitesPorAreaChart } from '@/components/features/reporte/TramitesPorAreaChart';
+import type { PaginatedData, Tramite } from '@/types/generated/Tramite';
 
-interface AreaRow {
-    name: string;
-    total: number;
-}
-
-interface UrgenteItem {
+interface AuthUsuario {
     id: number;
-    numero_completo: string;
-    descripcion: string;
-    dias: number;
-    area_sigla: string;
-    estado: string;
+    name: string;
+    area: string | null;
+    area_id: number | null;
 }
 
-interface UrgentesData {
-    tres_dias: number;
-    cuatro_dias: number;
-    cinco_dias: number;
-    lista: UrgenteItem[];
+interface FiltrosBackend {
+    fecha_desde: string | null;
+    fecha_hasta: string | null;
+    hoy: boolean;
 }
 
-interface ReporteProps {
-    total_tramites: number;
-    por_estado: Record<string, number>;
-    iniciados_por_dia: Record<number, number>;
-    finalizados_por_dia: Record<number, number>;
-    tramites_por_area: AreaRow[];
-    tramites_urgentes: UrgentesData;
-    auth_user: { id: number; name: string; role: string; permisos: string[] };
-    filtro_user_id: number;
-    tramites_por_mes: Record<string, number>;
+interface ArchivoGuardado {
+    path: string;
+    url: string;
 }
 
-const estadoConfig: Record<string, { label: string; color: string }> = {
-    iniciado: { label: 'Iniciados', color: 'text-blue-600' },
-    proceso: { label: 'En Proceso', color: 'text-patuju-yellow' },
-    observado: { label: 'Observados', color: 'text-gray-600 dark:text-gray-400' },
-    finalizado: { label: 'Finalizados', color: 'text-patuju-green' },
-};
+interface ReporteIndexProps {
+    auth_usuario: AuthUsuario;
+    filtros: FiltrosBackend;
+    generado: boolean;
+    reporte: PaginatedData<Tramite>;
+    archivo: ArchivoGuardado | null;
+    historial: ReporteGuardado[];
+    vista_previa_url: string | null;
+}
 
-const mesLabels: Record<string, string> = {
-    '01': 'Ene', '02': 'Feb', '03': 'Mar', '04': 'Abr',
-    '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Ago',
-    '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dic',
-};
+export default function ReporteIndex({ auth_usuario, filtros, generado, reporte, archivo, historial, vista_previa_url }: ReporteIndexProps) {
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const {
+        fechaDesde,
+        fechaHasta,
+        soloHoy,
+        cambiarRango,
+        cambiarHoy,
+        generar,
+        guardar,
+        limpiar,
+        rangoValido,
+    } = useReporte({
+        fecha_desde: filtros.fecha_desde,
+        fecha_hasta: filtros.fecha_hasta,
+        hoy: filtros.hoy,
+    });
 
-export default function Reporte({
-    total_tramites,
-    por_estado,
-    iniciados_por_dia,
-    finalizados_por_dia,
-    tramites_por_area,
-    tramites_urgentes,
-    auth_user,
-    filtro_user_id,
-    tramites_por_mes,
-}: ReporteProps) {
-    const esAdmin = auth_user.permisos?.includes('usuarios.consulta') ?? false;
-    const esMiReporte = filtro_user_id === auth_user.id;
-    const titulo = esAdmin && !esMiReporte
-        ? `Reporte — Usuario #${filtro_user_id}`
-        : 'Mi Reporte';
+    const puedeImprimir = archivo !== null;
+
+    const imprimir = () => {
+        const ventana = iframeRef.current?.contentWindow;
+        if (ventana) {
+            ventana.focus();
+            ventana.print();
+        } else {
+            window.print();
+        }
+    };
+
+    // Filtros aplicados (los que generaron la vista previa). Guardar y
+    // paginar los reutilizan para que el PDF coincida con lo mostrado,
+    // aunque el formulario se edite después sin clicar Generar.
+    const filtrosAplicados: FiltrosParams = {
+        fecha_desde: filtros.fecha_desde ?? '',
+        fecha_hasta: filtros.fecha_hasta ?? '',
+        hoy: filtros.hoy,
+        per_page: reporte.meta.per_page,
+    };
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">
-                        {titulo}
-                    </h2>
-                    {esMiReporte && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Trámites creados por <strong>{auth_user.name}</strong>
-                        </p>
-                    )}
-                </div>
+            <style>{`@media print {
+                .app-sidebar, .app-header { display: none !important; }
+                main { padding: 0 !important; overflow: visible !important; }
+                .reporte-documento { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            }`}</style>
+
+            <div className="flex items-center justify-between print:hidden">
+                <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">
+                    Reporte
+                </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Trámites</p>
-                    <p className="mt-1 text-3xl font-bold text-patuju-green">{total_tramites}</p>
-                </Card>
-                {Object.entries(estadoConfig).map(([estado, config]) => (
-                    <Card key={estado}>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{config.label}</p>
-                        <p className={`mt-1 text-3xl font-bold ${config.color}`}>
-                            {por_estado[estado] ?? 0}
-                        </p>
+            <ReporteFiltros
+                usuarioNombre={auth_usuario.name}
+                usuarioArea={auth_usuario.area}
+                fechaDesde={fechaDesde}
+                fechaHasta={fechaHasta}
+                soloHoy={soloHoy}
+                puedeGenerar={rangoValido}
+                onRangoChange={cambiarRango}
+                onHoyChange={cambiarHoy}
+                onGenerar={generar}
+                onLimpiar={limpiar}
+            />
+
+            {generado && (
+                <div className="space-y-4">
+                    <Card padding="sm">
+                        <div className="mx-auto max-w-[8.5in]">
+                            {vista_previa_url ? (
+                                <iframe
+                                    ref={iframeRef}
+                                    src={vista_previa_url}
+                                    title="Vista previa del reporte en PDF"
+                                    className="h-[75vh] min-h-[560px] w-full rounded-lg border border-gray-200 bg-white dark:border-gray-700"
+                                />
+                            ) : (
+                                <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Sin datos para mostrar en el rango seleccionado.
+                                </p>
+                            )}
+                            <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                                {reporte.meta.total} registros
+                            </p>
+                        </div>
                     </Card>
-                ))}
-            </div>
 
-            {tramites_urgentes.lista.length > 0 && (
-                <Card>
-                    <h3 className="text-lg font-semibold text-patuju-green mb-4">Trámites Urgentes</h3>
-                    <div className="flex gap-4 mb-4">
-                        <div className="flex-1 text-center p-3 rounded-lg bg-patuju-yellow/10 border border-patuju-yellow/30">
-                            <p className="text-2xl font-bold text-patuju-yellow">{tramites_urgentes.tres_dias}</p>
-                            <p className="text-xs text-gray-600">3+ días</p>
+                    <Card padding="sm" className="print:hidden">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-wrap gap-2">
+                                <Button onClick={() => guardar(filtrosAplicados)} variant="primary">
+                                    Guardar en storage
+                                </Button>
+                                {puedeImprimir && archivo ? (
+                                    <a
+                                        href={archivo.url}
+                                        className="inline-flex items-center justify-center rounded-lg font-medium transition-colors px-4 py-2 text-sm bg-patuju-cream dark:bg-gray-700 text-patuju-green dark:text-patuju-green border border-patuju-green/30 hover:bg-patuju-cream/80"
+                                    >
+                                        Descargar PDF
+                                    </a>
+                                ) : null}
+                                <Button
+                                    variant="secondary"
+                                    onClick={imprimir}
+                                    disabled={!puedeImprimir}
+                                    title={puedeImprimir ? 'Imprimir documento' : 'Primero guarde el reporte en el storage'}
+                                >
+                                    Imprimir
+                                </Button>
+                            </div>
+                            {!puedeImprimir && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Para imprimir, primero guarde el reporte en el storage.
+                                </p>
+                            )}
+                            {puedeImprimir && archivo && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Guardado: {archivo.path}
+                                </p>
+                            )}
                         </div>
-                        <div className="flex-1 text-center p-3 rounded-lg bg-patuju-orange/10 border border-patuju-orange/30">
-                            <p className="text-2xl font-bold text-patuju-orange">{tramites_urgentes.cuatro_dias}</p>
-                            <p className="text-xs text-gray-600">4+ días</p>
-                        </div>
-                        <div className="flex-1 text-center p-3 rounded-lg bg-patuju-red/10 border border-patuju-red/30">
-                            <p className="text-2xl font-bold text-patuju-red">{tramites_urgentes.cinco_dias}</p>
-                            <p className="text-xs text-gray-600">5+ días</p>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        {tramites_urgentes.lista.map((item) => (
-                            <a
-                                key={item.id}
-                                href={`/tramites/${item.id}`}
-                                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-patuju-green truncate">{item.numero_completo}</p>
-                                    <p className="text-xs text-gray-500 truncate">{item.descripcion}</p>
-                                </div>
-                                <div className="flex items-center gap-2 ml-3">
-                                    {item.area_sigla && (
-                                        <span className="text-xs text-gray-400">{item.area_sigla}</span>
-                                    )}
-                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                                        item.dias >= 5 ? 'bg-patuju-red/10 text-patuju-red'
-                                        : item.dias >= 4 ? 'bg-patuju-orange/10 text-patuju-orange'
-                                        : 'bg-patuju-yellow/10 text-patuju-yellow'
-                                    }`}>
-                                        {item.dias}
-                                    </span>
-                                </div>
-                            </a>
-                        ))}
-                    </div>
-                </Card>
+                    </Card>
+                </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <SemanalChart
-                    title="Trámites Iniciados por Día de la Semana"
-                    data={iniciados_por_dia}
-                    color="#2D6A4F"
-                />
-                <SemanalChart
-                    title="Trámites Finalizados por Día de la Semana"
-                    data={finalizados_por_dia}
-                    color="#C1121F"
-                />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <TramitesPorAreaChart data={tramites_por_area} />
-                <Card>
-                    <h3 className="text-lg font-semibold text-patuju-green mb-4">
-                        Trámites por Mes
-                    </h3>
-                    <div className="space-y-2">
-                        {Object.entries(tramites_por_mes).slice(-6).map(([mes, total]) => {
-                            const [, mm] = mes.split('-');
-                            return (
-                                <div key={mes} className="flex items-center gap-3">
-                                    <span className="w-20 text-sm text-gray-600 dark:text-gray-400 font-medium">
-                                        {mesLabels[mm] ?? mm} {mes.split('-')[0]}
-                                    </span>
-                                    <div className="flex-1 h-5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-patuju-green rounded-full transition-all"
-                                            style={{ width: `${Math.min((total / Math.max(...Object.values(tramites_por_mes))) * 100, 100)}%` }}
-                                        />
-                                    </div>
-                                    <span className="text-sm font-semibold text-patuju-green w-8 text-right">
-                                        {total}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </Card>
-            </div>
+            <ReporteHistorial historial={historial ?? []} />
         </div>
     );
 }

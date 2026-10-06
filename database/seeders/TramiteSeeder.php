@@ -82,19 +82,88 @@ class TramiteSeeder extends Seeder
         foreach ($this->tramitesDeHoy() as $t) {
             $this->crearTramite($t, $areaIds);
         }
+
+        // Fase 3: 50 trámites de hoy para erodriguez (reporte).
+        // UserSecretariaSeeder corre antes, pero se protege el seed parcial.
+        $erodriguez = User::where('email', 'erodriguez@'.config('app.user_domain'))->first();
+        if ($erodriguez !== null) {
+            $this->crearParaUsuario($erodriguez, 50);
+        }
     }
 
-    private function crearTramite(array $t, array $areaIds): Tramite
+    /**
+     * Crea $cantidad trámites con fecha de hoy para un usuario dado.
+     * Útil para probar el reporte de trámites ingresados.
+     *
+     * @param  User|string|int  $usuario  Modelo, id, email o login (sin dominio).
+     */
+    public function crearParaUsuario(User|string|int $usuario, int $cantidad = 50): void
+    {
+        $user = $this->resolverUsuario($usuario);
+
+        $areaId = $user->funcionario?->area_id
+            ?? $user->puestoActivo?->puesto?->area_id
+            ?? Area::where('sigla', 'DLA')->value('id')
+            ?? Area::orderBy('id')->value('id');
+
+        if ($areaId === null) {
+            throw new \RuntimeException('Sin áreas para asignar los trámites del seed.');
+        }
+
+        $hoy = now()->format('Y-m-d');
+        $year = now()->year;
+
+        $estados = [
+            'iniciado', 'proceso', 'proceso', 'iniciado', 'proceso',
+            'observado', 'proceso', 'iniciado', 'proceso', 'proceso',
+            'finalizado', 'proceso', 'iniciado', 'proceso', 'observado',
+        ];
+
+        // Horarios escalonados entre 08:00 y 18:00.
+        for ($i = 0; $i < $cantidad; $i++) {
+            $minutos = (int) round($i * 600 / max($cantidad, 1));
+            $hora = sprintf('%02d:%02d:00', 8 + intdiv($minutos, 60), $minutos % 60);
+
+            $this->crearTramite([
+                'year' => $year,
+                'fecha' => $hoy,
+                'hora' => $hora,
+                'estado' => $estados[$i % count($estados)],
+                'area_id' => $areaId,
+            ], [$areaId], $user);
+        }
+    }
+
+    private function resolverUsuario(User|string|int $usuario): User
+    {
+        if ($usuario instanceof User) {
+            return $usuario;
+        }
+
+        if (is_int($usuario)) {
+            return User::findOrFail($usuario);
+        }
+
+        $email = str_contains($usuario, '@')
+            ? $usuario
+            : $usuario.'@'.config('app.user_domain');
+
+        return User::where('email', $email)->firstOrFail();
+    }
+
+    private function crearTramite(array $t, array $areaIds, ?User $usuarioFijo = null): Tramite
     {
         $contador = app(ContadorTramiteService::class);
 
         // El área puede venir forzada (ej. trámites de hoy) o del usuario.
-        $areaId = isset($t['area_sigla'])
-            ? Area::where('sigla', $t['area_sigla'])->firstOrFail()->id
-            : null;
+        $areaId = $t['area_id']
+            ?? (isset($t['area_sigla'])
+                ? Area::where('sigla', $t['area_sigla'])->firstOrFail()->id
+                : null);
 
-        // Usuario aleatorio primero: de él salen área, creador y primera derivación.
-        $usuario = User::inRandomOrder()->firstOrFail();
+        // Usuario fijo (ej. seed por usuario) o aleatorio: de él salen
+        // área, creador y primera derivación.
+        $usuario = $usuarioFijo ?? User::inRandomOrder()->firstOrFail();
         $areaId ??= $usuario->funcionario?->area_id
             ?? $usuario->puestoActivo?->puesto?->area_id
             ?? $areaIds[array_rand($areaIds)];

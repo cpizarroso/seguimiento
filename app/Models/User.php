@@ -50,7 +50,10 @@ class User extends Authenticatable
         return $this->hasMany(Tramite::class, 'creado_por');
     }
 
-    public function tramitesAsignados(): HasMany
+    public function reportes(): HasMany
+    {
+        return $this->hasMany(Reporte::class, 'user_id');
+    }    public function tramitesAsignados(): HasMany
     {
         return $this->hasMany(Tramite::class, 'derivado_a');
     }

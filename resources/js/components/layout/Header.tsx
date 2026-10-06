@@ -8,7 +8,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     const { auth } = usePage().props;
 
     return (
-        <header className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 sm:px-6">
+        <header className="app-header flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 sm:px-6">
             <button
                 onClick={onMenuClick}
                 className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"

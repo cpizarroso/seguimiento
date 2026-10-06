@@ -58,6 +58,9 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
         });
 
         Route::get('reporte', [ReporteController::class, 'index'])->name('reporte.index');
+        Route::get('reporte/vista-previa', [ReporteController::class, 'vistaPrevia'])->name('reporte.vista-previa');
+        Route::post('reporte/guardar', [ReporteController::class, 'guardar'])->name('reporte.guardar');
+        Route::get('reporte/descargar', [ReporteController::class, 'descargar'])->name('reporte.descargar');
         Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
         Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 

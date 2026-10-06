@@ -44,7 +44,7 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
 
     return (
         <aside
-            className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out ${
+            className={`app-sidebar fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out ${
                 collapsed ? 'w-16' : 'w-64'
             } ${
                 open ? 'translate-x-0' : '-translate-x-full'
