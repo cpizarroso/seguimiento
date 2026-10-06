@@ -71,34 +71,90 @@ class TramiteSeeder extends Seeder
             ['year' => 2026, 'fecha' => '2026-06-12', 'estado' => 'iniciado'],
         ];
 
+        $areaIds = Area::pluck('id')->toArray();
+
+        // Fase 1: trámites iniciales (históricos).
+        foreach ($tramites as $t) {
+            $this->crearTramite($t, $areaIds);
+        }
+
+        // Fase 2: trámites de hoy, después de los iniciales.
+        foreach ($this->tramitesDeHoy() as $t) {
+            $this->crearTramite($t, $areaIds);
+        }
+    }
+
+    private function crearTramite(array $t, array $areaIds): Tramite
+    {
         $contador = app(ContadorTramiteService::class);
 
-        foreach ($tramites as $t) {
-            // Usuario aleatorio primero: de él salen área, creador y primera derivación.
-            $usuario = User::inRandomOrder()->firstOrFail();
-            $areaId = $usuario->funcionario?->area_id
-                ?? $usuario->puestoActivo?->puesto?->area_id
-                ?? $areaIds[array_rand($areaIds)];
+        // El área puede venir forzada (ej. trámites de hoy) o del usuario.
+        $areaId = isset($t['area_sigla'])
+            ? Area::where('sigla', $t['area_sigla'])->firstOrFail()->id
+            : null;
 
-            // Numeración con la misma lógica de la aplicación.
-            $numero = $contador->siguienteNumero($areaId, $t['year']);
+        // Usuario aleatorio primero: de él salen área, creador y primera derivación.
+        $usuario = User::inRandomOrder()->firstOrFail();
+        $areaId ??= $usuario->funcionario?->area_id
+            ?? $usuario->puestoActivo?->puesto?->area_id
+            ?? $areaIds[array_rand($areaIds)];
 
-            // Datos variables (descripción, urgente, etc.) desde el factory.
-            $tramite = Tramite::factory()->create([
-                'numero_tramite' => $numero,
-                'numero_completo' => Tramite::generarNumeroCompleto($areaId, $numero, $t['year']),
-                'year' => $t['year'],
-                'fecha' => $t['fecha'].' 08:00:00',
-                'estado' => $t['estado'],
-                'area_id' => $areaId,
-                'creado_por' => $usuario->id,
-                'derivado_a' => null,
-                'ultima_respuesta' => null,
-            ]);
+        // Numeración con la misma lógica de la aplicación.
+        $numero = $contador->siguienteNumero($areaId, $t['year']);
 
-            $tramite->crearPrimeraDerivacion();
-            $this->crearDerivaciones($tramite);
+        // Datos variables (descripción, urgente, etc.) desde el factory.
+        // created_at usa la fecha del arreglo, no el momento del seed.
+        $tramite = Tramite::factory()->create([
+            'numero_tramite' => $numero,
+            'numero_completo' => Tramite::generarNumeroCompleto($areaId, $numero, $t['year']),
+            'year' => $t['year'],
+            'fecha' => $t['fecha'].' '.($t['hora'] ?? '08:00:00'),
+            'estado' => $t['estado'],
+            'area_id' => $areaId,
+            'creado_por' => $usuario->id,
+            'derivado_a' => null,
+            'ultima_respuesta' => null,
+            'created_at' => $t['fecha'].' '.($t['hora'] ?? '08:00:00'),
+        ]);
+
+        $tramite->crearPrimeraDerivacion();
+        $this->crearDerivaciones($tramite);
+
+        return $tramite;
+    }
+
+    /**
+     * 15 trámites con fecha de hoy en distintos horarios.
+     */
+    private function tramitesDeHoy(): array
+    {
+        $hoy = now()->format('Y-m-d');
+        $year = now()->year;
+
+        $horas = [
+            '08:00:00', '08:30:00', '09:00:00', '09:30:00', '10:00:00',
+            '10:30:00', '11:00:00', '11:30:00', '12:00:00', '13:00:00',
+            '14:00:00', '15:00:00', '16:00:00', '17:00:00', '17:30:00',
+        ];
+
+        $estados = [
+            'iniciado', 'proceso', 'proceso', 'iniciado', 'proceso',
+            'observado', 'proceso', 'iniciado', 'proceso', 'proceso',
+            'finalizado', 'proceso', 'iniciado', 'proceso', 'observado',
+        ];
+
+        $tramites = [];
+        foreach ($horas as $i => $hora) {
+            $tramites[] = [
+                'year' => $year,
+                'fecha' => $hoy,
+                'hora' => $hora,
+                'estado' => $estados[$i],
+                'area_sigla' => 'DLA',
+            ];
         }
+
+        return $tramites;
     }
 
     private function crearDerivaciones(Tramite $tramite): void

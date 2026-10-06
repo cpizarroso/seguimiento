@@ -143,7 +143,7 @@ class Tramite extends Model
 
     public function getDiasTranscurridosAttribute(): int
     {
-        $desde = $this->fecha ?? $this->created_at;
+        $desde = $this->created_at ?? $this->fecha ?? now();
         $hasta = $this->estado === 'finalizado' && $this->fecha_finalizacion
             ? $this->fecha_finalizacion
             : now();

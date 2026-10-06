@@ -5,6 +5,8 @@ interface AuthUser {
     role: string;
     funcionario_id: number | null;
     puesto?: string | null;
+    area?: string | null;
+    area_id?: number | null;
     permisos: string[];
 }
 

@@ -31,11 +31,17 @@ const estadoLabels: Record<string, string> = {
 
 export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
     const { url } = usePage();
+    const { auth } = usePage().props;
     const { can } = usePermissions();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const [search, setSearch] = useState(params.get('search') ?? '');
+    const [soloHoy, setSoloHoy] = useState(params.get('hoy') === '1');
+    const [areaId, setAreaId] = useState(params.get('area_id') ?? '');
     const [createOpen, setCreateOpen] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const miAreaId = auth.user?.area_id != null ? String(auth.user.area_id) : '';
+    const miAreaActiva = areaId !== '' && miAreaId !== '' && areaId === miAreaId;
 
     const createForm = useForm({
         descripcion: '',
@@ -50,17 +56,73 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         }
     }, [createOpen]);
 
+    useEffect(() => {
+        const paramsEnUrl = new URLSearchParams(url.split('?')[1] ?? '');
+        if (
+            typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(max-width: 639px)').matches &&
+            !paramsEnUrl.has('per_page') &&
+            tramites.meta.per_page !== 5
+        ) {
+            router.get('/tramites', {
+                search: search || undefined,
+                hoy: soloHoy ? '1' : undefined,
+                area_id: areaId || undefined,
+                per_page: 5,
+                page: 1,
+            }, { preserveState: true });
+        }
+    }, []);
+
     const buscar = () => {
         router.get('/tramites', {
             search: search || undefined,
+            hoy: soloHoy ? '1' : undefined,
+            area_id: areaId || undefined,
             page: undefined,
         }, { preserveState: true, preserveScroll: true });
     };
 
+    const toggleHoy = () => {
+        const value = !soloHoy;
+        setSoloHoy(value);
+        router.get('/tramites', {
+            search: search || undefined,
+            hoy: value ? '1' : undefined,
+            area_id: areaId || undefined,
+            page: 1,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const filtrarArea = (value: string) => {
+        setAreaId(value);
+        router.get('/tramites', {
+            search: search || undefined,
+            hoy: soloHoy ? '1' : undefined,
+            area_id: value || undefined,
+            page: 1,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const toggleMiArea = () => {
+        filtrarArea(miAreaActiva ? '' : miAreaId);
+    };
+
     const limpiar = () => {
         setSearch('');
+        setSoloHoy(false);
+        setAreaId('');
         router.get('/tramites', { page: 1 }, { preserveState: true, preserveScroll: true });
         searchInputRef.current?.focus();
+    };
+
+    const exportar = () => {
+        const query = new URLSearchParams();
+        if (search) query.set('search', search);
+        if (soloHoy) query.set('hoy', '1');
+        if (areaId) query.set('area_id', areaId);
+        window.location.href = `/tramites/exportar?${query.toString()}`;
     };
 
     const ACENTOS: Record<string, string> = {
@@ -96,19 +158,30 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
     const columns = [
         {
             key: 'numero_tramite',
-            header: 'N° Trámite',
+            header: 'NRO',
+            cellClassName: 'text-center',
             render: (t: Tramite) => (
                 <span className="whitespace-nowrap">
-                    <Link href={`/tramites/${t.id}?search=${encodeURIComponent(search)}`} className="text-patuju-green hover:underline font-medium">
-                        {resaltar(t.numero_completo)}
+                    <Link href={`/tramites/${t.id}?search=${encodeURIComponent(search)}`} className="text-patuju-green hover:underline text-2xl font-bold">
+                        {resaltar(String(t.numero_tramite))}
                     </Link>
-                    {t.urgente && (
-                        <Badge variant="danger" className="ml-2">Urgente</Badge>
-                    )}
                 </span>
             ),
         },
-        { key: 'fecha', header: 'Gestión', render: (t: Tramite) => resaltar(t.fecha) },
+        {
+            key: 'urgente',
+            header: 'Urgente',
+            cellClassName: 'text-center',
+            render: (t: Tramite) => (
+                <span className="flex items-center justify-center">
+                    {t.urgente
+                        ? <Badge variant="danger">Urgente</Badge>
+                        : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                </span>
+            ),
+        },
+        { key: 'created_at', header: 'Fecha creación', render: (t: Tramite) => t.created_at ?? '—' },
+        { key: 'numero_diamante', header: 'N° Diamante', render: (t: Tramite) => resaltar(t.numero_diamante) },
         { key: 'area', header: 'Área', render: (t: Tramite) => resaltar(t.area?.sigla ?? t.area?.nombre) },
         {
             key: 'descripcion',
@@ -118,39 +191,28 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
             ),
         },
         {
-            key: 'ultima_actuacion',
-            header: 'Última actuación',
+            key: 'ultima_derivacion',
+            header: 'Última derivación',
             render: (t: Tramite) => {
-                const actuacion = t.actuaciones?.[0];
+                const derivacion = t.derivaciones?.[0];
 
-                if (!actuacion) {
-                    return <span className="text-xs text-gray-400 dark:text-gray-500">Sin actuaciones</span>;
+                if (!derivacion) {
+                    return <span className="text-xs text-gray-400 dark:text-gray-500">Sin derivaciones</span>;
                 }
-
-                const autor = actuacion.funcionario
-                    ? `${actuacion.funcionario.nombre} ${actuacion.funcionario.apellidos ?? ''}`.trim()
-                    : actuacion.area?.sigla;
 
                 return (
                     <div className="max-w-[240px]">
                         <div className="text-xs font-medium text-patuju-green dark:text-patuju-green">
-                            {actuacion.fecha_actuacion}
+                            N° {derivacion.numero_derivacion} · {derivacion.fecha_derivacion}
                         </div>
-                        <div className="line-clamp-2 text-sm">{resaltar(actuacion.glosa)}</div>
-                        {autor && (
-                            <div className="truncate text-xs text-gray-500 dark:text-gray-400">{autor}</div>
+                        <div className="line-clamp-2 text-sm">{resaltar(derivacion.glosa_derivacion)}</div>
+                        {t.asignado?.name && (
+                            <div className="truncate text-xs text-gray-500 dark:text-gray-400">{t.asignado.name}</div>
                         )}
                     </div>
                 );
             },
         },
-        {
-            key: 'asignado',
-            header: 'Derivado a',
-            render: (t: Tramite) => resaltar(t.asignado?.name),
-        },
-        { key: 'numero_diamante', header: 'Diamante', render: (t: Tramite) => resaltar(t.numero_diamante) },
-        { key: 'ultima_respuesta', header: 'Respuesta', render: (t: Tramite) => resaltar(t.ultima_respuesta) },
         {
             key: 'dias_transcurridos',
             header: 'Días',
@@ -183,9 +245,12 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Trámites</h2>
-                {can('tramites', 'creacion') && (
-                    <Button onClick={() => setCreateOpen(true)}>Nuevo Trámite</Button>
-                )}
+                <div className="flex items-center gap-2">
+                    <Button variant="secondary" onClick={exportar}>Exportar Excel</Button>
+                    {can('tramites', 'creacion') && (
+                        <Button onClick={() => setCreateOpen(true)}>Nuevo Trámite</Button>
+                    )}
+                </div>
             </div>
 
             <Card padding="sm">
@@ -217,6 +282,42 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                             Buscar
                         </button>
                     </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            Área
+                            <select
+                                value={areaId}
+                                onChange={(e) => filtrarArea(e.target.value)}
+                                className="text-sm border border-gray-300 dark:border-gray-600 rounded-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-patuju-green"
+                            >
+                                <option value="">Todas</option>
+                                {(areas?.data ?? []).map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.sigla} · {a.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none" title={miAreaId ? undefined : 'Tu usuario no tiene área asignada'}>
+                            <input
+                                type="checkbox"
+                                checked={miAreaActiva}
+                                onChange={toggleMiArea}
+                                disabled={miAreaId === ''}
+                                className="h-4 w-4 rounded accent-patuju-green disabled:opacity-40"
+                            />
+                            Mi área
+                        </label>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={soloHoy}
+                            onChange={toggleHoy}
+                            className="h-4 w-4 rounded accent-patuju-green"
+                        />
+                        Solo hoy
+                    </label>
                 </div>
             </Card>
 
@@ -235,8 +336,8 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                     total={tramites.meta.total}
                     perPage={tramites.meta.per_page}
                     label="trámites"
-                    onPageChange={(page) => router.get('/tramites', { page, search: search || undefined }, { preserveState: true })}
-                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search: search || undefined }, { preserveState: true })}
+                    onPageChange={(page) => router.get('/tramites', { page, search: search || undefined, hoy: soloHoy ? '1' : undefined, area_id: areaId || undefined }, { preserveState: true })}
+                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search: search || undefined, hoy: soloHoy ? '1' : undefined, area_id: areaId || undefined }, { preserveState: true })}
                 />
             </Card>
 

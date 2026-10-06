@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Tramite;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class TramiteService
 {
@@ -13,6 +15,17 @@ class TramiteService
     ) {}
 
     public function listar(array $filtros = [], ?int $usuarioId = null): LengthAwarePaginator
+    {
+        return $this->queryFiltrada($filtros)
+            ->paginate(min((int) ($filtros['per_page'] ?? 15), 100));
+    }
+
+    public function coleccionParaExportar(array $filtros = []): Collection
+    {
+        return $this->queryFiltrada($filtros)->get();
+    }
+
+    private function queryFiltrada(array $filtros = []): Builder
     {
         return Tramite::with([
             'creador',
@@ -25,13 +38,15 @@ class TramiteService
                 $q->with(['area', 'funcionario'])->reorder('fecha_actuacion', 'desc')->limit(1);
             },
         ])
+            ->select('tramites.*')
+            ->leftJoin('areas', 'areas.id', '=', 'tramites.area_id')
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $q->where(function ($query) use ($v) {
-                    $query->where('numero_completo', 'like', "%{$v}%")
-                        ->orWhere('numero_tramite', 'like', "%{$v}%")
-                        ->orWhere('descripcion', 'like', "%{$v}%")
-                        ->orWhere('numero_diamante', 'like', "%{$v}%")
-                        ->orWhere('estado', 'like', "%{$v}%")
+                    $query->where('tramites.numero_completo', 'like', "%{$v}%")
+                        ->orWhere('tramites.numero_tramite', 'like', "%{$v}%")
+                        ->orWhere('tramites.descripcion', 'like', "%{$v}%")
+                        ->orWhere('tramites.numero_diamante', 'like', "%{$v}%")
+                        ->orWhere('tramites.estado', 'like', "%{$v}%")
                         ->orWhereHas('creador', fn ($q) => $q->where('name', 'like', "%{$v}%"))
                         ->orWhereHas('asignado', fn ($q) => $q->where('name', 'like', "%{$v}%"))
                         ->orWhereHas('area', fn ($q) => $q->where('nombre', 'like', "%{$v}%"));
@@ -53,16 +68,17 @@ class TramiteService
                     }
                 });
             })
-            ->when($filtros['estado'] ?? null, fn ($q, $v) => $q->where('estado', $v))
+            ->when($filtros['estado'] ?? null, fn ($q, $v) => $q->where('tramites.estado', $v))
+            ->when($filtros['area_id'] ?? null, fn ($q, $v) => $q->where('tramites.area_id', $v))
             ->when(isset($filtros['urgente']) && $filtros['urgente'] !== null && $filtros['urgente'] !== '', function ($q) use ($filtros) {
-                $q->where('urgente', filter_var($filtros['urgente'], FILTER_VALIDATE_BOOLEAN));
+                $q->where('tramites.urgente', filter_var($filtros['urgente'], FILTER_VALIDATE_BOOLEAN));
             })
-            ->when($filtros['fecha_desde'] ?? null, fn ($q, $v) => $q->whereDate('fecha', '>=', $v))
-            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $v) => $q->whereDate('fecha', '<=', $v))
-            ->orderByDesc('urgente')
-            ->orderByDesc('year')
-            ->orderByDesc('numero_tramite')
-            ->paginate(min((int) ($filtros['per_page'] ?? 15), 100));
+            ->when($filtros['fecha_desde'] ?? null, fn ($q, $v) => $q->whereDate('tramites.fecha', '>=', $v))
+            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $v) => $q->whereDate('tramites.fecha', '<=', $v))
+            ->when(isset($filtros['hoy']) && $filtros['hoy'] !== null && $filtros['hoy'] !== '' && filter_var($filtros['hoy'], FILTER_VALIDATE_BOOLEAN), fn ($q) => $q->whereDate('tramites.created_at', today()))
+            ->orderBy('areas.sigla')
+            ->orderBy('tramites.year')
+            ->orderBy('tramites.numero_tramite');
     }
 
     public function crear(array $data, int $creadoPor): Tramite

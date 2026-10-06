@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tramites;
 
+use App\Exports\TramitesExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tramites\StoreTramiteRequest;
 use App\Http\Requests\Tramites\UpdateEstadoTramiteRequest;
@@ -20,6 +21,8 @@ use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class TramiteController extends Controller
 {
@@ -34,7 +37,7 @@ class TramiteController extends Controller
     public function index(): Response
     {
         $user = request()->user();
-        $filtros = request()->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'urgente']);
+        $filtros = request()->only(['search', 'estado', 'area_id', 'fecha_desde', 'fecha_hasta', 'urgente', 'hoy']);
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
 
         return Inertia::render('Tramites/Index', [
@@ -43,6 +46,16 @@ class TramiteController extends Controller
             ),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        $filtros = request()->only(['search', 'estado', 'area_id', 'fecha_desde', 'fecha_hasta', 'urgente', 'hoy']);
+
+        return Excel::download(
+            new TramitesExport($this->tramiteService, $filtros),
+            'tramites-'.now()->format('Ymd-His').'.xlsx'
+        );
     }
 
     public function create(): Response

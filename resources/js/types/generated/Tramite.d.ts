@@ -7,6 +7,7 @@ export interface Tramite {
     numero_completo: string;
     year: number;
     fecha: string;
+    created_at: string;
     descripcion: string;
     numero_diamante: string | null;
     estado: string;

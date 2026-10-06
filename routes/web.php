@@ -27,6 +27,7 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('tramites', [TramiteController::class, 'index'])->name('tramites.index');
+        Route::get('tramites/exportar', [TramiteController::class, 'export'])->name('tramites.export');
 
         Route::middleware('permission:tramites,creacion')->group(function () {
             Route::get('tramites/create', [TramiteController::class, 'create'])->name('tramites.create');

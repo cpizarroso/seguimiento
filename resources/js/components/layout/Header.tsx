@@ -32,6 +32,11 @@ export function Header({ onMenuClick }: HeaderProps) {
                             {auth.user.puesto}
                         </span>
                     )}
+                    {auth.user?.area && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {auth.user.area}
+                        </span>
+                    )}
                 </div>
             </div>
         </header>

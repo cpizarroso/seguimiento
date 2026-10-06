@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tramite;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 class ReporteService
 {
@@ -83,7 +84,7 @@ class ReporteService
             ->where('estado', '!=', 'finalizado')
             ->when($userId, fn ($q) => $q->where('creado_por', $userId))
             ->get()
-            ->map(fn ($t) => $t->setAttribute('dias', (int) ($t->fecha ?? $t->created_at)->diffInDays(now())));
+            ->map(fn ($t) => $t->setAttribute('dias', (int) ($t->created_at ?? $t->fecha ?? now())->diffInDays(now())));
 
         $filtrar = fn ($minDias) => $tramites->filter(fn ($t) => $t->dias >= $minDias);
 
@@ -98,7 +99,7 @@ class ReporteService
                 ->map(fn ($t) => [
                     'id' => $t->id,
                     'numero_completo' => $t->numero_completo,
-                    'descripcion' => \Illuminate\Support\Str::limit($t->descripcion, 80),
+                    'descripcion' => Str::limit($t->descripcion, 80),
                     'dias' => $t->dias,
                     'area_sigla' => $t->area?->sigla,
                     'estado' => $t->estado,
