@@ -1,4 +1,4 @@
-import { router, useForm, usePage } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -10,7 +10,7 @@ import { useState } from 'react';
 interface AreaItem {
     id: number;
     nombre: string;
-    sigla: string;
+    codigo: string;
 }
 
 interface ContadorData {
@@ -29,6 +29,9 @@ interface ContadorRow {
 interface ConfiguracionIndexProps {
     perPage: number;
     contadores: ContadorRow[];
+    gestionInicial: number;
+    gestionesConfigurables: number[];
+    puedeConfigurarReporte: boolean;
 }
 
 const PER_PAGE_OPTIONS = [
@@ -36,8 +39,15 @@ const PER_PAGE_OPTIONS = [
     { value: '10', label: '10 por página' },
 ];
 
-export default function ConfiguracionIndex({ perPage, contadores }: ConfiguracionIndexProps) {
+export default function ConfiguracionIndex({
+    perPage,
+    contadores,
+    gestionInicial,
+    gestionesConfigurables,
+    puedeConfigurarReporte,
+}: ConfiguracionIndexProps) {
     const perPageForm = useForm({ per_page: String(perPage) });
+    const gestionForm = useForm({ gestion_inicial: String(gestionInicial) });
     const [selectedArea, setSelectedArea] = useState<ContadorRow | null>(null);
     const reiniciarForm = useForm({ area_id: '', glosa: '' });
 
@@ -83,6 +93,40 @@ export default function ConfiguracionIndex({ perPage, contadores }: Configuracio
                 </form>
             </Card>
 
+            {puedeConfigurarReporte && (
+                <Card>
+                    <h3 className="text-lg font-semibold text-patuju-green mb-4">Reporte</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Define la gestión más antigua que estará disponible en el filtro de gestión
+                        de los reportes. Las opciones llegan hasta el año actual.
+                    </p>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            gestionForm.put('/configuracion/reporte-gestion-inicial');
+                        }}
+                        className="flex items-end gap-4"
+                    >
+                        <div className="w-48">
+                            <Select
+                                label="Gestión inicial"
+                                placeholder="Seleccione..."
+                                options={gestionesConfigurables.map((year) => ({
+                                    value: String(year),
+                                    label: String(year),
+                                }))}
+                                value={gestionForm.data.gestion_inicial}
+                                onChange={(e) => gestionForm.setData('gestion_inicial', e.target.value)}
+                                error={gestionForm.errors.gestion_inicial}
+                            />
+                        </div>
+                        <Button type="submit" loading={gestionForm.processing}>
+                            Guardar
+                        </Button>
+                    </form>
+                </Card>
+            )}
+
             {esAdmin && (
                 <Card>
                     <h3 className="text-lg font-semibold text-patuju-green mb-4">Administrador de Contadores</h3>
@@ -96,7 +140,7 @@ export default function ConfiguracionIndex({ perPage, contadores }: Configuracio
                             <Card key={item.area.id}>
                                 <div className="flex flex-col h-full">
                                     <h4 className="text-lg font-semibold text-patuju-green">{item.area.nombre}</h4>
-                                    <p className="text-xs text-gray-400">{item.area.sigla}</p>
+                                    <p className="text-xs text-gray-400">{item.area.codigo}</p>
 
                                     <div className="mt-3 space-y-2 flex-1">
                                         <div className="flex justify-between text-sm">

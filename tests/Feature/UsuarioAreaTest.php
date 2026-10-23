@@ -1,42 +1,33 @@
 <?php
 
-use App\Models\Area;
-use App\Models\Funcionario;
-use App\Models\Puesto;
+use App\Models\Persona;
 use App\Models\User;
-use App\Models\UserPuesto;
 
-it('comparte el area del funcionario del usuario autenticado', function () {
-    $area = Area::factory()->create(['nombre' => 'Dirección de Prueba', 'sigla' => 'DPR']);
-    $funcionario = Funcionario::factory()->create(['area_id' => $area->id]);
-    $user = User::factory()->create(['funcionario_id' => $funcionario->id]);
+it('comparte el area del puesto vigente de la persona del usuario', function () {
+    $area = crearArea('DPR', 'Dirección de Prueba');
+    [$user] = crearUsuarioConPuesto($area);
 
     $this->actingAs($user)
         ->get(route('tramites.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('auth.user.area', 'Dirección de Prueba')
-            ->where('auth.user.area_id', $area->id));
+            ->where('auth.user.area_id', $area->id)
+            ->where('auth.user.persona_id', $user->persona_id));
 });
 
-it('usa el area del puesto activo cuando no tiene funcionario', function () {
-    $area = Area::factory()->create(['nombre' => 'Área del Puesto', 'sigla' => 'APU']);
-    $puesto = Puesto::factory()->create(['area_id' => $area->id, 'nombre' => 'Puesto de Prueba']);
-    $user = User::factory()->create(['funcionario_id' => null]);
-    UserPuesto::create([
-        'user_id' => $user->id,
-        'puesto_id' => $puesto->id,
-        'fecha_inicio' => now()->toDateString(),
-    ]);
+it('el area es nula cuando la persona no tiene puesto vigente', function () {
+    $persona = Persona::factory()->create();
+    $user = User::factory()->create(['persona_id' => $persona->id]);
 
     $this->actingAs($user)
         ->get(route('tramites.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('auth.user.area', 'Área del Puesto'));
+        ->assertInertia(fn ($page) => $page->where('auth.user.area', null));
 });
 
-it('el area es nula cuando no tiene funcionario ni puesto', function () {
-    $user = User::factory()->create(['funcionario_id' => null]);
+it('el area es nula cuando el usuario no tiene persona', function () {
+    $user = User::factory()->create(['persona_id' => null]);
 
     $this->actingAs($user)
         ->get(route('tramites.index'))

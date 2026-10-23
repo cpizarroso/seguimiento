@@ -7,15 +7,13 @@ use App\Http\Requests\Users\ResetPasswordRequest;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\AreaResource;
-use App\Http\Resources\FuncionarioListResource;
-use App\Http\Resources\PuestoResource;
+use App\Http\Resources\PersonaResource;
 use App\Http\Resources\RolResource;
 use App\Http\Resources\UserResource;
 use App\Models\Rol;
 use App\Models\User;
 use App\Services\AreaService;
-use App\Services\FuncionarioService;
-use App\Services\PuestoService;
+use App\Services\PersonaService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -25,31 +23,30 @@ class UserController extends Controller
 {
     public function __construct(
         private readonly UserService $userService,
+        private readonly PersonaService $personaService,
         private readonly AreaService $areaService,
-        private readonly PuestoService $puestoService,
-        private readonly FuncionarioService $funcionarioService,
     ) {}
 
     public function index(): Response
     {
         return Inertia::render('Users/Index', [
             'users' => UserResource::collection(
-                $this->userService->listar(request()->only(['search']))
+                $this->userService->listar(
+                    request()->only(['search', 'role_id', 'area_id', 'con_persona', 'per_page'])
+                )
             ),
-            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
-            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
-            'funcionarios' => FuncionarioListResource::collection($this->funcionarioService->obtenerTodos()),
+            'personas' => PersonaResource::collection($this->personaService->obtenerTodos()),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Users/Create', [
-            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
-            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
-            'funcionarios' => FuncionarioListResource::collection($this->funcionarioService->obtenerTodos()),
+            'personas' => PersonaResource::collection($this->personaService->obtenerTodos()),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 
@@ -63,20 +60,27 @@ class UserController extends Controller
 
     public function show(User $user): Response
     {
+        $user->load([
+            'persona.puestoActivo.puesto.area',
+            'persona.historialPuestos.puesto.area',
+            'roles.permisos',
+            'areasHabilitadas',
+        ]);
+
         return Inertia::render('Users/Show', [
-            'user' => new UserResource($user->load(['funcionario', 'puestoActivo.puesto.area', 'historialPuestos.puesto.area', 'roles.permisos'])),
+            'user' => new UserResource($user),
         ]);
     }
 
     public function edit(User $user): Response
     {
-        $user->load('funcionario', 'puestoActivo.puesto', 'roles');
+        $user->load('persona.puestoActivo.puesto.area', 'roles', 'areasHabilitadas');
+
         return Inertia::render('Users/Edit', [
             'user' => new UserResource($user),
-            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
-            'puestos' => PuestoResource::collection($this->puestoService->obtenerTodos()),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
-            'funcionarios' => FuncionarioListResource::collection($this->funcionarioService->obtenerTodos()),
+            'personas' => PersonaResource::collection($this->personaService->obtenerTodos()),
+            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
         ]);
     }
 

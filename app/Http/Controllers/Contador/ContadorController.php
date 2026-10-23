@@ -38,7 +38,7 @@ class ContadorController extends Controller
             $request->input('glosa'),
         );
 
-        return to_route('contador.index')
+        return to_route('configuracion.index')
             ->with('success', 'Contador reiniciado exitosamente.');
     }
 }

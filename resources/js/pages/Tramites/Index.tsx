@@ -1,18 +1,27 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { FilterChip } from '@/components/ui/FilterChip';
+import { Icon } from '@/components/ui/Icon';
+import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Table } from '@/components/ui/Table';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { RangoCalendario } from '@/components/features/reporte/RangoCalendario';
+import { Table, type SortDirection } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
 import { TramiteForm } from '@/components/features/tramites/TramiteForm';
+import { DerivarModal } from '@/components/features/derivaciones/DerivarModal';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { Tramite, PaginatedData, Area } from '@/types/generated/Tramite';
-import { useEffect, useRef, useState } from 'react';
+import type { DestinatarioDerivacion } from '@/types/derivaciones';
 
 interface TramitesIndexProps {
     tramites: PaginatedData<Tramite>;
     areas: { data: Area[] };
+    areasCreacion?: { data: (Area & { predeterminada?: boolean })[] };
+    destinatarios?: DestinatarioDerivacion[];
 }
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
@@ -29,32 +38,153 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
-export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
+const DEFAULT_SORT = 'area';
+
+type FiltroRecepcion = 'todos' | 'por_recepcionar' | 'recepcionados';
+
+const RECEPCION_OPCIONES: { value: FiltroRecepcion; label: string }[] = [
+    { value: 'todos', label: 'Todos' },
+    { value: 'por_recepcionar', label: 'Por recepcionar' },
+    { value: 'recepcionados', label: 'Recepcionados' },
+];
+
+function fechaISO(fecha: Date): string {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+function normalizarRango(desde: string, hasta: string): [string, string] {
+    if (desde && hasta && desde > hasta) {
+        return [hasta, desde];
+    }
+
+    return [desde, hasta];
+}
+
+const SORTABLE_KEYS = [
+    'numero_tramite',
+    'urgente',
+    'created_at',
+    'numero_diamante',
+    'area',
+    'descripcion',
+    'ultima_derivacion',
+    'dias_transcurridos',
+    'estado',
+];
+
+export default function TramitesIndex({ tramites, areas, areasCreacion, destinatarios }: TramitesIndexProps) {
     const { url } = usePage();
     const { auth } = usePage().props;
     const { can } = usePermissions();
+    const usuarioId = auth.user?.id;
+    const puedeGestionar = can('tramites', 'edicion');
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [derivarOpen, setDerivarOpen] = useState(false);
     const params = new URLSearchParams(url.split('?')[1] ?? '');
-    const [search, setSearch] = useState(params.get('search') ?? '');
-    const [soloHoy, setSoloHoy] = useState(params.get('hoy') === '1');
+    const hoyISO = fechaISO(new Date());
+    const esRangoHoy = params.get('hoy') === '1';
+    const [numeroTramite, setNumeroTramite] = useState(params.get('numero_tramite') ?? '');
+    const [numeroDiamante, setNumeroDiamante] = useState(params.get('numero_diamante') ?? '');
+    const [descripcion, setDescripcion] = useState(params.get('descripcion') ?? '');
+    const [fechaDesde, setFechaDesde] = useState(
+        params.get('fecha_desde') ?? (esRangoHoy ? hoyISO : ''),
+    );
+    const [fechaHasta, setFechaHasta] = useState(
+        params.get('fecha_hasta') ?? (esRangoHoy ? hoyISO : ''),
+    );
     const [areaId, setAreaId] = useState(params.get('area_id') ?? '');
+    const recepcionParam = params.get('recepcion');
+    const [recepcion, setRecepcion] = useState<FiltroRecepcion>(
+        recepcionParam === 'por_recepcionar' || recepcionParam === 'recepcionados'
+            ? recepcionParam
+            : 'todos',
+    );
+    const sortParam = params.get('sort');
+    const [sortBy, setSortBy] = useState(
+        sortParam && SORTABLE_KEYS.includes(sortParam) ? sortParam : DEFAULT_SORT,
+    );
+    const [sortDirection, setSortDirection] = useState<SortDirection>(
+        params.get('direction') === 'desc' ? 'desc' : 'asc',
+    );
     const [createOpen, setCreateOpen] = useState(false);
-    const searchInputRef = useRef<HTMLInputElement>(null);
 
     const miAreaId = auth.user?.area_id != null ? String(auth.user.area_id) : '';
     const miAreaActiva = areaId !== '' && miAreaId !== '' && areaId === miAreaId;
+    const aplicadoDesde = params.get('fecha_desde') ?? (esRangoHoy ? hoyISO : '');
+    const aplicadoHasta = params.get('fecha_hasta') ?? (esRangoHoy ? hoyISO : '');
+    const esHoy = aplicadoDesde === hoyISO && aplicadoHasta === hoyISO;
+
+    const esDerivable = (tramite: Tramite): boolean => {
+        if (!usuarioId || !puedeGestionar || tramite.estado === 'finalizado' || tramite.asignado?.id !== usuarioId) {
+            return false;
+        }
+
+        const ultima = (tramite.derivaciones ?? []).reduce<Tramite['derivaciones'][number] | null>((actual, derivacion) => {
+            if (!actual || derivacion.numero_derivacion > actual.numero_derivacion) {
+                return derivacion;
+            }
+
+            return actual;
+        }, null);
+
+        return ultima?.estado === 'recepcionado' && ultima.derivado_a?.id === usuarioId;
+    };
+
+    useEffect(() => {
+        setSelectedIds((previos) => previos.filter((id) => {
+            const tramite = tramites.data.find((item) => item.id === id);
+
+            return tramite ? esDerivable(tramite) : false;
+        }));
+    }, [tramites.data, puedeGestionar, usuarioId]);
+
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [url]);
+
+    const areaOptions = (areas?.data ?? []).map((area) => ({
+        value: String(area.id),
+        label: `${area.codigo} · ${area.nombre}`,
+    }));
+
+    const areasCreacionData = areasCreacion?.data ?? [];
+    const areaPredeterminada = areasCreacionData.find((area) => area.predeterminada) ?? areasCreacionData[0];
 
     const createForm = useForm({
         descripcion: '',
         numero_diamante: '',
-        area_id: '',
+        area_id: areaPredeterminada ? String(areaPredeterminada.id) : '',
         urgente: false as boolean,
     });
 
-    useEffect(() => {
-        if (!createOpen) {
-            searchInputRef.current?.focus();
-        }
-    }, [createOpen]);
+    const abrirCreacion = () => {
+        createForm.setData('area_id', areaPredeterminada ? String(areaPredeterminada.id) : '');
+        createForm.clearErrors();
+        setCreateOpen(true);
+    };
+
+    const filtrosAplicados = (overrides: Record<string, string | number | undefined> = {}) => {
+        const filtros: Record<string, string | number | undefined> = {};
+
+        params.forEach((value, key) => {
+            if (key !== 'page' && key !== 'per_page') {
+                filtros[key] = value;
+            }
+        });
+
+        return {
+            ...filtros,
+            area_id: areaId || undefined,
+            recepcion: recepcion === 'todos' ? undefined : recepcion,
+            sort: sortBy || undefined,
+            direction: sortBy ? sortDirection : undefined,
+            ...overrides,
+        };
+    };
 
     useEffect(() => {
         const paramsEnUrl = new URLSearchParams(url.split('?')[1] ?? '');
@@ -65,64 +195,108 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
             !paramsEnUrl.has('per_page') &&
             tramites.meta.per_page !== 5
         ) {
-            router.get('/tramites', {
-                search: search || undefined,
-                hoy: soloHoy ? '1' : undefined,
-                area_id: areaId || undefined,
+            router.get('/tramites', filtrosAplicados({
                 per_page: 5,
                 page: 1,
-            }, { preserveState: true });
+            }), { preserveState: true });
         }
     }, []);
 
     const buscar = () => {
-        router.get('/tramites', {
-            search: search || undefined,
-            hoy: soloHoy ? '1' : undefined,
-            area_id: areaId || undefined,
-            page: undefined,
-        }, { preserveState: true, preserveScroll: true });
+        const [desde, hasta] = normalizarRango(fechaDesde, fechaHasta);
+        setFechaDesde(desde);
+        setFechaHasta(hasta);
+
+        router.get('/tramites', filtrosAplicados({
+            numero_tramite: numeroTramite.trim() || undefined,
+            numero_diamante: numeroDiamante.trim() || undefined,
+            descripcion: descripcion.trim() || undefined,
+            fecha_desde: desde || undefined,
+            fecha_hasta: hasta || undefined,
+            search: undefined,
+            hoy: undefined,
+            page: 1,
+        }), { preserveState: true, preserveScroll: true });
+    };
+
+    const aplicarRango = (desde: string, hasta: string) => {
+        const [inicio, fin] = normalizarRango(desde, hasta);
+        setFechaDesde(inicio);
+        setFechaHasta(fin);
+
+        router.get('/tramites', filtrosAplicados({
+            fecha_desde: inicio || undefined,
+            fecha_hasta: fin || undefined,
+            hoy: undefined,
+            page: 1,
+        }), { preserveState: true, preserveScroll: true });
     };
 
     const toggleHoy = () => {
-        const value = !soloHoy;
-        setSoloHoy(value);
-        router.get('/tramites', {
-            search: search || undefined,
-            hoy: value ? '1' : undefined,
-            area_id: areaId || undefined,
+        const value = esHoy ? '' : hoyISO;
+        setFechaDesde(value);
+        setFechaHasta(value);
+
+        router.get('/tramites', filtrosAplicados({
+            fecha_desde: value || undefined,
+            fecha_hasta: value || undefined,
+            hoy: undefined,
             page: 1,
-        }, { preserveState: true, preserveScroll: true });
+        }), { preserveState: true, preserveScroll: true });
     };
 
     const filtrarArea = (value: string) => {
         setAreaId(value);
-        router.get('/tramites', {
-            search: search || undefined,
-            hoy: soloHoy ? '1' : undefined,
+        router.get('/tramites', filtrosAplicados({
             area_id: value || undefined,
             page: 1,
-        }, { preserveState: true, preserveScroll: true });
+        }), { preserveState: true, preserveScroll: true });
     };
 
     const toggleMiArea = () => {
         filtrarArea(miAreaActiva ? '' : miAreaId);
     };
 
-    const limpiar = () => {
-        setSearch('');
-        setSoloHoy(false);
+    const filtrarRecepcion = (value: FiltroRecepcion) => {
+        setRecepcion(value);
+        router.get('/tramites', filtrosAplicados({
+            recepcion: value === 'todos' ? undefined : value,
+            page: 1,
+        }), { preserveState: true, preserveScroll: true });
+    };
+
+    const limpiarFiltros = () => {
+        setNumeroTramite('');
+        setNumeroDiamante('');
+        setDescripcion('');
+        setFechaDesde('');
+        setFechaHasta('');
         setAreaId('');
-        router.get('/tramites', { page: 1 }, { preserveState: true, preserveScroll: true });
-        searchInputRef.current?.focus();
+        setRecepcion('todos');
+        router.get('/tramites', {
+            sort: sortBy || undefined,
+            direction: sortBy ? sortDirection : undefined,
+            page: 1,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const ordenar = (key: string) => {
+        const direction: SortDirection = sortBy === key && sortDirection === 'asc' ? 'desc' : 'asc';
+        setSortBy(key);
+        setSortDirection(direction);
+        router.get('/tramites', filtrosAplicados({
+            sort: key,
+            direction,
+            page: 1,
+        }), { preserveState: true, preserveScroll: true });
     };
 
     const exportar = () => {
-        const query = new URLSearchParams();
-        if (search) query.set('search', search);
-        if (soloHoy) query.set('hoy', '1');
-        if (areaId) query.set('area_id', areaId);
-        window.location.href = `/tramites/exportar?${query.toString()}`;
+        const query = new URLSearchParams(url.split('?')[1] ?? '');
+        query.delete('page');
+        query.delete('per_page');
+
+        window.location.href = `/tramites/exportar${query.toString() ? `?${query.toString()}` : ''}`;
     };
 
     const ACENTOS: Record<string, string> = {
@@ -134,36 +308,47 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         let result = '';
         for (const c of s.toLowerCase()) {
             const vars = ACENTOS[c];
-            result += vars ? `[${vars}]` : c;
+            if (vars) {
+                result += `[${vars}]`;
+            } else if (/[.*+?^${}()|[\]\\]/.test(c)) {
+                result += `\\${c}`;
+            } else {
+                result += c;
+            }
         }
         return result;
     };
 
-    const resaltar = (texto: string | null | undefined): React.ReactNode => {
-        if (!texto || !search) return texto ?? '—';
+    const resaltar = (texto: string | null | undefined, termino: string): ReactNode => {
+        if (!texto || !termino.trim()) return texto ?? '—';
 
-        const palabras = search.split(/[/\s]+/).filter(Boolean);
+        const palabras = termino.split(/[/\s]+/).filter(Boolean);
         if (palabras.length === 0) return texto;
 
         const pattern = palabras.map((p) => aPattern(p)).join('|');
+        if (!pattern) return texto;
+
         const regex = new RegExp(`(${pattern})`, 'gi');
 
         return texto.split(regex).map((parte, i) =>
             i % 2 === 1
-                ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-inherit rounded px-0.5">{parte}</mark>
+                ? <mark key={i} className="rounded bg-yellow-200 px-0.5 text-inherit dark:bg-yellow-700">{parte}</mark>
                 : parte,
         );
     };
+
+    const queryActual = url.split('?')[1] ?? '';
 
     const columns = [
         {
             key: 'numero_tramite',
             header: 'NRO',
+            sortable: true,
             cellClassName: 'text-center',
             render: (t: Tramite) => (
                 <span className="whitespace-nowrap">
-                    <Link href={`/tramites/${t.id}?search=${encodeURIComponent(search)}`} className="text-patuju-green hover:underline text-2xl font-bold">
-                        {resaltar(String(t.numero_tramite))}
+                    <Link href={`/tramites/${t.id}${queryActual ? `?${queryActual}` : ''}`} className="text-sm font-semibold text-patuju-green hover:underline">
+                        {resaltar(String(t.numero_tramite), numeroTramite)}
                     </Link>
                 </span>
             ),
@@ -171,6 +356,7 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         {
             key: 'urgente',
             header: 'Urgente',
+            sortable: true,
             cellClassName: 'text-center',
             render: (t: Tramite) => (
                 <span className="flex items-center justify-center">
@@ -180,19 +366,21 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                 </span>
             ),
         },
-        { key: 'created_at', header: 'Fecha creación', render: (t: Tramite) => t.created_at ?? '—' },
-        { key: 'numero_diamante', header: 'N° Diamante', render: (t: Tramite) => resaltar(t.numero_diamante) },
-        { key: 'area', header: 'Área', render: (t: Tramite) => resaltar(t.area?.sigla ?? t.area?.nombre) },
+        { key: 'created_at', header: 'Fecha creación', sortable: true, render: (t: Tramite) => t.created_at ?? '—' },
+        { key: 'numero_diamante', header: 'N° Diamante', sortable: true, render: (t: Tramite) => resaltar(t.numero_diamante, numeroDiamante) },
+        { key: 'area', header: 'Área', sortable: true, render: (t: Tramite) => resaltar(t.area?.codigo ?? t.area?.nombre, '') },
         {
             key: 'descripcion',
             header: 'Descripción',
+            sortable: true,
             render: (t: Tramite) => (
-                <span className="line-clamp-2 max-w-xs">{resaltar(t.descripcion)}</span>
+                <span className="line-clamp-2 max-w-xs">{resaltar(t.descripcion, descripcion)}</span>
             ),
         },
         {
             key: 'ultima_derivacion',
             header: 'Última derivación',
+            sortable: true,
             render: (t: Tramite) => {
                 const derivacion = t.derivaciones?.[0];
 
@@ -205,7 +393,7 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                         <div className="text-xs font-medium text-patuju-green dark:text-patuju-green">
                             N° {derivacion.numero_derivacion} · {derivacion.fecha_derivacion}
                         </div>
-                        <div className="line-clamp-2 text-sm">{resaltar(derivacion.glosa_derivacion)}</div>
+                        <div className="line-clamp-2 text-sm">{resaltar(derivacion.glosa_derivacion, '')}</div>
                         {t.asignado?.name && (
                             <div className="truncate text-xs text-gray-500 dark:text-gray-400">{t.asignado.name}</div>
                         )}
@@ -216,15 +404,16 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         {
             key: 'dias_transcurridos',
             header: 'Días',
+            sortable: true,
             cellClassName: 'text-center',
             render: (t: Tramite) => {
                 const d = t.dias_transcurridos ?? 0;
                 const color = d >= 5 ? 'bg-patuju-red/10 text-patuju-red border-patuju-red'
                     : d >= 4 ? 'bg-patuju-orange/10 text-patuju-orange border-patuju-orange'
-                    : d >= 3 ? 'bg-patuju-yellow/10 text-patuju-yellow border-patuju-yellow'
-                    : 'text-gray-500';
+                        : d >= 3 ? 'bg-patuju-yellow/10 text-patuju-yellow border-patuju-yellow'
+                            : 'text-gray-500';
                 return (
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${color}`}>
+                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${color}`}>
                         {d}
                     </span>
                 );
@@ -233,6 +422,7 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
         {
             key: 'estado',
             header: 'Estado',
+            sortable: true,
             render: (t: Tramite) => (
                 <Badge variant={estadoColors[t.estado] ?? 'default'}>
                     {estadoLabels[t.estado] ?? t.estado}
@@ -243,90 +433,177 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Trámites</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Trámites</h2>
+                    <p className="mt-0.5 text-xs text-excel-muted dark:text-gray-400">
+                        Consulta y filtra los trámites registrados.
+                    </p>
+                </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="secondary" onClick={exportar}>Exportar Excel</Button>
-                    {can('tramites', 'creacion') && (
-                        <Button onClick={() => setCreateOpen(true)}>Nuevo Trámite</Button>
+                    <Button variant="secondary" onClick={exportar}>
+                        <Icon name="download" size={15} />
+                        Exportar Excel
+                    </Button>
+                    {can('tramites', 'creacion') && areasCreacionData.length > 0 && (
+                        <Button onClick={abrirCreacion}>
+                            <Icon name="plus" size={15} />
+                            Nuevo Trámite
+                        </Button>
                     )}
                 </div>
             </div>
 
             <Card padding="sm">
-                <div className="flex flex-col items-center gap-3 w-full max-w-2xl mx-auto">
-                    <div className="flex items-center w-full border border-gray-300 dark:border-gray-600 rounded-full shadow-sm hover:shadow-md focus-within:shadow-md focus-within:border-patuju-green dark:focus-within:border-patuju-green transition-all bg-white dark:bg-gray-700">
-                        <span className="pl-4 text-gray-400 dark:text-gray-500 flex-shrink-0">🔍</span>
-                        <input
-                            ref={searchInputRef}
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <Input
+                        id="filtro-numero-tramite"
+                        label="N° Trámite"
+                        value={numeroTramite}
+                        onChange={(e) => setNumeroTramite(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && buscar()}
+                        placeholder="Ej. 12 o DLA-0012/2026"
+                        inputMode="text"
+                        autoComplete="off"
+                    />
+
+                    <Input
+                        id="filtro-numero-diamante"
+                        label="N° Diamante"
+                        value={numeroDiamante}
+                        onChange={(e) => setNumeroDiamante(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && buscar()}
+                        placeholder="Ej. DIA-1234"
+                        autoComplete="off"
+                    />
+
+                    <div className="sm:col-span-2 xl:col-span-1">
+                        <Input
+                            id="filtro-descripcion"
+                            label="Descripción"
+                            value={descripcion}
+                            onChange={(e) => setDescripcion(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && buscar()}
-                            placeholder="Buscar trámites..."
-                            className="w-full px-3 py-2.5 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                            placeholder="Buscar en la descripción..."
+                            autoComplete="off"
                         />
-                        {search && (
-                            <button
-                                onClick={limpiar}
-                                className="flex-shrink-0 px-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-lg leading-none"
-                                title="Limpiar búsqueda"
-                            >
-                                ✕
-                            </button>
-                        )}
-                        <button
-                            onClick={() => buscar()}
-                            className="flex-shrink-0 px-5 py-2 mr-1.5 text-sm font-medium text-white bg-patuju-green hover:bg-patuju-green/90 rounded-full transition-colors"
+                    </div>
+
+                    <RangoCalendario
+                        desde={fechaDesde}
+                        hasta={fechaHasta}
+                        onChange={(desde, hasta) => {
+                            setFechaDesde(desde);
+                            setFechaHasta(hasta);
+                        }}
+                        onApply={aplicarRango}
+                    />
+
+                    <SearchableSelect
+                        id="filtro-area"
+                        label="Área"
+                        ariaLabel="Área"
+                        value={areaId || null}
+                        onChange={(value) => filtrarArea(value ?? '')}
+                        options={areaOptions}
+                        placeholder="Todas las áreas"
+                        searchPlaceholder="Buscar área..."
+                        emptyMessage="No se encontraron áreas."
+                        clearable
+                        clearLabel="Todas las áreas"
+                        showPath={false}
+                        className="w-full"
+                    />
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2 border-t border-excel-border pt-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold text-excel-muted dark:text-gray-400">
+                            Recepción
+                        </span>
+                        <div
+                            className="inline-flex rounded-md border border-excel-border-strong bg-excel-surface p-0.5 dark:border-gray-600 dark:bg-gray-800"
+                            role="group"
+                            aria-label="Filtro por recepción"
                         >
-                            Buscar
-                        </button>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                            Área
-                            <select
-                                value={areaId}
-                                onChange={(e) => filtrarArea(e.target.value)}
-                                className="text-sm border border-gray-300 dark:border-gray-600 rounded-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-patuju-green"
-                            >
-                                <option value="">Todas</option>
-                                {(areas?.data ?? []).map((a) => (
-                                    <option key={a.id} value={a.id}>
-                                        {a.sigla} · {a.nombre}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none" title={miAreaId ? undefined : 'Tu usuario no tiene área asignada'}>
-                            <input
-                                type="checkbox"
-                                checked={miAreaActiva}
-                                onChange={toggleMiArea}
-                                disabled={miAreaId === ''}
-                                className="h-4 w-4 rounded accent-patuju-green disabled:opacity-40"
-                            />
-                            Mi área
-                        </label>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                        <input
-                            type="checkbox"
-                            checked={soloHoy}
-                            onChange={toggleHoy}
-                            className="h-4 w-4 rounded accent-patuju-green"
+                            {RECEPCION_OPCIONES.map((opcion) => {
+                                const activo = recepcion === opcion.value;
+
+                                return (
+                                    <button
+                                        key={opcion.value}
+                                        type="button"
+                                        aria-pressed={activo}
+                                        onClick={() => filtrarRecepcion(opcion.value)}
+                                        className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors ${
+                                            activo
+                                                ? 'bg-excel-green text-white shadow-sm'
+                                                : 'text-excel-muted hover:bg-excel-surface-2 hover:text-excel-text dark:text-gray-300 dark:hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        {opcion.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <FilterChip
+                            label="Mi área"
+                            checked={miAreaActiva}
+                            onChange={toggleMiArea}
+                            disabled={miAreaId === ''}
+                            title={miAreaId ? undefined : 'Tu usuario no tiene área asignada'}
+                            icon="building"
                         />
-                        Solo hoy
-                    </label>
+                        <FilterChip
+                            label="Hoy"
+                            checked={esHoy}
+                            onChange={toggleHoy}
+                            icon="calendar"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:justify-end">
+                        <Button variant="secondary" onClick={limpiarFiltros}>
+                            Limpiar filtros
+                        </Button>
+                        <Button onClick={buscar}>
+                            <Icon name="filter" size={15} />
+                            Filtrar
+                        </Button>
+                    </div>
                 </div>
             </Card>
 
             <Card>
+                {selectedIds.length > 0 && (
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-excel-green/30 bg-excel-green-light/60 px-3 py-2 dark:border-excel-green/40 dark:bg-excel-green/10">
+                        <p className="text-sm font-medium text-excel-text dark:text-gray-100">
+                            {selectedIds.length} trámite{selectedIds.length === 1 ? '' : 's'} seleccionado{selectedIds.length === 1 ? '' : 's'}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button variant="secondary" size="sm" onClick={() => setSelectedIds([])}>
+                                Limpiar
+                            </Button>
+                            <Button size="sm" onClick={() => setDerivarOpen(true)}>
+                                <Icon name="arrow-right" size={14} />
+                                Derivar seleccionados
+                            </Button>
+                        </div>
+                    </div>
+                )}
                 <Table
                     columns={columns}
                     data={tramites.data}
                     keyExtractor={(t) => t.id}
                     emptyMessage="No hay trámites registrados."
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    onSort={ordenar}
+                    selectable={puedeGestionar}
+                    selectedKeys={selectedIds}
+                    onSelectionChange={(keys) => setSelectedIds(keys.map(Number))}
+                    isRowSelectable={esDerivable}
+                    getRowLabel={(t) => `Seleccionar trámite ${t.numero_completo}`}
                 />
                 <Pagination
                     currentPage={tramites.meta.current_page}
@@ -336,15 +613,15 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                     total={tramites.meta.total}
                     perPage={tramites.meta.per_page}
                     label="trámites"
-                    onPageChange={(page) => router.get('/tramites', { page, search: search || undefined, hoy: soloHoy ? '1' : undefined, area_id: areaId || undefined }, { preserveState: true })}
-                    onPerPageChange={(perPage) => router.get('/tramites', { per_page: perPage, page: 1, search: search || undefined, hoy: soloHoy ? '1' : undefined, area_id: areaId || undefined }, { preserveState: true })}
+                    onPageChange={(page) => router.get('/tramites', filtrosAplicados({ page }), { preserveState: true, preserveScroll: true })}
+                    onPerPageChange={(perPage) => router.get('/tramites', filtrosAplicados({ per_page: perPage, page: 1 }), { preserveState: true, preserveScroll: true })}
                 />
             </Card>
 
             <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo Trámite">
                 <TramiteForm
                     form={createForm}
-                    areas={areas?.data ?? []}
+                    areas={areasCreacionData}
                     submitUrl="/tramites"
                     onSuccess={() => {
                         setCreateOpen(false);
@@ -353,6 +630,21 @@ export default function TramitesIndex({ tramites, areas }: TramitesIndexProps) {
                     onCancel={() => setCreateOpen(false)}
                 />
             </Modal>
+
+            {derivarOpen && (
+                <DerivarModal
+                    open
+                    onClose={() => setDerivarOpen(false)}
+                    destinatarios={destinatarios ?? []}
+                    submitUrl="/tramites/derivar-varios"
+                    tramiteIds={selectedIds}
+                    title={`Derivar ${selectedIds.length} trámite${selectedIds.length === 1 ? '' : 's'}`}
+                    onSuccess={() => {
+                        setDerivarOpen(false);
+                        setSelectedIds([]);
+                    }}
+                />
+            )}
         </div>
     );
 }

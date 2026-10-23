@@ -101,9 +101,8 @@ class TramiteSeeder extends Seeder
     {
         $user = $this->resolverUsuario($usuario);
 
-        $areaId = $user->funcionario?->area_id
-            ?? $user->puestoActivo?->puesto?->area_id
-            ?? Area::where('sigla', 'DLA')->value('id')
+        $areaId = $user->persona?->puestoActivo?->puesto?->area_id
+            ?? Area::where('codigo', 'DLA')->value('id')
             ?? Area::orderBy('id')->value('id');
 
         if ($areaId === null) {
@@ -157,15 +156,14 @@ class TramiteSeeder extends Seeder
 
         // El área puede venir forzada (ej. trámites de hoy) o del usuario.
         $areaId = $t['area_id']
-            ?? (isset($t['area_sigla'])
-                ? Area::where('sigla', $t['area_sigla'])->firstOrFail()->id
+            ?? (isset($t['area_codigo'])
+                ? Area::where('codigo', $t['area_codigo'])->firstOrFail()->id
                 : null);
 
         // Usuario fijo (ej. seed por usuario) o aleatorio: de él salen
         // área, creador y primera derivación.
         $usuario = $usuarioFijo ?? User::inRandomOrder()->firstOrFail();
-        $areaId ??= $usuario->funcionario?->area_id
-            ?? $usuario->puestoActivo?->puesto?->area_id
+        $areaId ??= $usuario->persona?->puestoActivo?->puesto?->area_id
             ?? $areaIds[array_rand($areaIds)];
 
         // Numeración con la misma lógica de la aplicación.
@@ -219,7 +217,7 @@ class TramiteSeeder extends Seeder
                 'fecha' => $hoy,
                 'hora' => $hora,
                 'estado' => $estados[$i],
-                'area_sigla' => 'DLA',
+                'area_codigo' => 'DLA',
             ];
         }
 

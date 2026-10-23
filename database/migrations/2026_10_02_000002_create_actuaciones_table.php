@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('derivacion_id')->constrained('derivaciones')->cascadeOnDelete();
             $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
-            $table->foreignId('funcionario_id')->nullable()->constrained('funcionarios')->nullOnDelete();
+            $table->foreignId('persona_id')->nullable()->constrained('personas')->nullOnDelete();
             $table->text('glosa');
             $table->timestamp('fecha_actuacion')->useCurrent();
             $table->timestamps();

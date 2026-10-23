@@ -16,7 +16,7 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $user = $request->user()?->loadMissing('funcionario.area', 'puestoActivo.puesto.area');
+        $user = $request->user()?->loadMissing('persona.puestoActivo.puesto.area');
 
         return [
             ...parent::share($request),
@@ -26,12 +26,10 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'funcionario_id' => $user->funcionario?->id,
-                    'puesto' => $user->puestoActivo?->puesto?->nombre,
-                    'area' => $user->funcionario?->area?->nombre
-                        ?? $user->puestoActivo?->puesto?->area?->nombre,
-                    'area_id' => $user->funcionario?->area_id
-                        ?? $user->puestoActivo?->puesto?->area_id,
+                    'persona_id' => $user->persona_id,
+                    'puesto' => $user->persona?->puestoActivo?->puesto?->nombre,
+                    'area' => $user->persona?->puestoActivo?->puesto?->area?->nombre,
+                    'area_id' => $user->persona?->puestoActivo?->puesto?->area_id,
                     'permisos' => $user->permisos_slug,
                 ] : null,
             ],

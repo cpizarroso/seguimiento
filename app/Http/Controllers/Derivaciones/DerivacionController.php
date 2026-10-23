@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Derivaciones;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Derivaciones\DerivarTramiteRequest;
+use App\Http\Requests\Derivaciones\DerivarTramitesRequest;
 use App\Http\Requests\Derivaciones\RecepcionarDerivacionRequest;
 use App\Http\Requests\Derivaciones\RechazarDerivacionRequest;
 use App\Models\Derivacion;
 use App\Models\Tramite;
+use App\Models\User;
 use App\Services\DerivacionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 
 class DerivacionController extends Controller
 {
@@ -19,18 +22,50 @@ class DerivacionController extends Controller
 
     public function derivar(DerivarTramiteRequest $request, Tramite $tramite): RedirectResponse
     {
-        $usuarioId = $request->user()?->id;
+        $usuarioId = (int) $request->user()?->id;
 
-        abort_if(! $usuarioId || $tramite->derivado_a !== $usuarioId || $tramite->estado === 'finalizado', 403,
+        abort_if(! $usuarioId || ! $this->derivacionService->puedeDerivar($tramite, $usuarioId), 403,
             'No tienes permiso para derivar este trámite.');
 
         $this->derivacionService->derivar(
             $tramite,
-            $request->input('derivado_a'),
+            (int) $request->input('derivado_a'),
             $request->input('glosa_derivacion'),
         );
 
-        return to_route('tramites.show', $tramite);
+        return to_route('tramites.show', $tramite)
+            ->with('success', 'Trámite derivado exitosamente.');
+    }
+
+    public function derivarVarios(DerivarTramitesRequest $request): RedirectResponse
+    {
+        $usuarioId = (int) $request->user()?->id;
+        $ids = collect($request->input('tramite_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $tramites = Tramite::whereIn('id', $ids)->get();
+        $noPermitidos = $tramites->reject(fn (Tramite $tramite) => $this->derivacionService->puedeDerivar($tramite, $usuarioId));
+
+        if ($tramites->count() !== $ids->count() || $noPermitidos->isNotEmpty()) {
+            $numeros = $noPermitidos->pluck('numero_completo')->implode(', ');
+
+            throw ValidationException::withMessages([
+                'tramite_ids' => $numeros !== ''
+                    ? "No puedes derivar los siguientes trámites: {$numeros}."
+                    : 'Uno o más trámites seleccionados ya no están disponibles.',
+            ]);
+        }
+
+        $destino = User::findOrFail((int) $request->input('derivado_a'));
+        $cantidad = $this->derivacionService->derivarVarios(
+            $tramites,
+            $destino->id,
+            $request->input('glosa_derivacion'),
+        );
+
+        return back()->with('success', "Se derivaron {$cantidad} trámites a {$destino->name}.");
     }
 
     public function recepcionar(RecepcionarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse

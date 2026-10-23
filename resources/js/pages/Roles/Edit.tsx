@@ -27,7 +27,7 @@ interface EditProps {
     permisos_agrupados: Record<string, PermisoOption[]>;
 }
 
-const moduloOrder = ['dashboard', 'tramites', 'funcionarios', 'areas_puestos', 'reporte', 'configuracion', 'usuarios', 'roles'];
+const moduloOrder = ['dashboard', 'tramites', 'personas', 'areas_puestos', 'reporte', 'configuracion', 'usuarios', 'roles'];
 
 export default function RolesEdit({ rol, permisos_agrupados }: EditProps) {
     const { data, setData, put, processing, errors } = useForm({

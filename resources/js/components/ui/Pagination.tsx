@@ -1,3 +1,5 @@
+import { Icon } from './Icon';
+
 interface PaginationProps {
     currentPage: number;
     lastPage: number;
@@ -26,19 +28,22 @@ function getPageRange(current: number, last: number, siblings: number = 1): (num
     return range;
 }
 
-const PER_PAGE_OPTIONS = [5, 10];
+const PER_PAGE_OPTIONS = [5, 10, 15, 20];
 
 export function Pagination({ currentPage, lastPage, from, to, total = 0, perPage, label = 'registros', onPageChange, onPerPageChange }: PaginationProps) {
     if (lastPage <= 1 && !onPerPageChange) return null;
 
     const pages = getPageRange(currentPage, lastPage);
+    const perPageOptions = perPage && !PER_PAGE_OPTIONS.includes(perPage)
+        ? [...PER_PAGE_OPTIONS, perPage].sort((a, b) => a - b)
+        : PER_PAGE_OPTIONS;
 
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-2">
-            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-3 flex flex-col items-center justify-between gap-3 border-t border-excel-border px-2 pt-3 text-xs text-excel-muted dark:border-gray-700 dark:text-gray-400 sm:flex-row">
+            <div className="flex items-center gap-4">
                 {from != null && to != null ? (
                     <span>
-                        Mostrando {from}–{to} de {total} {label}
+                        Mostrando <strong className="font-semibold text-excel-text dark:text-gray-200">{from}–{to}</strong> de {total} {label}
                     </span>
                 ) : (
                     <span>{total} {label}</span>
@@ -48,9 +53,9 @@ export function Pagination({ currentPage, lastPage, from, to, total = 0, perPage
                         <select
                             value={perPage}
                             onChange={(e) => onPerPageChange(Number(e.target.value))}
-                            className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-patuju-green"
+                            className="h-7 rounded border border-excel-border-strong bg-excel-surface px-2 text-xs text-excel-text focus:border-excel-green focus:outline-none focus:ring-1 focus:ring-excel-green/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
                         >
-                            {PER_PAGE_OPTIONS.map((n) => (
+                            {perPageOptions.map((n) => (
                                 <option key={n} value={n}>{n} por página</option>
                             ))}
                         </select>
@@ -63,21 +68,22 @@ export function Pagination({ currentPage, lastPage, from, to, total = 0, perPage
                     <button
                         onClick={() => onPageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-patuju-cream dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded border border-excel-border-strong bg-excel-surface text-excel-muted transition-colors hover:bg-excel-surface-2 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                        aria-label="Página anterior"
                     >
-                        Anterior
+                        <Icon name="chevron-left" size={14} />
                     </button>
                     {pages.map((page, i) =>
                         page === 'ellipsis' ? (
-                            <span key={`ellipsis-${i}`} className="px-2 text-gray-400 dark:text-gray-500 select-none">...</span>
+                            <span key={`ellipsis-${i}`} className="select-none px-1.5 text-gray-400">...</span>
                         ) : (
                             <button
                                 key={page}
                                 onClick={() => onPageChange(page)}
-                                className={`min-w-[2rem] px-2 py-1 text-sm rounded border transition-colors ${
+                                className={`inline-flex h-7 min-w-7 items-center justify-center rounded border px-1.5 text-xs font-medium transition-colors ${
                                     page === currentPage
-                                        ? 'bg-patuju-green text-white border-patuju-green font-medium'
-                                        : 'border-gray-300 dark:border-gray-600 hover:bg-patuju-cream dark:hover:bg-gray-700 dark:text-gray-300'
+                                        ? 'border-excel-green bg-excel-green text-white'
+                                        : 'border-excel-border-strong bg-excel-surface text-excel-muted hover:bg-excel-surface-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                                 }`}
                             >
                                 {page}
@@ -87,9 +93,10 @@ export function Pagination({ currentPage, lastPage, from, to, total = 0, perPage
                     <button
                         onClick={() => onPageChange(currentPage + 1)}
                         disabled={currentPage === lastPage}
-                        className="px-3 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-patuju-cream dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded border border-excel-border-strong bg-excel-surface text-excel-muted transition-colors hover:bg-excel-surface-2 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                        aria-label="Página siguiente"
                     >
-                        Siguiente
+                        <Icon name="chevron-right" size={14} />
                     </button>
                 </nav>
             )}

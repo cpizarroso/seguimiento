@@ -1,11 +1,9 @@
 <?php
 
-use App\Models\Area;
-use App\Models\Derivacion;
-use App\Models\Funcionario;
 use App\Models\Permiso;
 use App\Models\Rol;
 use App\Models\User;
+use App\Services\ActuacionService;
 use App\Services\DerivacionService;
 use App\Services\TramiteService;
 use Database\Seeders\RolesYPermisosSeeder;
@@ -36,9 +34,10 @@ function payloadActuacion(): array
 
 it('permite actuar sobre una derivacion recepcionada por el usuario', function () {
     $editor = editor();
-    $funcionario = Funcionario::factory()->create();
-    $editor->update(['funcionario_id' => $funcionario->id]);
-    $area = Area::factory()->create(['nombre' => 'Act '.uniqid(), 'sigla' => 'ACT']);
+    $persona = crearPersonaConPuesto();
+    $editor->update(['persona_id' => $persona->id]);
+    $area = $persona->puestoActivo->puesto->area;
+
     $tramite = app(TramiteService::class)->crear([
         'descripcion' => 'Trámite para actuar',
         'area_id' => $area->id,
@@ -54,14 +53,14 @@ it('permite actuar sobre una derivacion recepcionada por el usuario', function (
         'derivacion_id' => $derivacion->id,
         'glosa' => 'Actuación de prueba',
         'area_id' => $area->id,
-        'funcionario_id' => $funcionario->id,
+        'persona_id' => $persona->id,
     ]);
 });
 
 it('niega actuar sobre una derivacion de otro usuario', function () {
     $editor = editor();
     $otro = editor();
-    $area = Area::factory()->create(['nombre' => 'Act2 '.uniqid(), 'sigla' => 'AC2']);
+    $area = crearArea('AC2', 'Act2 '.uniqid());
     $tramite = app(TramiteService::class)->crear([
         'descripcion' => 'Trámite ajeno',
         'area_id' => $area->id,
@@ -77,7 +76,7 @@ it('niega actuar sobre una derivacion de otro usuario', function () {
 it('niega actuar sobre una derivacion historica', function () {
     $editor = editor();
     $destino = editor();
-    $area = Area::factory()->create(['nombre' => 'Act3 '.uniqid(), 'sigla' => 'AC3']);
+    $area = crearArea('AC3', 'Act3 '.uniqid());
     $tramite = app(TramiteService::class)->crear([
         'descripcion' => 'Trámite con historial',
         'area_id' => $area->id,
@@ -96,7 +95,7 @@ it('niega actuar sobre una derivacion historica', function () {
 it('niega actuar sobre una derivacion aun no recepcionada', function () {
     $editor = editor();
     $destino = editor();
-    $area = Area::factory()->create(['nombre' => 'Act4 '.uniqid(), 'sigla' => 'AC4']);
+    $area = crearArea('AC4', 'Act4 '.uniqid());
     $tramite = app(TramiteService::class)->crear([
         'descripcion' => 'Trámite derivado sin recepcion',
         'area_id' => $area->id,
@@ -113,7 +112,7 @@ it('niega actuar sobre una derivacion aun no recepcionada', function () {
 
 it('niega actuar en un tramite finalizado aunque la derivacion sea propia', function () {
     $editor = editor();
-    $area = Area::factory()->create(['nombre' => 'Act5 '.uniqid(), 'sigla' => 'AC5']);
+    $area = crearArea('AC5', 'Act5 '.uniqid());
     $tramite = app(TramiteService::class)->crear([
         'descripcion' => 'Trámite a finalizar',
         'area_id' => $area->id,
@@ -130,7 +129,7 @@ it('niega actuar en un tramite finalizado aunque la derivacion sea propia', func
 it('el servicio rechaza actuar sobre derivacion historica', function () {
     $editor = editor();
     $destino = editor();
-    $area = Area::factory()->create(['nombre' => 'Act6 '.uniqid(), 'sigla' => 'AC6']);
+    $area = crearArea('AC6', 'Act6 '.uniqid());
     $tramite = app(TramiteService::class)->crear([
         'descripcion' => 'Trámite servicio',
         'area_id' => $area->id,
@@ -139,6 +138,6 @@ it('el servicio rechaza actuar sobre derivacion historica', function () {
     $primera = $tramite->derivaciones()->firstOrFail();
     app(DerivacionService::class)->derivar($tramite->fresh(), $destino->id, 'Derivo');
 
-    expect(fn () => app(App\Services\ActuacionService::class)->crear($primera->fresh(), payloadActuacion(), $editor->id))
+    expect(fn () => app(ActuacionService::class)->crear($primera->fresh(), payloadActuacion(), $editor->id))
         ->toThrow(InvalidArgumentException::class);
 });

@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('areas', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 255);
-            $table->string('sigla', 10)->nullable()->unique();
-            $table->string('codigo', 20)->nullable()->unique();
+            $table->string('codigo', 20)->unique();
             $table->text('descripcion')->nullable();
-            $table->boolean('estado')->default(true);
-            $table->foreignId('parent_id')->nullable()->constrained('areas')->nullOnDelete();
+            $table->boolean('activo')->default(true);
+            $table->foreignId('user_id')->nullable();
+            $table->foreignId('area_padre_id')->nullable()
+                ->constrained('areas')->nullOnDelete();
             $table->timestamps();
+
+            $table->index('user_id');
+            $table->index('area_padre_id');
         });
     }
 

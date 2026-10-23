@@ -7,22 +7,15 @@ import { Select } from '@/components/ui/Select';
 import { Table, type Column } from '@/components/ui/Table';
 import { usePermissions } from '@/hooks/usePermissions';
 import { TramiteTimeline } from '@/components/features/tramites/TramiteTimeline';
+import { DerivarModal } from '@/components/features/derivaciones/DerivarModal';
+import { DestinoDerivacion } from '@/components/features/derivaciones/DestinoDerivacion';
 import { useEffect, useState } from 'react';
-import type { Tramite, Actuacion, Area } from '@/types/generated/Tramite';
-import type { User } from '@/types/generated/User';
+import type { Tramite, Actuacion } from '@/types/generated/Tramite';
+import type { DestinatarioDerivacion } from '@/types/derivaciones';
 
 interface ShowProps {
     tramite: Tramite;
-    usuarios: { data: User[] };
-    areas: { data: Area[] };
-    funcionarios: { data: FuncionarioOption[] };
-}
-
-interface FuncionarioOption {
-    id: number;
-    nombre: string;
-    apellidos: string;
-    area_id: number | null;
+    destinatarios?: DestinatarioDerivacion[];
 }
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
@@ -39,36 +32,34 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
-export default function TramitesShow({ tramite, usuarios, areas, funcionarios }: ShowProps) {
-    const { auth } = usePage().props;
+export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps) {
+    const { url, props } = usePage();
+    const { auth } = props;
     const usuario = auth?.user as { id: number; role: string; permisos: string[] } | null;
     const usuarioId = usuario?.id;
     const { can } = usePermissions();
     const puedeGestionar = can('tramites', 'edicion');
-    const params = new URLSearchParams(window.location.search);
-    const busquedaAnterior = params.get('search') ?? '';
-    const urgenteAnterior = params.get('urgente') === '1';
-    const volverQuery = [
-        busquedaAnterior ? `search=${encodeURIComponent(busquedaAnterior)}` : '',
-        urgenteAnterior ? 'urgente=1' : '',
-    ].filter(Boolean).join('&');
-    const volverHref = volverQuery ? `/tramites?${volverQuery}` : '/tramites';
+    const volverHref = url.includes('?') ? `/tramites?${url.split('?')[1]}` : '/tramites';
     const [recepcionarOpen, setRecepcionarOpen] = useState<number | null>(null);
     const [observarOpen, setObservarOpen] = useState(false);
     const [finalizarOpen, setFinalizarOpen] = useState(false);
     const [actuacionOpen, setActuacionOpen] = useState(false);
+    const [derivarOpen, setDerivarOpen] = useState(false);
 
     const actuacionForm = useForm({ glosa: '' });
     const recepcionarForm = useForm({ glosa_recepcion: '' });
-    const observarForm = useForm({ glosa_observacion: '', derivado_a: '', estado: 'observado' });
+    const observarForm = useForm({ area_id: '', glosa_observacion: '', derivado_a: '', estado: 'observado' });
     const finalizarForm = useForm({ glosa_finalizacion: '', estado: 'finalizado' });
 
-    const otrosUsuarios = usuarios?.data?.filter((u) => u.id !== usuarioId) ?? [];
+    const puedeObservarDestino = destinatarios.length > 0
+        && observarForm.data.area_id !== ''
+        && observarForm.data.derivado_a !== '';
 
     const ultimaDerivacion = tramite.derivaciones?.at(-1);
     const asignadoAMi = tramite.asignado?.id === usuarioId;
     const recepcionadoPorMi = ultimaDerivacion?.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId;
 
+    const puedeDerivar = puedeGestionar && tramite.estado !== 'finalizado' && asignadoAMi && recepcionadoPorMi;
     const puedeObservar = puedeGestionar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
     const puedeFinalizar = puedeGestionar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
     const puedeRecepcionar = puedeGestionar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
@@ -99,12 +90,12 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
         {
             key: 'area',
             header: 'Área',
-            render: (a) => a.area ? `${a.area.nombre} (${a.area.sigla})` : '—',
+            render: (a) => a.area ? `${a.area.nombre} (${a.area.codigo})` : '—',
         },
         {
-            key: 'funcionario',
-            header: 'Funcionario',
-            render: (a) => a.funcionario ? `${a.funcionario.nombre} ${a.funcionario.apellidos}` : '—',
+            key: 'persona',
+            header: 'Persona',
+            render: (a) => a.persona ? `${a.persona.nombres} ${a.persona.apellidos}` : '—',
         },
         {
             key: 'glosa',
@@ -145,6 +136,11 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                         <Link href={`/tramites/${tramite.id}/edit`}>
                             <Button>Editar</Button>
                         </Link>
+                    )}
+                    {puedeDerivar && (
+                        <Button onClick={() => setDerivarOpen(true)}>
+                            Derivar
+                        </Button>
                     )}
                     {puedeRecepcionar && (
                         <Button onClick={() => setRecepcionarOpen(ultimaDerivacion!.id)} variant="secondary">
@@ -342,14 +338,7 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                     }}
                     className="space-y-4"
                 >
-                    <Select
-                        label="Derivar a"
-                        placeholder="Seleccione funcionario"
-                        options={otrosUsuarios.map((u) => ({ value: String(u.id), label: u.name }))}
-                        value={observarForm.data.derivado_a}
-                        onChange={(e) => observarForm.setData('derivado_a', e.target.value)}
-                        error={observarForm.errors.derivado_a}
-                    />
+                    <DestinoDerivacion form={observarForm} destinatarios={destinatarios} />
                     <div>
                         <label htmlFor="glosa_observacion" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">
                             Glosa de observación
@@ -361,9 +350,12 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                             value={observarForm.data.glosa_observacion}
                             onChange={(e) => observarForm.setData('glosa_observacion', e.target.value)}
                         />
+                        {observarForm.errors.glosa_observacion && (
+                            <p className="mt-1 text-xs text-excel-red">{observarForm.errors.glosa_observacion}</p>
+                        )}
                     </div>
                     <div className="flex gap-3 pt-2">
-                        <Button type="submit" loading={observarForm.processing} variant="secondary">Observar</Button>
+                        <Button type="submit" loading={observarForm.processing} variant="secondary" disabled={!puedeObservarDestino}>Observar</Button>
                         <Button type="button" variant="secondary" onClick={() => setObservarOpen(false)}>Cancelar</Button>
                     </div>
                 </form>
@@ -400,6 +392,17 @@ export default function TramitesShow({ tramite, usuarios, areas, funcionarios }:
                     </div>
                 </form>
             </Modal>
+
+            {derivarOpen && (
+                <DerivarModal
+                    open
+                    onClose={() => setDerivarOpen(false)}
+                    destinatarios={destinatarios}
+                    submitUrl={`/tramites/${tramite.id}/derivar`}
+                    title="Derivar Trámite"
+                    onSuccess={() => setDerivarOpen(false)}
+                />
+            )}
         </div>
     );
 }

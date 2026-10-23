@@ -13,8 +13,11 @@ class ProfileController extends Controller
 {
     public function show(): Response
     {
-        $user = User::with(['funcionario', 'puestoActivo.puesto.area', 'historialPuestos.puesto.area', 'roles'])
-            ->findOrFail(request()->user()->id);
+        $user = User::with([
+            'persona.puestoActivo.puesto.area',
+            'persona.historialPuestos.puesto.area',
+            'roles',
+        ])->findOrFail(request()->user()->id);
 
         return Inertia::render('Profile/Show', [
             'user' => new UserResource($user),

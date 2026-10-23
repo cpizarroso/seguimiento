@@ -3,14 +3,16 @@ import { Card } from '@/components/ui/Card';
 import { TramiteForm, type TramiteAreaOption } from '@/components/features/tramites/TramiteForm';
 
 interface CreateProps {
-    areas: { data: TramiteAreaOption[] };
+    areas: { data: (TramiteAreaOption & { predeterminada?: boolean })[] };
 }
 
 export default function TramitesCreate({ areas }: CreateProps) {
+    const areaPredeterminada = areas.data.find((area) => area.predeterminada) ?? areas.data[0];
+
     const form = useForm({
         descripcion: '',
         numero_diamante: '',
-        area_id: '',
+        area_id: areaPredeterminada ? String(areaPredeterminada.id) : '',
         urgente: false as boolean,
     });
 

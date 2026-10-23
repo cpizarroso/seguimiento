@@ -14,18 +14,21 @@ class ActuacionService
             throw new InvalidArgumentException('Solo puedes registrar actuaciones en derivaciones recepcionadas por ti.');
         }
 
-        // El área es la del trámite y el funcionario el del usuario que lo tiene asignado.
+        // El área es la del trámite y la persona la vinculada al usuario que lo tiene asignado.
         $tramite = $derivacion->tramite;
+
+        $personaId = $tramite->asignado?->persona_id
+            ?? $derivacion->a?->persona_id;
 
         $actuacion = Actuacion::create([
             'derivacion_id' => $derivacion->id,
             'area_id' => $tramite->area_id,
-            'funcionario_id' => $tramite->asignado?->funcionario_id,
+            'persona_id' => $personaId,
             'glosa' => $data['glosa'],
             'fecha_actuacion' => now(),
         ]);
 
-        return $actuacion->refresh()->load(['area', 'funcionario']);
+        return $actuacion->refresh()->load(['area', 'persona.puestoActivo.puesto.area']);
     }
 
     public function eliminar(Actuacion $actuacion): void

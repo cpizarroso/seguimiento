@@ -1,39 +1,39 @@
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
-import { UserForm, type AreaOption, type FuncionarioOption, type PuestoOption, type RolOption } from '@/components/features/users/UserForm';
+import { UserForm } from '@/components/features/users/UserForm';
+import type { Area, Persona } from '@/types/generated/Tramite';
+import type { RolOption } from '@/components/features/users/UserForm';
 
-interface CreateProps {
-    areas?: { data: AreaOption[] };
-    puestos?: { data: PuestoOption[] };
+interface UsersCreateProps {
     roles?: { data: RolOption[] };
-    funcionarios?: { data: FuncionarioOption[] };
+    personas?: { data: Persona[] };
+    areas?: { data: Area[] };
 }
 
-export default function UsersCreate({ areas, puestos, roles, funcionarios }: CreateProps) {
+export default function UsersCreate({ roles, personas, areas }: UsersCreateProps) {
     const form = useForm({
         name: '',
         email: '',
         phone: '',
         profesion: '',
         password: '',
-        funcionario_id: '',
+        persona_id: '',
         role_ids: [] as number[],
-        area_id: '',
-        puesto_id: '',
+        area_ids: [] as number[],
+        area_predeterminada_id: '',
     });
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-patuju-green">Nuevo Usuario</h2>
-
+            <h1 className="text-2xl font-bold text-patuju-green">Nuevo usuario</h1>
             <Card>
                 <UserForm
                     form={form}
-                    areas={areas}
-                    puestos={puestos}
                     roles={roles}
-                    funcionarios={funcionarios}
+                    personas={personas}
+                    areas={areas}
                     submitUrl="/users"
+                    onCancel={() => router.visit('/users')}
                 />
             </Card>
         </div>

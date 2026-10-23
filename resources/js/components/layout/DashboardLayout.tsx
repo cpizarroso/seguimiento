@@ -46,7 +46,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }, [flash]);
 
     return (
-        <div className="flex h-screen bg-patuju-white dark:bg-gray-900">
+        <div className="flex h-screen overflow-hidden bg-excel-bg dark:bg-gray-950">
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 z-20 bg-black/50 md:hidden"
@@ -65,7 +65,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
             }`}>
                 <Header onMenuClick={() => setSidebarOpen(true)} />
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
                     {children}
                 </main>
             </div>

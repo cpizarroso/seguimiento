@@ -12,9 +12,9 @@ it('el factory respeta created_at explicito para el seed por fecha', function ()
 });
 
 it('el seeder crea 15 tramites de hoy en distintos horarios', function () {
-    Area::factory()->create(['nombre' => 'Seed Uno', 'sigla' => 'SU']);
-    Area::factory()->create(['nombre' => 'Seed Dos', 'sigla' => 'SD']);
-    $areaDla = Area::factory()->create(['nombre' => 'Dirección Legal', 'sigla' => 'DLA']);
+    Area::factory()->create(['nombre' => 'Seed Uno', 'codigo' => 'SU']);
+    Area::factory()->create(['nombre' => 'Seed Dos', 'codigo' => 'SD']);
+    $areaDla = Area::factory()->create(['nombre' => 'Dirección Legal', 'codigo' => 'DLA']);
     User::factory()->count(3)->create();
 
     $this->seed(TramiteSeeder::class);
@@ -33,7 +33,7 @@ it('el seeder crea 15 tramites de hoy en distintos horarios', function () {
 });
 
 it('el seeder crea 50 tramites de hoy para erodriguez', function () {
-    $areaDla = Area::factory()->create(['nombre' => 'Dirección Legal', 'sigla' => 'DLA']);
+    $areaDla = Area::factory()->create(['nombre' => 'Dirección Legal', 'codigo' => 'DLA']);
     $erodriguez = User::factory()->create(['email' => 'erodriguez@'.config('app.user_domain')]);
 
     $this->seed(TramiteSeeder::class);
@@ -56,7 +56,7 @@ it('el seeder crea 50 tramites de hoy para erodriguez', function () {
 });
 
 it('crearParaUsuario crea la cantidad pedida para el usuario indicado', function () {
-    Area::factory()->create(['nombre' => 'Dirección Legal', 'sigla' => 'DLA']);
+    Area::factory()->create(['nombre' => 'Dirección Legal', 'codigo' => 'DLA']);
     $user = User::factory()->create();
     $otro = User::factory()->create();
 
@@ -70,7 +70,7 @@ it('crearParaUsuario crea la cantidad pedida para el usuario indicado', function
 });
 
 it('crearParaUsuario resuelve el usuario por login sin dominio', function () {
-    Area::factory()->create(['nombre' => 'Dirección Legal', 'sigla' => 'DLA']);
+    Area::factory()->create(['nombre' => 'Dirección Legal', 'codigo' => 'DLA']);
     $user = User::factory()->create(['email' => 'erodriguez@'.config('app.user_domain')]);
 
     app(TramiteSeeder::class)->crearParaUsuario('erodriguez', 2);

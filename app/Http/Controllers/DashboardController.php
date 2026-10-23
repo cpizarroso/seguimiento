@@ -15,16 +15,16 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        $funcionarioId = $request->integer('funcionario_id') ?: null;
+        $usuarioId = $request->integer('usuario_id') ?: ($request->integer('funcionario_id') ?: null);
 
         return Inertia::render('Dashboard', [
             ...$this->reporteService->resumenGeneral(),
-            ...$this->reporteService->tramitesPorDiaSemana($funcionarioId),
-            'tramites_por_funcionario' => $this->reporteService->tramitesPorFuncionario(),
-            'tramites_por_area' => $this->reporteService->tramitesPorArea($funcionarioId),
-            'tramites_urgentes' => $this->reporteService->tramitesUrgentes($funcionarioId),
-            'funcionarios' => User::orderBy('name')->get(['id', 'name']),
-            'filtro_funcionario_id' => $funcionarioId,
+            ...$this->reporteService->tramitesPorDiaSemana($usuarioId),
+            'tramites_por_usuario' => $this->reporteService->tramitesPorUsuario(),
+            'tramites_por_area' => $this->reporteService->tramitesPorArea($usuarioId),
+            'tramites_urgentes' => $this->reporteService->tramitesUrgentes($usuarioId),
+            'usuarios' => User::orderBy('name')->get(['id', 'name']),
+            'filtro_usuario_id' => $usuarioId,
         ]);
     }
 }

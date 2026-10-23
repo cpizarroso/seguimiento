@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Area;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class AreaFactory extends Factory
 {
@@ -11,9 +12,14 @@ class AreaFactory extends Factory
 
     public function definition(): array
     {
+        $nombre = 'Área '.fake()->unique()->word();
+
         return [
-            'nombre' => fake()->unique()->randomElement(['Administrativa', 'Legal', 'Técnica', 'Financiera']),
+            'nombre' => $nombre,
+            'codigo' => Str::upper(fake()->unique()->bothify('AR-###')),
             'descripcion' => fake()->sentence(),
+            'activo' => true,
+            'area_padre_id' => null,
         ];
     }
 }

@@ -1,43 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Table } from '@/components/ui/Table';
-
-interface AreaInfo {
-    id: number;
-    nombre: string;
-    sigla: string;
-}
-
-interface PuestoInfo {
-    id: number;
-    nombre: string;
-    sigla: string;
-    area_id: number;
-    area: AreaInfo | null;
-}
-
-interface PuestoActivoData {
-    id: number;
-    puesto_id: number;
-    puesto: PuestoInfo | null;
-}
-
-interface HistorialPuestoRow {
-    id: number;
-    puesto_id: number;
-    puesto: PuestoInfo | null;
-    fecha_inicio: string;
-    fecha_fin: string | null;
-}
-
-interface FuncionarioData {
-    id: number;
-    nombre: string;
-}
+import { Table, type Column } from '@/components/ui/Table';
+import type { PersonaPuesto } from '@/types/generated/Tramite';
 
 interface UserRoleData {
     id: number;
@@ -53,9 +21,18 @@ interface UserProfile {
     profesion: string | null;
     role: string;
     roles: UserRoleData[];
-    funcionario: FuncionarioData | null;
-    puesto_activo: PuestoActivoData | null;
-    historial_puestos: HistorialPuestoRow[] | null;
+    persona: {
+        id: number;
+        nombres: string;
+        apellidos: string;
+        nombre_completo: string;
+        ci: string;
+        correo: string | null;
+        activo: boolean;
+        area: { id: number; nombre: string; codigo: string } | null;
+    } | null;
+    puesto_activo: PersonaPuesto | null;
+    historial_puestos: PersonaPuesto[] | null;
 }
 
 interface ProfileProps {
@@ -63,14 +40,14 @@ interface ProfileProps {
 }
 
 export default function ProfileShow({ user }: ProfileProps) {
-    const historialColumns = [
-        { key: 'puesto', header: 'Puesto', render: (h: HistorialPuestoRow) => h.puesto?.nombre ?? '—' },
-        { key: 'area', header: 'Área', render: (h: HistorialPuestoRow) => h.puesto?.area?.nombre ?? '—' },
+    const historialColumns: Column<PersonaPuesto>[] = [
+        { key: 'puesto', header: 'Puesto', render: (h) => h.puesto?.nombre ?? '—' },
+        { key: 'area', header: 'Área', render: (h) => h.puesto?.area?.nombre ?? '—' },
         { key: 'fecha_inicio', header: 'Fecha Inicio' },
         {
             key: 'fecha_fin',
             header: 'Fecha Fin',
-            render: (h: HistorialPuestoRow) => h.fecha_fin ?? 'Activo',
+            render: (h) => h.fecha_fin ?? 'Activo',
         },
     ];
 
@@ -84,7 +61,7 @@ export default function ProfileShow({ user }: ProfileProps) {
         password_confirmation: '',
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         put('/profile/password', {
             preserveScroll: true,
@@ -150,8 +127,8 @@ export default function ProfileShow({ user }: ProfileProps) {
                         </dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
-                        <dt className="text-sm text-gray-500 dark:text-gray-400">Funcionario</dt>
-                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.funcionario?.nombre ?? '—'}</dd>
+                        <dt className="text-sm text-gray-500 dark:text-gray-400">Persona</dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.persona?.nombre_completo ?? '—'}</dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Puesto Actual</dt>

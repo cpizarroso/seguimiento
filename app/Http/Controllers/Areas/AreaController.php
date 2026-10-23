@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Areas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Areas\StoreAreaRequest;
 use App\Http\Requests\Areas\UpdateAreaRequest;
-use App\Http\Resources\AreaResource;
+use App\Http\Requests\Puestos\StorePuestoRequest;
+use App\Http\Requests\Puestos\UpdatePuestoRequest;
 use App\Models\Area;
 use App\Models\Puesto;
+use App\Models\User;
 use App\Services\AreaService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,112 +24,81 @@ class AreaController extends Controller
     public function index(): Response
     {
         return Inertia::render('Areas/Index', [
-            'areas' => AreaResource::collection($this->areaService->listar(
-                request()->only(['search', 'per_page'])
-            )),
             'areasTree' => $this->areaService->obtenerArbolCompleto(),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('Areas/Create', [
-            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'areasOpciones' => $this->areaService->obtenerOpciones(),
+            'responsables' => User::orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
     public function store(StoreAreaRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $puestos = $data['puestos'] ?? [];
-        unset($data['puestos']);
+        $puestosEstandar = $data['puestos_estandar'] ?? [];
+        unset($data['puestos_estandar']);
 
-        $area = $this->areaService->crear($data, $puestos);
+        $this->areaService->crear($data, $puestosEstandar);
 
-        return to_route('areas.index')
-            ->with('success', 'Área y puestos creados exitosamente.');
-    }
-
-    public function show(Area $area): Response
-    {
-        return Inertia::render('Areas/Show', [
-            'area' => new AreaResource($this->areaService->obtenerConPuestos($area)),
-        ]);
-    }
-
-    public function edit(Area $area): Response
-    {
-        return Inertia::render('Areas/Edit', [
-            'area' => new AreaResource($this->areaService->obtenerConPuestos($area)),
-            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
-        ]);
+        return to_route('areas.index')->with('success', 'Área creada exitosamente.');
     }
 
     public function update(UpdateAreaRequest $request, Area $area): RedirectResponse
     {
-        $data = $request->validated();
-        $puestos = $data['puestos'] ?? null;
-        unset($data['puestos']);
+        $this->areaService->actualizar($area, $request->validated());
 
-        $this->areaService->actualizar($area, $data, $puestos);
-
-        return to_route('areas.show', $area)
-            ->with('success', 'Área actualizada exitosamente.');
+        return to_route('areas.index')->with('success', 'Área actualizada exitosamente.');
     }
 
     public function destroy(Area $area): RedirectResponse
     {
         $this->areaService->eliminar($area);
 
-        return to_route('areas.index')
-            ->with('success', 'Área eliminada exitosamente.');
+        return to_route('areas.index')->with('success', 'Área eliminada exitosamente.');
     }
 
-    public function storePuesto(Request $request, Area $area): RedirectResponse
+    public function toggleActivo(Area $area): RedirectResponse
     {
-        $validated = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'descripcion' => ['nullable', 'string', 'max:1000'],
-            'sigla' => ['required', 'string', 'max:10', 'unique:puestos,sigla'],
-            'codigo' => ['nullable', 'string', 'max:20', 'unique:puestos,codigo'],
-            'estado' => ['nullable', 'boolean'],
-        ]);
+        $this->areaService->toggleActivo($area);
 
-        $this->areaService->crearPuesto($area, $validated);
-
-        return to_route('areas.show', $area)
-            ->with('success', 'Puesto creado exitosamente.');
+        return to_route('areas.index')->with('success', 'Estado del área actualizado.');
     }
 
-    public function updatePuesto(Request $request, Area $area, Puesto $puesto): RedirectResponse
+    public function storePuesto(StorePuestoRequest $request, Area $area): RedirectResponse
     {
-        if ($puesto->area_id !== $area->id) {
-            abort(404);
-        }
+        $data = $request->validated();
+        $data['area_id'] = $area->id;
 
-        $validated = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'descripcion' => ['nullable', 'string', 'max:1000'],
-            'sigla' => ['required', 'string', 'max:10', Rule::unique('puestos', 'sigla')->ignore($puesto->id)],
-            'codigo' => ['nullable', 'string', 'max:20', Rule::unique('puestos', 'codigo')->ignore($puesto->id)],
-            'estado' => ['nullable', 'boolean'],
-        ]);
+        $this->areaService->crearPuesto($area, $data);
 
-        $this->areaService->actualizarPuesto($puesto, $validated);
+        return to_route('areas.index')->with('success', 'Puesto creado exitosamente.');
+    }
 
-        return to_route('areas.show', $area)
-            ->with('success', 'Puesto actualizado exitosamente.');
+    public function updatePuesto(UpdatePuestoRequest $request, Area $area, Puesto $puesto): RedirectResponse
+    {
+        abort_unless($puesto->area_id === $area->id, 404);
+
+        $data = $request->validated();
+        $data['area_id'] = $area->id;
+
+        $this->areaService->actualizarPuesto($puesto, $data);
+
+        return to_route('areas.index')->with('success', 'Puesto actualizado exitosamente.');
     }
 
     public function destroyPuesto(Area $area, Puesto $puesto): RedirectResponse
     {
-        if ($puesto->area_id !== $area->id) {
-            abort(404);
-        }
+        abort_unless($puesto->area_id === $area->id, 404);
 
         $this->areaService->eliminarPuesto($puesto);
 
-        return to_route('areas.show', $area)
-            ->with('success', 'Puesto eliminado exitosamente.');
+        return to_route('areas.index')->with('success', 'Puesto eliminado exitosamente.');
+    }
+
+    public function togglePuesto(Area $area, Puesto $puesto): RedirectResponse
+    {
+        abort_unless($puesto->area_id === $area->id, 404);
+
+        $this->areaService->togglePuesto($puesto);
+
+        return to_route('areas.index')->with('success', 'Estado del puesto actualizado.');
     }
 }

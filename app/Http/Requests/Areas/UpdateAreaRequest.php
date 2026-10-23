@@ -9,7 +9,24 @@ class UpdateAreaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasPermission('areas_puestos', 'edicion') ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $datos = [
+            'codigo' => $this->filled('codigo') ? mb_strtoupper(trim((string) $this->input('codigo'))) : null,
+        ];
+
+        if ($this->has('activo')) {
+            $datos['activo'] = $this->boolean('activo');
+        }
+
+        if ($this->has('area_padre_id') || $this->has('parent_id')) {
+            $datos['area_padre_id'] = $this->input('area_padre_id', $this->input('parent_id'));
+        }
+
+        $this->merge($datos);
     }
 
     public function rules(): array
@@ -17,38 +34,20 @@ class UpdateAreaRequest extends FormRequest
         $areaId = $this->route('area')->id ?? $this->route('area');
 
         return [
-            'nombre' => [
-                'required', 'string', 'max:255',
-                Rule::unique('areas', 'nombre')->ignore($areaId),
-            ],
+            'nombre' => ['required', 'string', 'max:255'],
+            'codigo' => ['required', 'string', 'max:20', Rule::unique('areas', 'codigo')->ignore($areaId)],
             'descripcion' => ['nullable', 'string', 'max:1000'],
-            'sigla' => [
-                'required', 'string', 'max:10',
-                Rule::unique('areas', 'sigla')->ignore($areaId),
-            ],
-            'codigo' => [
-                'nullable', 'string', 'max:20',
-                Rule::unique('areas', 'codigo')->ignore($areaId),
-            ],
-            'estado' => ['nullable', 'boolean'],
-            'parent_id' => ['nullable', 'integer', 'exists:areas,id'],
-            'puestos' => ['nullable', 'array'],
-            'puestos.*.nombre' => ['required', 'string', 'max:255'],
-            'puestos.*.descripcion' => ['nullable', 'string', 'max:1000'],
-            'puestos.*.sigla' => ['required', 'string', 'max:10', 'distinct:strict'],
-            'puestos.*.codigo' => ['nullable', 'string', 'max:20', 'distinct:strict'],
-            'puestos.*.estado' => ['nullable', 'boolean'],
+            'activo' => ['nullable', 'boolean'],
+            'area_padre_id' => ['nullable', 'integer', 'exists:areas,id'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'puestos.*.nombre.required' => 'El nombre del puesto es obligatorio.',
-            'puestos.*.nombre.max' => 'El nombre del puesto no debe exceder 255 caracteres.',
-            'puestos.*.sigla.required' => 'La sigla del puesto es obligatoria.',
-            'puestos.*.sigla.max' => 'La sigla del puesto no debe exceder 10 caracteres.',
-            'puestos.*.sigla.distinct' => 'Las siglas de los puestos no pueden repetirse.',
+            'codigo.unique' => 'El código del área ya está en uso.',
+            'area_padre_id.exists' => 'El área padre seleccionada no existe.',
         ];
     }
 }

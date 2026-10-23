@@ -23,8 +23,8 @@ class ActuacionResource extends JsonResource
             'dias_transcurridos' => $this->dias_transcurridos,
             'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,
             'area_id' => $this->area_id,
-            'funcionario' => $this->whenLoaded('funcionario') ? new FuncionarioResource($this->funcionario) : null,
-            'funcionario_id' => $this->funcionario_id,
+            'persona' => $this->whenLoaded('persona') ? new PersonaResource($this->persona) : null,
+            'persona_id' => $this->persona_id,
             'created_at' => $this->created_at?->format('d/m/Y H:i'),
         ];
     }

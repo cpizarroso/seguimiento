@@ -5,7 +5,7 @@ import { ReporteFiltros } from '@/components/features/reporte/ReporteFiltros';
 import { ReporteHistorial, type ReporteGuardado } from '@/components/features/reporte/ReporteHistorial';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import type { PaginatedData, Tramite } from '@/types/generated/Tramite';
+import type { Area, PaginatedData, Tramite } from '@/types/generated/Tramite';
 
 interface AuthUsuario {
     id: number;
@@ -18,6 +18,9 @@ interface FiltrosBackend {
     fecha_desde: string | null;
     fecha_hasta: string | null;
     hoy: boolean;
+    gestion: number | null;
+    numero_tramite: string | null;
+    area_id: number | null;
 }
 
 interface ArchivoGuardado {
@@ -27,22 +30,50 @@ interface ArchivoGuardado {
 
 interface ReporteIndexProps {
     auth_usuario: AuthUsuario;
+    area_reporte: Area | null;
+    areas: { data: Area[] };
+    puede_seleccionar_area: boolean;
     filtros: FiltrosBackend;
+    gestiones: number[];
+    gestion_actual: number;
     generado: boolean;
     reporte: PaginatedData<Tramite>;
     archivo: ArchivoGuardado | null;
     historial: ReporteGuardado[];
     vista_previa_url: string | null;
+    errors?: Record<string, string>;
 }
 
-export default function ReporteIndex({ auth_usuario, filtros, generado, reporte, archivo, historial, vista_previa_url }: ReporteIndexProps) {
+const NUMERO_TRAMITE_REGEX = /^\s*\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*\s*$/;
+
+export default function ReporteIndex({
+    auth_usuario,
+    area_reporte,
+    areas,
+    puede_seleccionar_area,
+    filtros,
+    gestiones,
+    gestion_actual,
+    generado,
+    reporte,
+    archivo,
+    historial,
+    vista_previa_url,
+    errors = {},
+}: ReporteIndexProps) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const {
         fechaDesde,
         fechaHasta,
         soloHoy,
+        gestion,
+        numeroTramite,
+        areaId,
         cambiarRango,
+        cambiarGestion,
         cambiarHoy,
+        cambiarNumeroTramite,
+        cambiarArea,
         generar,
         guardar,
         limpiar,
@@ -51,6 +82,10 @@ export default function ReporteIndex({ auth_usuario, filtros, generado, reporte,
         fecha_desde: filtros.fecha_desde,
         fecha_hasta: filtros.fecha_hasta,
         hoy: filtros.hoy,
+        gestion: filtros.gestion,
+        gestion_actual,
+        numero_tramite: filtros.numero_tramite,
+        area_id: filtros.area_id,
     });
 
     const puedeImprimir = archivo !== null;
@@ -65,6 +100,15 @@ export default function ReporteIndex({ auth_usuario, filtros, generado, reporte,
         }
     };
 
+    const numeroTramiteValido = numeroTramite.trim() === '' || NUMERO_TRAMITE_REGEX.test(numeroTramite);
+    const hayNumeroTramite = numeroTramite.trim() !== '';
+    const puedeGenerar = numeroTramiteValido
+        && (gestion !== null || rangoValido || hayNumeroTramite)
+        && areaId !== null;
+    const errorNumeroTramite = !numeroTramiteValido
+        ? 'El N° de trámite debe ser un número, una lista separada por comas o un rango. Ej.: 5, 1,3,5 o 1-10.'
+        : errors.numero_tramite;
+
     // Filtros aplicados (los que generaron la vista previa). Guardar y
     // paginar los reutilizan para que el PDF coincida con lo mostrado,
     // aunque el formulario se edite después sin clicar Generar.
@@ -72,6 +116,9 @@ export default function ReporteIndex({ auth_usuario, filtros, generado, reporte,
         fecha_desde: filtros.fecha_desde ?? '',
         fecha_hasta: filtros.fecha_hasta ?? '',
         hoy: filtros.hoy,
+        gestion: filtros.gestion,
+        numero_tramite: filtros.numero_tramite ?? '',
+        area_id: filtros.area_id,
         per_page: reporte.meta.per_page,
     };
 
@@ -91,11 +138,21 @@ export default function ReporteIndex({ auth_usuario, filtros, generado, reporte,
 
             <ReporteFiltros
                 usuarioNombre={auth_usuario.name}
-                usuarioArea={auth_usuario.area}
+                usuarioArea={area_reporte?.nombre ?? auth_usuario.area}
+                areaSeleccionadaId={areaId}
+                areas={areas?.data ?? []}
+                puedeSeleccionarArea={puede_seleccionar_area}
+                gestion={gestion}
+                gestiones={gestiones}
+                numeroTramite={numeroTramite}
+                errorNumeroTramite={errorNumeroTramite}
                 fechaDesde={fechaDesde}
                 fechaHasta={fechaHasta}
                 soloHoy={soloHoy}
-                puedeGenerar={rangoValido}
+                puedeGenerar={puedeGenerar}
+                onAreaChange={cambiarArea}
+                onGestionChange={cambiarGestion}
+                onNumeroTramiteChange={cambiarNumeroTramite}
                 onRangoChange={cambiarRango}
                 onHoyChange={cambiarHoy}
                 onGenerar={generar}

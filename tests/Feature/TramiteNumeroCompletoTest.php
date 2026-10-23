@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 it('autocompleta numero_completo al crear un tramite', function () {
-    $area = Area::factory()->create(['nombre' => 'Legal '.uniqid(), 'sigla' => 'DLA']);
+    $area = Area::factory()->create(['nombre' => 'Legal '.uniqid(), 'codigo' => 'DLA']);
 
     $tramite = Tramite::factory()->create([
         'area_id' => $area->id,
@@ -22,12 +22,12 @@ it('autocompleta numero_completo al crear un tramite', function () {
         'year' => 2026,
     ]);
 
-    expect($tramite->fresh()->numero_completo)->toBe('DLA-7/2026');
+    expect($tramite->fresh()->numero_completo)->toBe('DLA-0007/2026');
 });
 
 it('recalcula numero_completo al cambiar el tramite de area', function () {
-    $origen = Area::factory()->create(['nombre' => 'Origen '.uniqid(), 'sigla' => 'DLA']);
-    $destino = Area::factory()->create(['nombre' => 'Destino '.uniqid(), 'sigla' => 'DOT']);
+    $origen = Area::factory()->create(['nombre' => 'Origen '.uniqid(), 'codigo' => 'DLA']);
+    $destino = Area::factory()->create(['nombre' => 'Destino '.uniqid(), 'codigo' => 'DOT']);
 
     $tramite = Tramite::factory()->create([
         'area_id' => $origen->id,
@@ -35,15 +35,15 @@ it('recalcula numero_completo al cambiar el tramite de area', function () {
         'year' => 2026,
     ]);
 
-    expect($tramite->fresh()->numero_completo)->toBe('DLA-12/2026');
+    expect($tramite->fresh()->numero_completo)->toBe('DLA-0012/2026');
 
     $tramite->update(['area_id' => $destino->id]);
 
-    expect($tramite->fresh()->numero_completo)->toBe('DOT-12/2026');
+    expect($tramite->fresh()->numero_completo)->toBe('DOT-0012/2026');
 });
 
 it('rellena numero_completo al guardar una fila legacy sin valor', function () {
-    $area = Area::factory()->create(['nombre' => 'Migrada '.uniqid(), 'sigla' => 'DRU']);
+    $area = Area::factory()->create(['nombre' => 'Migrada '.uniqid(), 'codigo' => 'DRU']);
 
     $id = DB::table('tramites')->insertGetId([
         'numero_tramite' => 3,
@@ -52,7 +52,7 @@ it('rellena numero_completo al guardar una fila legacy sin valor', function () {
         'descripcion' => 'Trámite sin numero_completo',
         'estado' => 'iniciado',
         'area_id' => $area->id,
-        'creado_por' => \App\Models\User::factory()->create()->id,
+        'creado_por' => User::factory()->create()->id,
         'created_at' => now(),
         'updated_at' => now(),
     ]);
@@ -63,11 +63,11 @@ it('rellena numero_completo al guardar una fila legacy sin valor', function () {
     $tramite = Tramite::findOrFail($id);
     $tramite->save();
 
-    expect($tramite->fresh()->numero_completo)->toBe('DRU-3/2025');
+    expect($tramite->fresh()->numero_completo)->toBe('DRU-0003/2025');
 });
 
 it('encuentra tramites buscando por numero_completo', function () {
-    $area = Area::factory()->create(['nombre' => 'Busq '.uniqid(), 'sigla' => 'DLA']);
+    $area = Area::factory()->create(['nombre' => 'Busq '.uniqid(), 'codigo' => 'DLA']);
     $tramite = Tramite::factory()->create([
         'area_id' => $area->id,
         'numero_tramite' => 42,

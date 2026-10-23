@@ -1,31 +1,31 @@
 import { createInertiaApp } from '@inertiajs/react';
+import type { ResolvedComponent } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ThemeProvider } from './hooks/useTheme';
-import type { ComponentType } from 'react';
 import './app.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Seguimiento de Trámites';
 
+const pages = import.meta.glob<{ default: ResolvedComponent }>('./pages/**/*.tsx');
+
 createInertiaApp({
     title: (title) => `${title} — ${appName}`,
     resolve: async (name) => {
-        const page = await resolvePageComponent<{
-            default: ComponentType<Record<string, unknown>>;
-            layout?: ComponentType<Record<string, unknown>>;
-        }>(
+        const page = await resolvePageComponent<{ default: ResolvedComponent }>(
             `./pages/${name}.tsx`,
-            import.meta.glob('./pages/**/*.tsx'),
+            pages,
         );
 
+        const component = page.default;
         const authPages = ['Auth/Login', 'Auth/Register'];
 
         if (!authPages.includes(name)) {
-            page.default.layout = page.default.layout || DashboardLayout;
+            component.layout = component.layout || DashboardLayout;
         }
 
-        return page;
+        return component;
     },
     setup({ el, App, props }) {
         const app = (
@@ -40,6 +40,6 @@ createInertiaApp({
         }
     },
     progress: {
-        color: '#2D6A4F',
+        color: '#107C41',
     },
 });

@@ -11,12 +11,13 @@ return new class extends Migration
         Schema::create('puestos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 255);
-            $table->string('sigla', 10)->nullable()->unique();
-            $table->string('codigo', 20)->nullable()->unique();
+            $table->string('codigo', 30)->unique();
             $table->text('descripcion')->nullable();
-            $table->boolean('estado')->default(true);
-            $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
+            $table->boolean('activo')->default(true);
+            $table->foreignId('area_id')->constrained('areas')->restrictOnDelete();
             $table->timestamps();
+
+            $table->index('area_id');
         });
     }
 

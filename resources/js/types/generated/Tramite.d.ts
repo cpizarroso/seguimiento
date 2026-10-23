@@ -26,32 +26,72 @@ export interface Area {
     id: number;
     nombre: string;
     descripcion: string | null;
-    sigla: string;
-    codigo: string | null;
-    estado: boolean;
-    parent_id: number | null;
-    parent: Area | null;
+    codigo: string;
+    activo: boolean;
+    area_padre_id: number | null;
+    user_id: number | null;
+    responsable?: { id: number; name: string; email: string } | null;
     children?: Area[];
+    children_count?: number;
     puestos_count?: number;
+    personas_count?: number;
+    usuarios_count?: number;
     puestos?: Puesto[];
+    created_at?: string;
 }
 
-export interface AreaTreeNode extends Omit<Area, 'parent' | 'children' | 'puestos'> {
-    parent: AreaTreeNode | null;
+export interface AreaTreeNode extends Omit<Area, 'children' | 'puestos'> {
     children: AreaTreeNode[];
     puestos: Puesto[];
+}
+
+export interface AreaOpcion {
+    id: number;
+    nombre: string;
+    codigo: string;
+    path: string;
+    depth: number;
+    activo: boolean;
+    disabled: boolean;
 }
 
 export interface Puesto {
     id: number;
     nombre: string;
     descripcion: string | null;
-    sigla: string;
-    codigo: string | null;
-    estado: boolean;
-    area_id: number | null;
-    area: Area | null;
-    funcionarios_count?: number;
+    codigo: string;
+    activo: boolean;
+    area_id: number;
+    area?: Area | null;
+    personas_count?: number;
+    usuarios_count?: number;
+}
+
+export interface Persona {
+    id: number;
+    nombres: string;
+    apellidos: string;
+    nombre_completo: string;
+    ci: string;
+    telefono: string | null;
+    correo: string | null;
+    direccion: string | null;
+    activo: boolean;
+    puesto_activo: PersonaPuesto | null;
+    area: { id: number; nombre: string; codigo: string } | null;
+    user: { id: number; name: string; email: string } | null;
+    historial_puestos?: PersonaPuesto[];
+    created_at?: string;
+}
+
+export interface PersonaPuesto {
+    id: number;
+    persona_id: number;
+    puesto_id: number;
+    puesto: Puesto | null;
+    fecha_inicio: string | null;
+    fecha_fin: string | null;
+    vigente: boolean;
 }
 
 export interface Derivacion {
@@ -76,18 +116,9 @@ export interface Actuacion {
     dias_transcurridos: number;
     area: Area | null;
     area_id: number | null;
-    funcionario: FuncionarioListItem | null;
-    funcionario_id: number | null;
+    persona: Persona | null;
+    persona_id: number | null;
     created_at: string;
-}
-
-export interface FuncionarioListItem {
-    id: number;
-    nombre: string;
-    apellidos: string;
-    email: string;
-    area_id: number | null;
-    area: Area | null;
 }
 
 export interface PaginationMeta {

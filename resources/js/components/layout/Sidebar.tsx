@@ -1,22 +1,23 @@
 import { Link, usePage } from '@inertiajs/react';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { useTheme } from '@/hooks/useTheme';
 
 interface MenuItem {
     label: string;
     href: string;
-    icon: string;
+    icon: IconName;
     permission?: string;
 }
 
 const allMenuItems: MenuItem[] = [
-    { label: 'Dashboard', href: '/dashboard', icon: '📊', permission: 'dashboard' },
-    { label: 'Trámites', href: '/tramites', icon: '📋', permission: 'tramites' },
-    { label: 'Funcionarios', href: '/funcionarios', icon: '👥', permission: 'funcionarios' },
-    { label: 'Áreas y Puestos', href: '/areas', icon: '🗂️', permission: 'areas_puestos' },
-    { label: 'Reporte', href: '/reporte', icon: '📈', permission: 'reporte' },
-    { label: 'Configuración', href: '/configuracion', icon: '⚙️', permission: 'configuracion' },
-    { label: 'Usuarios', href: '/users', icon: '🔐', permission: 'usuarios' },
-    { label: 'Roles', href: '/roles', icon: '🛡️', permission: 'roles' },
+    { label: 'Dashboard', href: '/dashboard', icon: 'dashboard', permission: 'dashboard' },
+    { label: 'Trámites', href: '/tramites', icon: 'document', permission: 'tramites' },
+    { label: 'Personas', href: '/personas', icon: 'people', permission: 'personas' },
+    { label: 'Áreas y Puestos', href: '/areas', icon: 'building', permission: 'areas_puestos' },
+    { label: 'Reporte', href: '/reporte', icon: 'chart', permission: 'reporte' },
+    { label: 'Configuración', href: '/configuracion', icon: 'settings', permission: 'configuracion' },
+    { label: 'Usuarios', href: '/users', icon: 'key', permission: 'usuarios' },
+    { label: 'Roles', href: '/roles', icon: 'shield', permission: 'roles' },
 ];
 
 interface SidebarProps {
@@ -44,119 +45,77 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
 
     return (
         <aside
-            className={`app-sidebar fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out ${
+            className={`app-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-x-hidden border-r border-excel-border bg-excel-surface transition-all duration-300 ease-in-out dark:border-gray-700 dark:bg-gray-900 ${
                 collapsed ? 'w-16' : 'w-64'
             } ${
                 open ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0`}
         >
-            <div className={`flex h-16 items-center border-b border-gray-100 dark:border-gray-700 ${collapsed ? 'justify-center px-0' : 'justify-between gap-2 px-6'}`}>
+            <div className={`flex h-16 items-center border-b border-excel-border dark:border-gray-700 ${collapsed ? 'justify-center px-0' : 'justify-between gap-2 px-4'}`}>
                 {collapsed ? (
-                    <img src="/favicon_io/favicon-32x32.png" alt="Seguimiento" className="h-8 w-8" />
+                    <img src="/favicon/favicon-32x32.png" alt="Seguimiento" className="h-8 w-8 rounded" />
                 ) : (
-                    <div className="flex items-center gap-2">
-                        <img src="/favicon_io/favicon-32x32.png" alt="Seguimiento" className="h-8 w-8" />
-                        <h1 className="text-lg font-bold text-patuju-green dark:text-patuju-green">Seguimiento</h1>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <img src="/favicon/favicon-32x32.png" alt="Seguimiento" className="h-8 w-8 rounded" />
+                        <div className="min-w-0 leading-tight">
+                            <h1 className="truncate text-sm font-semibold text-excel-text dark:text-gray-100">Seguimiento</h1>
+                            <p className="truncate text-[11px] text-excel-muted dark:text-gray-400">Gestión de trámites</p>
+                        </div>
                     </div>
                 )}
                 <button
                     onClick={onToggleCollapse}
-                    className="hidden md:flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="hidden h-7 w-7 items-center justify-center rounded text-excel-muted transition-colors hover:bg-excel-surface-2 hover:text-excel-text dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 md:flex"
                     title={collapsed ? 'Expandir sidebar' : 'Minimizar sidebar'}
+                    aria-label={collapsed ? 'Expandir sidebar' : 'Minimizar sidebar'}
                 >
-                    <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                    </svg>
+                    <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} size={16} />
                 </button>
                 <button
                     onClick={onClose}
-                    className="md:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded text-excel-muted hover:bg-excel-surface-2 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+                    aria-label="Cerrar menú"
                 >
-                    ✕
+                    <Icon name="close" size={16} />
                 </button>
             </div>
 
-            <nav className="flex-1 space-y-1 px-2 py-4">
-                {menuItems.map((item) => (
-                    <div key={item.href} className="relative group">
+            <nav className="flex-1 space-y-1 overflow-x-hidden overflow-y-auto px-2 py-3">
+                {menuItems.map((item) => {
+                    const active = isActive(item.href);
+
+                    return (
                         <Link
+                            key={item.href}
                             href={item.href}
                             onClick={onClose}
-                            className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                collapsed ? 'justify-center' : 'gap-3'
+                            title={collapsed ? item.label : undefined}
+                            className={`flex items-center rounded-md border-l-2 px-2.5 py-2 text-[13px] font-medium transition-colors ${
+                                collapsed ? 'justify-center' : 'gap-2.5'
                             } ${
-                                isActive(item.href)
-                                    ? 'bg-patuju-green text-white'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green dark:hover:text-patuju-green'
+                                active
+                                    ? 'border-excel-green bg-excel-green-light text-excel-green dark:bg-excel-green/15 dark:text-[#6fd394]'
+                                    : 'border-transparent text-excel-muted hover:bg-excel-surface-2 hover:text-excel-text dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
                             }`}
                         >
-                            <span className="text-lg">{item.icon}</span>
-                            {!collapsed && <span>{item.label}</span>}
+                            <Icon name={item.icon} size={18} className="flex-shrink-0" />
+                            {!collapsed && <span className="truncate">{item.label}</span>}
                         </Link>
-                        {collapsed && (
-                            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
-                                {item.label}
-                            </div>
-                        )}
-                    </div>
-                ))}
-
+                    );
+                })}
             </nav>
 
-            <div className={`border-t border-gray-100 dark:border-gray-700 p-2 space-y-1 ${collapsed ? 'items-center' : ''}`}>
-                <div className="relative group">
-                    <Link
-                        href="/profile"
-                        onClick={onClose}
-                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors ${
-                            collapsed ? 'justify-center' : 'gap-3'
-                        }`}
-                    >
-                        <span className="text-lg">👤</span>
-                        {!collapsed && <span>Mi Perfil</span>}
-                    </Link>
-                    {collapsed && (
-                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
-                            Mi Perfil
-                        </div>
-                    )}
-                </div>
-
-                <div className="relative group">
-                    <button
-                        onClick={toggle}
-                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-green/10 dark:hover:bg-patuju-green/20 hover:text-patuju-green transition-colors ${
-                            collapsed ? 'justify-center' : 'gap-3'
-                        }`}
-                    >
-                        <span className="text-lg">{theme === 'dark' ? '☀️' : '🌙'}</span>
-                        {!collapsed && <span>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>}
-                    </button>
-                    {collapsed && (
-                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
-                            {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-                        </div>
-                    )}
-                </div>
-
-                <div className="relative group">
-                    <Link
-                        href="/logout"
-                        method="post"
-                        as="button"
-                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-patuju-red/10 hover:text-patuju-red transition-colors ${
-                            collapsed ? 'justify-center' : 'gap-3'
-                        }`}
-                    >
-                        <span className="text-lg">🚪</span>
-                        {!collapsed && <span>Cerrar sesión</span>}
-                    </Link>
-                    {collapsed && (
-                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 shadow-lg">
-                            Cerrar sesión
-                        </div>
-                    )}
-                </div>
+            <div className="space-y-1 border-t border-excel-border p-2 dark:border-gray-700">
+                <button
+                    onClick={toggle}
+                    title={collapsed ? (theme === 'dark' ? 'Modo claro' : 'Modo oscuro') : undefined}
+                    className={`flex w-full items-center rounded-md px-2.5 py-2 text-[13px] font-medium text-excel-muted transition-colors hover:bg-excel-surface-2 hover:text-excel-text dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 ${
+                        collapsed ? 'justify-center' : 'gap-2.5'
+                    }`}
+                >
+                    <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} className="flex-shrink-0" />
+                    {!collapsed && <span>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>}
+                </button>
             </div>
         </aside>
     );

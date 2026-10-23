@@ -3,17 +3,115 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --color-patuju-green: #2D6A4F;
-    --color-patuju-yellow: #F4A100;
-    --color-patuju-red: #C1121F;
-    --color-patuju-white: #F8FAFC;
-    --color-patuju-cream: #FFF8E7;
-    --color-patuju-card: #ECFBE9;
-    --color-patuju-orange: #E76F00;
+    --font-sans: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+
+    /* Paleta principal inspirada en Microsoft Excel / Fluent 2 */
+    --color-excel-green: #107c41;
+    --color-excel-green-dark: #0c5c30;
+    --color-excel-green-light: #e6f4ea;
+    --color-excel-gold: #f2c811;
+    --color-excel-red: #c42b1c;
+    --color-excel-blue: #0078d4;
+    --color-excel-bg: #f3f2f1;
+    --color-excel-surface: #ffffff;
+    --color-excel-surface-2: #faf9f8;
+    --color-excel-border: #e1dfdd;
+    --color-excel-border-strong: #d1d1d1;
+    --color-excel-text: #242424;
+    --color-excel-muted: #605e5c;
+
+    /* Alias de compatibilidad con la paleta anterior */
+    --color-patuju-green: #107c41;
+    --color-patuju-yellow: #f2c811;
+    --color-patuju-red: #c42b1c;
+    --color-patuju-white: #f3f2f1;
+    --color-patuju-cream: #e6f4ea;
+    --color-patuju-card: #ffffff;
+    --color-patuju-orange: #d83b01;
 }
 
 @layer base {
+    html {
+        font-family: var(--font-sans);
+        color-scheme: light;
+    }
+
+    body {
+        background-color: var(--color-excel-bg);
+        color: var(--color-excel-text);
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    ::selection {
+        background-color: #c7ead4;
+        color: #0c3b21;
+    }
+
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #c7c7c7 transparent;
+    }
+
+    *::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: #c7c7c7;
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background-color: #a8a8a8;
+    }
+
     .dark {
-        --color-patuju-green: #1f911f;
+        color-scheme: dark;
+
+        --color-excel-green: #1f8a4c;
+        --color-excel-green-dark: #16703d;
+        --color-excel-green-light: #123b25;
+        --color-excel-gold: #e8c547;
+        --color-excel-red: #e05252;
+        --color-excel-blue: #4da3e8;
+        --color-excel-bg: #111111;
+        --color-excel-surface: #1b1b1b;
+        --color-excel-surface-2: #202020;
+        --color-excel-border: #3a3a3a;
+        --color-excel-border-strong: #4a4a4a;
+        --color-excel-text: #f3f3f3;
+        --color-excel-muted: #a8a8a8;
+
+        --color-patuju-green: #1f8a4c;
+        --color-patuju-yellow: #e8c547;
+        --color-patuju-red: #e05252;
+        --color-patuju-white: #111111;
+        --color-patuju-cream: #132a1d;
+        --color-patuju-card: #1b1b1b;
+        --color-patuju-orange: #f0783c;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: #5a5a5a;
+    }
+
+    .dark *::-webkit-scrollbar-thumb {
+        background-color: #5a5a5a;
+    }
+}
+
+@layer utilities {
+    .excel-focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+    }
+
+    .excel-focus:focus-visible {
+        outline-color: var(--color-excel-green);
     }
 }

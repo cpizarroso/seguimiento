@@ -50,35 +50,35 @@ class Tramite extends Model
 
     protected static function booted(): void
     {
-        // Mantiene numero_completo sincronizado: SIGLA-N/YEAR
+        // Mantiene numero_completo sincronizado: CODIGO-0000/YEAR
         static::saving(function (Tramite $tramite) {
             // Si cambió el área, la relación cargada puede estar desactualizada
-            $sigla = $tramite->isDirty('area_id') || ! $tramite->relationLoaded('area')
-                ? Area::where('id', $tramite->area_id)->value('sigla')
-                : $tramite->area?->sigla;
+            $codigo = $tramite->isDirty('area_id') || ! $tramite->relationLoaded('area')
+                ? Area::where('id', $tramite->area_id)->value('codigo')
+                : $tramite->area?->codigo;
 
             $tramite->numero_completo = self::generarNumeroCompleto(
                 $tramite->area_id,
                 (int) $tramite->numero_tramite,
                 (int) $tramite->year,
-                $sigla,
+                $codigo,
             );
         });
     }
 
     /**
-     * Genera el nombre completo del trámite: SIGLA-N/YEAR.
+     * Genera el nombre completo del trámite: CODIGO-0000/YEAR.
      * Reutilizable desde seeders, servicios y controladores.
      */
     public static function generarNumeroCompleto(
         ?int $areaId,
         int $numeroTramite,
         int $year,
-        ?string $sigla = null,
+        ?string $codigo = null,
     ): string {
-        $sigla ??= Area::where('id', $areaId)->value('sigla') ?? '?';
+        $codigo ??= Area::where('id', $areaId)->value('codigo') ?? '?';
 
-        return sprintf('%s-%d/%d', $sigla, $numeroTramite, $year);
+        return sprintf('%s-%04d/%d', $codigo, $numeroTramite, $year);
     }
 
     public function area(): BelongsTo

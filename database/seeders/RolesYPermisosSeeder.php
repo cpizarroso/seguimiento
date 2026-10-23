@@ -15,7 +15,7 @@ class RolesYPermisosSeeder extends Seeder
         $modulos = [
             ['nombre' => 'Dashboard', 'slug' => 'dashboard', 'orden' => 1],
             ['nombre' => 'Trámites', 'slug' => 'tramites', 'orden' => 2],
-            ['nombre' => 'Funcionarios', 'slug' => 'funcionarios', 'orden' => 3],
+            ['nombre' => 'Personas', 'slug' => 'personas', 'orden' => 3],
             ['nombre' => 'Áreas y Puestos', 'slug' => 'areas_puestos', 'orden' => 4],
             ['nombre' => 'Reporte', 'slug' => 'reporte', 'orden' => 5],
             ['nombre' => 'Configuración', 'slug' => 'configuracion', 'orden' => 6],
@@ -44,7 +44,7 @@ class RolesYPermisosSeeder extends Seeder
         $permisosMatrix = [
             'dashboard' => ['consulta'],
             'tramites' => ['consulta', 'creacion', 'edicion', 'baja'],
-            'funcionarios' => ['consulta', 'creacion', 'edicion', 'baja'],
+            'personas' => ['consulta', 'creacion', 'edicion', 'baja'],
             'areas_puestos' => ['consulta', 'creacion', 'edicion', 'baja'],
             'reporte' => ['consulta'],
             'configuracion' => ['consulta'],
@@ -122,7 +122,6 @@ class RolesYPermisosSeeder extends Seeder
             }
             $rol->permisos()->sync($pIds);
         }
-
 
     }
 }

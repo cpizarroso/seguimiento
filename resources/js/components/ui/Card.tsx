@@ -5,15 +5,15 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const paddingClasses = {
-    sm: 'p-4',
-    md: 'p-6',
-    lg: 'p-8',
+    sm: 'p-3',
+    md: 'p-4',
+    lg: 'p-6',
 };
 
 export function Card({ padding = 'md', className = '', children, ...props }: CardProps) {
     return (
         <div
-            className={`w-full rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-patuju-green/20 dark:border-gray-700 ${paddingClasses[padding]} ${className}`}
+            className={`w-full rounded-lg border border-excel-border bg-excel-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-gray-700 dark:bg-gray-800 ${paddingClasses[padding]} ${className}`}
             {...props}
         >
             {children}

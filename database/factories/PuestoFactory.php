@@ -12,15 +12,13 @@ class PuestoFactory extends Factory
 
     public function definition(): array
     {
-        $sigla = strtoupper(fake()->unique()->bothify('??'));
-
         return [
-            'nombre' => fake()->unique()->randomElement([
-                'Secretaria', 'Profesional', 'Jefe de Área',
+            'nombre' => fake()->randomElement([
+                'SECRETARIA', 'PROFESIONAL', 'JEFE', 'ASISTENTE',
             ]),
-            'sigla' => $sigla,
             'codigo' => strtoupper(fake()->unique()->bothify('PU-####')),
             'descripcion' => fake()->sentence(),
+            'activo' => true,
             'area_id' => Area::factory(),
         ];
     }

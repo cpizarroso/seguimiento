@@ -9,8 +9,6 @@ interface Props {
     data: AreaRow[];
 }
 
-const COLORS = ['#2D6A4F', '#F4A100', '#C1121F', '#1E6091', '#7B2D8E'];
-
 export function TramitesPorAreaChart({ data }: Props) {
     const total = data.reduce((sum, r) => sum + r.total, 0);
 
@@ -29,7 +27,7 @@ export function TramitesPorAreaChart({ data }: Props) {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis allowDecimals={false} />
-                    <Tooltip formatter={(value: number) => [value, 'Trámites']} />
+                    <Tooltip formatter={(value) => [value ?? 0, 'Trámites']} />
                     <Bar dataKey="total" fill="#1E6091" radius={[4, 4, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>

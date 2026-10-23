@@ -19,6 +19,7 @@ class Reporte extends Model
         'fecha_desde',
         'fecha_hasta',
         'hoy',
+        'gestion',
         'total_registros',
     ];
 
@@ -28,6 +29,7 @@ class Reporte extends Model
             'fecha_desde' => 'date',
             'fecha_hasta' => 'date',
             'hoy' => 'boolean',
+            'gestion' => 'integer',
             'total_registros' => 'integer',
         ];
     }

@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Icon, type IconName } from './Icon';
 
 interface ToastProps {
     type?: 'success' | 'error' | 'warning' | 'info';
     title: string;
     description?: string;
-    icon?: string;
+    icon?: ReactNode;
     duration?: number;
     onClose: () => void;
 }
 
-const typeConfig = {
-    success: { bg: 'bg-white dark:bg-gray-800', border: 'border-green-400', icon: '✓' },
-    error: { bg: 'bg-white dark:bg-gray-800', border: 'border-red-400', icon: '✕' },
-    warning: { bg: 'bg-white dark:bg-gray-800', border: 'border-yellow-400', icon: '⚠' },
-    info: { bg: 'bg-white dark:bg-gray-800', border: 'border-blue-400', icon: 'ℹ' },
+const typeConfig: Record<NonNullable<ToastProps['type']>, { border: string; iconBg: string; iconColor: string; icon: IconName }> = {
+    success: { border: 'border-l-excel-green', iconBg: 'bg-excel-green-light', iconColor: 'text-excel-green', icon: 'check' },
+    error: { border: 'border-l-excel-red', iconBg: 'bg-[#fdecea] dark:bg-excel-red/10', iconColor: 'text-excel-red', icon: 'warning' },
+    warning: { border: 'border-l-excel-gold', iconBg: 'bg-[#fff8d6] dark:bg-excel-gold/10', iconColor: 'text-[#8a6700] dark:text-excel-gold', icon: 'warning' },
+    info: { border: 'border-l-excel-blue', iconBg: 'bg-[#e5f1fb] dark:bg-excel-blue/10', iconColor: 'text-excel-blue', icon: 'info' },
 };
 
 export function Toast({ type = 'info', title, description, icon, duration = 4000, onClose }: ToastProps) {
@@ -38,26 +39,27 @@ export function Toast({ type = 'info', title, description, icon, duration = 4000
 
     return (
         <div
-            className={`fixed top-4 right-4 z-50 max-w-sm w-full transition-all duration-300 ease-in-out ${
+            className={`fixed right-4 top-4 z-50 w-full max-w-sm transition-all duration-300 ease-in-out ${
                 visible && !leaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
             }`}
         >
-            <div className={`rounded-lg border-2 border-l-4 ${config.border} ${config.bg} shadow-xl p-4`}>
+            <div className={`rounded-md border border-excel-border border-l-4 bg-excel-surface p-3.5 shadow-xl dark:border-gray-700 dark:bg-gray-800 ${config.border}`}>
                 <div className="flex items-start gap-3">
-                    <span className="text-lg flex-shrink-0 mt-0.5">
-                        {icon ?? config.icon}
+                    <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded ${config.iconBg} ${config.iconColor}`}>
+                        {icon ?? <Icon name={config.icon} size={16} />}
                     </span>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</p>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-excel-text dark:text-gray-100">{title}</p>
                         {description && (
-                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</p>
+                            <p className="mt-0.5 text-xs text-excel-muted dark:text-gray-400">{description}</p>
                         )}
                     </div>
                     <button
                         onClick={handleClose}
-                        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="flex-shrink-0 rounded p-1 text-excel-muted transition-colors hover:bg-excel-surface-2 hover:text-excel-text dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                        aria-label="Cerrar notificación"
                     >
-                        ✕
+                        <Icon name="close" size={14} />
                     </button>
                 </div>
             </div>

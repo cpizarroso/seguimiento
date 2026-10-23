@@ -12,7 +12,7 @@ class TramiteFactory extends Factory
     {
         return [
             'numero_tramite' => fake()->unique()->numberBetween(1, 9999),
-            'year' => (int) fake()->year(),
+            'year' => (int) now()->year,
             'fecha' => fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),
             'descripcion' => fake()->randomElement([
                 'Solicitud de permiso municipal',

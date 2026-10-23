@@ -3,9 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Reportes\ReporteTramitesRequest;
+use App\Http\Resources\AreaResource;
 use App\Http\Resources\TramiteResource;
+use App\Models\Area;
+use App\Models\User;
+use App\Services\AreaService;
+use App\Services\ConfiguracionService;
 use App\Services\ReporteService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -17,33 +23,28 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class ReporteController extends Controller
 {
     public function __construct(
-        private readonly ReporteService $reporteService
+        private readonly ReporteService $reporteService,
+        private readonly AreaService $areaService,
+        private readonly ConfiguracionService $configuracionService,
     ) {}
 
     public function index(ReporteTramitesRequest $request): Response
     {
-        $user = $request->user()->loadMissing('funcionario.area', 'puestoActivo.puesto.area');
+        $contexto = $this->contextoReporte($request);
+        $user = $contexto['user'];
         $filtros = $request->filtros();
+        $filtros['area_id'] = $contexto['areaId'];
         $filtros['per_page'] = $request->input('per_page', ReporteService::PER_PAGE_DOCUMENTO);
-
-        $area = $user->funcionario?->area?->nombre
-            ?? $user->puestoActivo?->puesto?->area?->nombre;
-
-        $authUsuario = [
-            'id' => $user->id,
-            'name' => $user->name,
-            'area' => $area,
-            'area_id' => $user->funcionario?->area_id
-                ?? $user->puestoActivo?->puesto?->area_id,
-        ];
 
         $quiereReporte = $request->has('fecha_desde')
             || $request->has('fecha_hasta')
-            || $request->boolean('hoy');
+            || $request->has('gestion')
+            || $request->boolean('hoy')
+            || filled($filtros['numero_tramite'] ?? null);
 
         $reporte = $quiereReporte
             ? TramiteResource::collection(
-                $this->reporteService->ingresadosPaginados($authUsuario['area_id'], $filtros)
+                $this->reporteService->ingresadosPaginados($contexto['areaId'], $filtros)
             )
             : ['data' => [], 'meta' => [
                 'current_page' => 1,
@@ -55,13 +56,31 @@ class ReporteController extends Controller
             ]];
 
         return Inertia::render('Reporte/Index', [
-            'auth_usuario' => $authUsuario,
+            'auth_usuario' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'area' => $contexto['areaUsuario']?->nombre,
+                'area_id' => $contexto['areaUsuario']?->id,
+            ],
+            'area_reporte' => $contexto['area'] ? new AreaResource($contexto['area']) : null,
+            'areas' => $contexto['esAdmin']
+                ? AreaResource::collection($this->areaService->obtenerTodos())
+                : ['data' => []],
+            'puede_seleccionar_area' => $contexto['esAdmin'],
             'filtros' => $filtros,
+            'gestiones' => $this->configuracionService->gestionesDisponibles(),
+            'gestion_actual' => (int) now()->year,
             'generado' => $quiereReporte,
             'reporte' => $reporte,
             'archivo' => $this->archivoProp($request, $user->id),
             'vista_previa_url' => $quiereReporte
-                ? $this->generarVistaPrevia($user->id, $user->name, $area, $authUsuario['area_id'], $filtros)
+                ? $this->generarVistaPrevia(
+                    $user->id,
+                    $user->name,
+                    $contexto['area']?->nombre,
+                    $contexto['areaId'],
+                    $filtros,
+                )
                 : null,
             'historial' => $user->reportes()->latest()->limit(10)->get()->map(fn ($r) => [
                 'id' => $r->id,
@@ -69,11 +88,41 @@ class ReporteController extends Controller
                 'fecha_desde' => $r->fecha_desde?->format('d/m/Y'),
                 'fecha_hasta' => $r->fecha_hasta?->format('d/m/Y'),
                 'hoy' => $r->hoy,
+                'gestion' => $r->gestion,
                 'total_registros' => $r->total_registros,
                 'creado_en' => $r->created_at?->format('d/m/Y H:i'),
                 'url' => route('reporte.descargar', ['archivo' => $r->ruta]),
             ])->all(),
         ]);
+    }
+
+    /**
+     * Resuelve el área del reporte y aplica la restricción por rol.
+     *
+     * @return array{
+     *     user: User,
+     *     esAdmin: bool,
+     *     areaUsuario: ?Area,
+     *     area: ?Area,
+     *     areaId: ?int
+     * }
+     */
+    private function contextoReporte(ReporteTramitesRequest $request): array
+    {
+        $user = $request->user()->loadMissing(['persona.puestoActivo.puesto.area', 'roles']);
+        $esAdmin = $user->esAdmin();
+        $areaUsuario = $user->persona?->puestoActivo?->puesto?->area;
+        $areaUsuarioId = $areaUsuario?->id;
+        $areaSolicitadaId = $request->filled('area_id') ? (int) $request->input('area_id') : null;
+        $areaId = $esAdmin ? ($areaSolicitadaId ?? $areaUsuarioId) : $areaUsuarioId;
+
+        return [
+            'user' => $user,
+            'esAdmin' => $esAdmin,
+            'areaUsuario' => $areaUsuario,
+            'area' => $areaId !== null ? Area::find($areaId) : null,
+            'areaId' => $areaId,
+        ];
     }
 
     /**
@@ -103,21 +152,20 @@ class ReporteController extends Controller
 
     public function guardar(ReporteTramitesRequest $request): RedirectResponse
     {
-        $user = $request->user()->loadMissing('funcionario.area', 'puestoActivo.puesto.area');
+        $contexto = $this->contextoReporte($request);
+        $user = $contexto['user'];
         $filtros = $request->filtros();
-
-        $area = $user->funcionario?->area?->nombre
-            ?? $user->puestoActivo?->puesto?->area?->nombre;
-
-        $areaId = $user->funcionario?->area_id
-            ?? $user->puestoActivo?->puesto?->area_id;
+        $filtros['area_id'] = $contexto['areaId'];
 
         $tmpRuta = $this->rutaTemporal($user->id);
 
         if (! Storage::disk('local')->exists($tmpRuta)) {
             // Sin vista previa generada: se crea el mismo documento.
-            $tramites = $this->reporteService->ingresadosColeccion($areaId, $filtros);
-            Storage::disk('local')->put($tmpRuta, $this->pdfBytes($user->name, $area, $filtros, $tramites));
+            $tramites = $this->reporteService->ingresadosColeccion($contexto['areaId'], $filtros);
+            Storage::disk('local')->put(
+                $tmpRuta,
+                $this->pdfBytes($user->name, $contexto['area']?->nombre, $filtros, $tramites)
+            );
         }
 
         $ruta = sprintf(
@@ -129,17 +177,21 @@ class ReporteController extends Controller
         // Se archiva el documento mostrado en la vista previa.
         Storage::disk('local')->move($tmpRuta, $ruta);
 
-        $request->user()->reportes()->create([
+        $user->reportes()->create([
             'ruta' => $ruta,
             'nombre' => basename($ruta),
             'fecha_desde' => $filtros['fecha_desde'],
             'fecha_hasta' => $filtros['fecha_hasta'],
             'hoy' => $filtros['hoy'],
-            'total_registros' => $this->reporteService->ingresadosQuery($areaId, $filtros)->count(),
+            'gestion' => $filtros['gestion'],
+            'total_registros' => $this->reporteService->ingresadosQuery($contexto['areaId'], $filtros)->count(),
         ]);
 
         return to_route('reporte.index', [
             ...$filtros,
+            // Null significa "todas", pero un parámetro null se omite de la URL
+            // y el backend volvería a aplicar la gestión actual por defecto.
+            'gestion' => $filtros['gestion'] ?? 0,
             'archivo' => $ruta,
         ])->with('success', 'Reporte guardado en el storage.');
     }
@@ -197,6 +249,8 @@ class ReporteController extends Controller
             'totalRegistros' => $tramites->count(),
             'fechaDesde' => $this->formatearFecha($filtros['fecha_desde']),
             'fechaHasta' => $this->formatearFecha($filtros['fecha_hasta']),
+            'gestion' => $filtros['gestion'] ?? null,
+            'numeroTramite' => $filtros['numero_tramite'] ?? null,
             'usuario' => $usuario,
             'area' => $area,
         ])->setPaper('letter')->setOption('enable_php', true)->output();
@@ -209,7 +263,7 @@ class ReporteController extends Controller
         }
 
         try {
-            return \Carbon\Carbon::parse($fecha)->format('d/m/Y');
+            return Carbon::parse($fecha)->format('d/m/Y');
         } catch (\Throwable) {
             return $fecha;
         }

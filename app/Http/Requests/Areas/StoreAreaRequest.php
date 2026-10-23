@@ -2,41 +2,46 @@
 
 namespace App\Http\Requests\Areas;
 
+use App\Services\AreaService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAreaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasPermission('areas_puestos', 'creacion') ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'codigo' => $this->filled('codigo') ? mb_strtoupper(trim((string) $this->input('codigo'))) : null,
+            'activo' => $this->has('activo') ? $this->boolean('activo') : true,
+            'area_padre_id' => $this->input('area_padre_id', $this->input('parent_id')),
+        ]);
     }
 
     public function rules(): array
     {
         return [
-            'nombre' => ['required', 'string', 'max:255', 'unique:areas,nombre'],
+            'nombre' => ['required', 'string', 'max:255'],
+            'codigo' => ['required', 'string', 'max:20', Rule::unique('areas', 'codigo')],
             'descripcion' => ['nullable', 'string', 'max:1000'],
-            'sigla' => ['required', 'string', 'max:10', 'unique:areas,sigla'],
-            'codigo' => ['nullable', 'string', 'max:20', 'unique:areas,codigo'],
-            'estado' => ['nullable', 'boolean'],
-            'parent_id' => ['nullable', 'integer', 'exists:areas,id'],
-            'puestos' => ['nullable', 'array'],
-            'puestos.*.nombre' => ['required', 'string', 'max:255'],
-            'puestos.*.descripcion' => ['nullable', 'string', 'max:1000'],
-            'puestos.*.sigla' => ['required', 'string', 'max:10', 'distinct:strict'],
-            'puestos.*.codigo' => ['nullable', 'string', 'max:20', 'distinct:strict'],
-            'puestos.*.estado' => ['nullable', 'boolean'],
+            'activo' => ['boolean'],
+            'area_padre_id' => ['nullable', 'integer', 'exists:areas,id'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'puestos_estandar' => ['nullable', 'array'],
+            'puestos_estandar.*' => ['string', Rule::in(array_keys(AreaService::PUESTOS_ESTANDAR))],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'puestos.*.nombre.required' => 'El nombre del puesto es obligatorio.',
-            'puestos.*.nombre.max' => 'El nombre del puesto no debe exceder 255 caracteres.',
-            'puestos.*.sigla.required' => 'La sigla del puesto es obligatoria.',
-            'puestos.*.sigla.max' => 'La sigla del puesto no debe exceder 10 caracteres.',
-            'puestos.*.sigla.distinct' => 'Las siglas de los puestos no pueden repetirse.',
+            'codigo.required' => 'El código del área es obligatorio.',
+            'codigo.unique' => 'El código del área ya está en uso.',
+            'area_padre_id.exists' => 'El área padre seleccionada no existe.',
         ];
     }
 }

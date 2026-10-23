@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Icon } from '@/components/ui/Icon';
 
 interface RangoCalendarioProps {
     desde: string;
     hasta: string;
     deshabilitado?: boolean;
     onChange: (desde: string, hasta: string) => void;
+    onApply?: (desde: string, hasta: string) => void;
 }
 
 function aISO(fecha: Date): string {
@@ -34,8 +36,9 @@ const MESES = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange }: RangoCalendarioProps) {
+export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange, onApply }: RangoCalendarioProps) {
     const [abierto, setAbierto] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
     const hoy = useMemo(() => new Date(), []);
     const [mesVisible, setMesVisible] = useState<Date>(() => desdeISO(desde) ?? new Date());
 
@@ -44,6 +47,30 @@ export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange 
             setMesVisible(desdeISO(desde) ?? new Date());
         }
     }, [abierto, desde]);
+
+    useEffect(() => {
+        if (!abierto) return;
+
+        const handleClick = (event: MouseEvent) => {
+            if (!containerRef.current?.contains(event.target as Node)) {
+                setAbierto(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setAbierto(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClick);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [abierto]);
 
     const desdeDate = desdeISO(desde);
     const hastaDate = desdeISO(hasta);
@@ -93,23 +120,24 @@ export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange 
         : 'Seleccionar rango…';
 
     return (
-        <div className="relative">
-            <span className="mb-0.5 block text-[11px] font-medium text-patuju-green dark:text-patuju-green">
+        <div className="relative" ref={containerRef}>
+            <span className="mb-1 block text-xs font-semibold text-excel-text dark:text-gray-200">
                 Fecha inicial y final
             </span>
             <button
                 type="button"
                 disabled={deshabilitado}
                 onClick={() => setAbierto((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm transition-colors hover:border-patuju-green focus:outline-none focus:ring-1 focus:ring-patuju-green disabled:opacity-50"
+                className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-excel-border-strong bg-excel-surface px-3 text-sm text-excel-text shadow-sm transition-colors hover:border-excel-green focus:outline-none focus:ring-2 focus:ring-excel-green/20 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                 aria-haspopup="dialog"
                 aria-expanded={abierto}
+                aria-label="Seleccionar rango de fechas"
             >
-                <span className="flex items-center gap-2">
-                    <span aria-hidden="true">📅</span>
-                    <span className={desde ? '' : 'text-gray-400'}>{etiqueta}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                    <Icon name="calendar" size={15} className="flex-shrink-0 text-excel-muted" />
+                    <span className={`truncate ${desde ? '' : 'text-gray-400'}`}>{etiqueta}</span>
                 </span>
-                <span aria-hidden="true" className="text-gray-400">▾</span>
+                <Icon name="chevron-down" size={14} className="flex-shrink-0 text-excel-muted" />
             </button>
 
             {abierto && !deshabilitado && (
@@ -125,7 +153,7 @@ export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange 
                             className="rounded px-2 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                             aria-label="Mes anterior"
                         >
-                            ‹
+                            <Icon name="chevron-left" size={15} />
                         </button>
                         <p className="text-sm font-semibold text-patuju-green">
                             {MESES[mesVisible.getMonth()]} {mesVisible.getFullYear()}
@@ -136,7 +164,7 @@ export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange 
                             className="rounded px-2 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                             aria-label="Mes siguiente"
                         >
-                            ›
+                            <Icon name="chevron-right" size={15} />
                         </button>
                     </div>
 
@@ -154,6 +182,7 @@ export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange 
                                     key={dia.toISOString()}
                                     type="button"
                                     onClick={() => elegirDia(dia)}
+                                    aria-label={formatearCorto(aISO(dia))}
                                     className={`rounded-full px-0 py-1.5 text-xs transition-colors ${
                                         esExtremo(dia)
                                             ? 'bg-patuju-green font-bold text-white'
@@ -192,7 +221,10 @@ export function RangoCalendario({ desde, hasta, deshabilitado = false, onChange 
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setAbierto(false)}
+                                onClick={() => {
+                                    onApply?.(desde, hasta);
+                                    setAbierto(false);
+                                }}
                                 className="rounded-full bg-patuju-green px-3 py-1 text-xs font-medium text-white hover:bg-patuju-green/90"
                             >
                                 Aplicar

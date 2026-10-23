@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
@@ -27,7 +26,7 @@ class User extends Authenticatable
         'profesion',
         'password',
         'role',
-        'funcionario_id',
+        'persona_id',
         'settings',
     ];
 
@@ -53,7 +52,9 @@ class User extends Authenticatable
     public function reportes(): HasMany
     {
         return $this->hasMany(Reporte::class, 'user_id');
-    }    public function tramitesAsignados(): HasMany
+    }
+
+    public function tramitesAsignados(): HasMany
     {
         return $this->hasMany(Tramite::class, 'derivado_a');
     }
@@ -68,19 +69,9 @@ class User extends Authenticatable
         return $this->hasMany(Derivacion::class, 'derivado_a');
     }
 
-    public function funcionario(): BelongsTo
+    public function persona(): BelongsTo
     {
-        return $this->belongsTo(Funcionario::class);
-    }
-
-    public function historialPuestos(): HasMany
-    {
-        return $this->hasMany(UserPuesto::class);
-    }
-
-    public function puestoActivo(): HasOne
-    {
-        return $this->hasOne(UserPuesto::class)->whereNull('fecha_fin');
+        return $this->belongsTo(Persona::class);
     }
 
     public function reseteos(): HasMany
@@ -98,6 +89,35 @@ class User extends Authenticatable
         return $this->belongsToMany(Rol::class, 'role_user');
     }
 
+    /**
+     * Áreas habilitadas para crear trámites.
+     */
+    public function areasHabilitadas(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class, 'area_user')
+            ->withPivot('predeterminada')
+            ->withTimestamps();
+    }
+
+    public function areaPredeterminada(): ?Area
+    {
+        return $this->areasHabilitadas->first(fn (Area $area) => (bool) $area->pivot->predeterminada);
+    }
+
+    public function esAdmin(): bool
+    {
+        return $this->hasAnyRole([self::ROL_ADMIN]);
+    }
+
+    public function tieneAreaHabilitada(int $areaId): bool
+    {
+        if ($this->esAdmin()) {
+            return true;
+        }
+
+        return $this->areasHabilitadas->contains('id', $areaId);
+    }
+
     public function permisos(): Collection
     {
         return $this->roles->flatMap(fn ($rol) => $rol->permisos);
@@ -109,8 +129,7 @@ class User extends Authenticatable
             return true;
         }
 
-        return $this->permisos()->contains(fn ($permiso) =>
-            $permiso->modulo->slug === $module && $permiso->accion->slug === $action
+        return $this->permisos()->contains(fn ($permiso) => $permiso->modulo->slug === $module && $permiso->accion->slug === $action
         );
     }
 

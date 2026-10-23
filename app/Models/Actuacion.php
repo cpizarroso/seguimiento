@@ -15,7 +15,7 @@ class Actuacion extends Model
     protected $fillable = [
         'derivacion_id',
         'area_id',
-        'funcionario_id',
+        'persona_id',
         'glosa',
         'fecha_actuacion',
     ];
@@ -37,9 +37,9 @@ class Actuacion extends Model
         return $this->belongsTo(Area::class);
     }
 
-    public function funcionario(): BelongsTo
+    public function persona(): BelongsTo
     {
-        return $this->belongsTo(Funcionario::class);
+        return $this->belongsTo(Persona::class);
     }
 
     public function getDiasTranscurridosAttribute(): int

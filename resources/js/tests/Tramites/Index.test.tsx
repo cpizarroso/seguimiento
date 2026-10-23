@@ -14,6 +14,10 @@ vi.mock('@inertiajs/react', () => ({
         data: initial,
         setData: vi.fn(),
         reset: vi.fn(),
+        clearErrors: vi.fn(),
+        post: vi.fn(),
+        processing: false,
+        errors: {},
     }),
     usePage: () => ({ url: mockUrl, props: { auth: { user: mockAuthUser } } }),
 }));
@@ -46,21 +50,49 @@ vi.mock('@/components/ui/Modal', () => ({
 }));
 
 vi.mock('@/components/ui/Table', () => ({
-    Table: ({ columns, data, emptyMessage }: any) =>
+    Table: ({ columns, data, emptyMessage, onSort, selectable, selectedKeys = [], onSelectionChange, isRowSelectable = () => true, getRowLabel }: any) =>
         React.createElement('div', null,
             data.length === 0
                 ? React.createElement('p', null, emptyMessage)
                 : React.createElement('table', null,
                     React.createElement('thead', null,
                         React.createElement('tr', null,
+                            selectable
+                                ? React.createElement('th', { key: '__select__' },
+                                    React.createElement('input', { type: 'checkbox', 'aria-label': 'Seleccionar todos' })
+                                )
+                                : null,
                             columns.map((col: any) =>
-                                React.createElement('th', { key: col.key }, col.header)
+                                React.createElement('th', { key: col.key },
+                                    col.sortable && onSort
+                                        ? React.createElement('button', {
+                                            type: 'button',
+                                            onClick: () => onSort(col.key),
+                                        }, col.header)
+                                        : col.header
+                                )
                             )
                         )
                     ),
                     React.createElement('tbody', null,
                         data.map((row: any, i: number) =>
                             React.createElement('tr', { key: row.id ?? i },
+                                selectable
+                                    ? React.createElement('td', { key: '__select__' },
+                                        React.createElement('input', {
+                                            type: 'checkbox',
+                                            'aria-label': getRowLabel ? getRowLabel(row) : `Seleccionar fila ${row.id ?? i}`,
+                                            checked: selectedKeys.includes(row.id),
+                                            disabled: !isRowSelectable(row),
+                                            onChange: () => {
+                                                const next = selectedKeys.includes(row.id)
+                                                    ? selectedKeys.filter((key: number) => key !== row.id)
+                                                    : [...selectedKeys, row.id];
+                                                onSelectionChange?.(next);
+                                            },
+                                        })
+                                    )
+                                    : null,
                                 columns.map((col: any) =>
                                     React.createElement('td', { key: col.key },
                                         col.render ? col.render(row) : row[col.key]
@@ -70,6 +102,24 @@ vi.mock('@/components/ui/Table', () => ({
                         )
                     )
                 )
+        ),
+}));
+
+vi.mock('@/components/ui/SearchableSelect', () => ({
+    SearchableSelect: ({ ariaLabel, label, options, value, onChange, placeholder }: any) =>
+        React.createElement('div', null,
+            React.createElement('label', { htmlFor: 'filtro-area-mock' }, label ?? ariaLabel),
+            React.createElement('select', {
+                id: 'filtro-area-mock',
+                'aria-label': ariaLabel ?? label,
+                value: value ?? '',
+                onChange: (event: React.ChangeEvent<HTMLSelectElement>) => onChange(event.target.value || null),
+            },
+                React.createElement('option', { value: '' }, placeholder),
+                options.map((opcion: any) =>
+                    React.createElement('option', { key: opcion.value, value: opcion.value }, opcion.label)
+                )
+            )
         ),
 }));
 
@@ -87,7 +137,7 @@ const mockTramite = {
     id: 1,
     numero_tramite: 7,
     numero_formateado: '0007',
-    numero_completo: 'DLA-7/2026',
+    numero_completo: 'DLA-0007/2026',
     year: 2026,
     fecha: '10/06/2026',
     descripcion: 'Solicitud de prueba',
@@ -97,7 +147,7 @@ const mockTramite = {
     ultima_respuesta: null,
     dias_transcurridos: 2,
     created_at: '10/06/2026 08:00',
-    area: { id: 1, nombre: 'Dirección Legal', sigla: 'DLA' },
+    area: { id: 1, nombre: 'Dirección Legal', codigo: 'DLA' },
     area_id: 1,
     creador: null,
     asignado: { id: 2, name: 'Juan Pérez' },
@@ -134,8 +184,32 @@ function props(perPage = 10) {
         },
         areas: {
             data: [
-                { id: 7, nombre: 'Dirección Legal', sigla: 'DLA' },
-                { id: 9, nombre: 'Administración', sigla: 'ADM' },
+                { id: 7, nombre: 'Dirección Legal', codigo: 'DLA' },
+                { id: 9, nombre: 'Administración', codigo: 'ADM' },
+            ],
+        },
+    };
+}
+
+function propsDerivable() {
+    const base = props();
+
+    return {
+        ...base,
+        tramites: {
+            ...base.tramites,
+            data: [
+                {
+                    ...mockTramite,
+                    asignado: { id: 1, name: 'Test' },
+                    derivaciones: [
+                        {
+                            ...mockTramite.derivaciones[0],
+                            estado: 'recepcionado',
+                            derivado_a: { id: 1, name: 'Test' },
+                        },
+                    ],
+                },
             ],
         },
     };
@@ -161,9 +235,9 @@ describe('Tramites Index', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
         for (const header of ['NRO', 'Fecha creación', 'N° Diamante', 'Área', 'Descripción', 'Última derivación', 'Días', 'Estado']) {
-            expect(screen.getByText(header, { selector: 'th' })).toBeInTheDocument();
+            expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
         }
-        expect(screen.getByText('Urgente', { selector: 'th' })).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Urgente' })).toBeInTheDocument();
         expect(screen.getByText('Urgente', { selector: 'span' })).toBeInTheDocument();
 
         expect(screen.queryByText('Gestión')).not.toBeInTheDocument();
@@ -172,10 +246,10 @@ describe('Tramites Index', () => {
         expect(screen.queryByText('Respuesta')).not.toBeInTheDocument();
     });
 
-    it('la columna nro muestra solo el numero sin sigla ni gestion', () => {
+    it('la columna nro muestra solo el numero sin codigo de area ni gestion', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
-        expect(screen.queryByText('DLA-7/2026')).not.toBeInTheDocument();
+        expect(screen.queryByText('DLA-0007/2026')).not.toBeInTheDocument();
         expect(screen.queryByText('10/06/2026')).not.toBeInTheDocument();
         expect(screen.getByText('10/06/2026 08:00')).toBeInTheDocument();
     });
@@ -234,6 +308,61 @@ describe('Tramites Index', () => {
         );
     });
 
+    it('muestra el filtro de recepcion con Todos activo por defecto', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', { name: 'Por recepcionar' })).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', { name: 'Recepcionados' })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('filtra por tramites por recepcionar y recepcionados', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Por recepcionar' }));
+
+        expect(routerGet).toHaveBeenLastCalledWith(
+            '/tramites',
+            expect.objectContaining({ recepcion: 'por_recepcionar', page: 1 }),
+            expect.anything(),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Recepcionados' }));
+
+        expect(routerGet).toHaveBeenLastCalledWith(
+            '/tramites',
+            expect.objectContaining({ recepcion: 'recepcionados', page: 1 }),
+            expect.anything(),
+        );
+    });
+
+    it('al volver a Todos quita el filtro de recepcion', () => {
+        mockUrl = '/tramites?recepcion=por_recepcionar';
+        render(React.createElement(TramitesIndex, props() as any));
+
+        expect(screen.getByRole('button', { name: 'Por recepcionar' })).toHaveAttribute('aria-pressed', 'true');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Todos' }));
+
+        const filtros = routerGet.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+
+        expect(filtros.recepcion).toBeUndefined();
+        expect(filtros.page).toBe(1);
+    });
+
+    it('el orden conserva el filtro de recepcion aplicado', () => {
+        mockUrl = '/tramites?recepcion=recepcionados';
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
+
+        expect(routerGet).toHaveBeenLastCalledWith(
+            '/tramites',
+            expect.objectContaining({ recepcion: 'recepcionados', sort: 'created_at' }),
+            expect.anything(),
+        );
+    });
+
     it('el check Mi area filtra por el area del usuario', () => {
         mockAuthUser = { id: 1, name: 'Test', area_id: 7 };
         render(React.createElement(TramitesIndex, props() as any));
@@ -251,5 +380,132 @@ describe('Tramites Index', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
         expect(screen.getByRole('checkbox', { name: 'Mi área' })).toBeDisabled();
+    });
+
+    it('el chip Hoy filtra los tramites del dia', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        const hoy = new Date();
+        const iso = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Hoy' }));
+
+        expect(routerGet).toHaveBeenCalledWith(
+            '/tramites',
+            expect.objectContaining({ fecha_desde: iso, fecha_hasta: iso, page: 1 }),
+            expect.anything(),
+        );
+    });
+
+    it('aplica los filtros separados de numero, diamante y descripcion', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.change(screen.getByLabelText('N° Trámite'), { target: { value: '12' } });
+        fireEvent.change(screen.getByLabelText('N° Diamante'), { target: { value: 'DIA-7' } });
+        fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'licencia' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
+
+        expect(routerGet).toHaveBeenCalledWith(
+            '/tramites',
+            expect.objectContaining({
+                numero_tramite: '12',
+                numero_diamante: 'DIA-7',
+                descripcion: 'licencia',
+                page: 1,
+            }),
+            expect.anything(),
+        );
+    });
+
+    it('aplica el rango elegido en el calendario', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        const hoy = new Date();
+        const iso = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        const etiqueta = hoy.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        fireEvent.click(screen.getByRole('button', { name: /Seleccionar rango de fechas/ }));
+        fireEvent.click(screen.getByRole('button', { name: etiqueta }));
+        fireEvent.click(screen.getByRole('button', { name: etiqueta }));
+        fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }));
+
+        expect(routerGet).toHaveBeenCalledWith(
+            '/tramites',
+            expect.objectContaining({ fecha_desde: iso, fecha_hasta: iso, page: 1 }),
+            expect.anything(),
+        );
+    });
+
+    it('limpiar filtros conserva el orden y quita los filtros', () => {
+        mockUrl = '/tramites?numero_diamante=777&area_id=9&recepcion=por_recepcionar&sort=created_at&direction=desc';
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+
+        expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'true');
+        expect(routerGet).toHaveBeenCalledWith(
+            '/tramites',
+            { sort: 'created_at', direction: 'desc', page: 1 },
+            expect.anything(),
+        );
+    });
+
+    it('al hacer clic en una columna envia el orden y la direccion', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
+
+        expect(routerGet).toHaveBeenCalledWith(
+            '/tramites',
+            expect.objectContaining({ sort: 'created_at', direction: 'asc', page: 1 }),
+            expect.anything(),
+        );
+    });
+
+    it('el orden conserva los filtros aplicados y no los borradores', () => {
+        mockUrl = '/tramites?numero_diamante=777';
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'borrador' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
+
+        const filtros = routerGet.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+
+        expect(filtros).toEqual(expect.objectContaining({ numero_diamante: '777', sort: 'created_at' }));
+        expect(filtros).not.toHaveProperty('descripcion');
+    });
+
+    it('solo habilita el checkbox de los tramites derivables por el usuario', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        expect(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' })).toBeEnabled();
+    });
+
+    it('deshabilita el checkbox de los tramites no derivables', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        expect(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' })).toBeDisabled();
+    });
+
+    it('muestra la barra de acciones y abre el modal al seleccionar un tramite', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' }));
+
+        expect(screen.getByText('1 trámite seleccionado')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: /Derivar seleccionados/ }));
+
+        expect(screen.getByTestId('modal')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Derivar 1 trámite' })).toBeInTheDocument();
+    });
+
+    it('limpiar la seleccion oculta la barra de acciones', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
+
+        expect(screen.queryByText('1 trámite seleccionado')).not.toBeInTheDocument();
     });
 });

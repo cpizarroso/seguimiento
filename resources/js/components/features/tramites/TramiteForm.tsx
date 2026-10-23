@@ -1,4 +1,4 @@
-import type { UseFormReturn } from '@inertiajs/react';
+import type { InertiaForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -6,10 +6,10 @@ import { Select } from '@/components/ui/Select';
 export interface TramiteAreaOption {
     id: number;
     nombre: string;
-    sigla: string;
+    codigo: string;
 }
 
-export type TramiteFormType = UseFormReturn<{
+export type TramiteFormType = InertiaForm<{
     descripcion: string;
     numero_diamante: string;
     area_id: string;
@@ -56,7 +56,7 @@ export function TramiteForm({
                     label="Área"
                     required
                     placeholder="Seleccione un área"
-                    options={areas.map((a) => ({ value: String(a.id), label: `${a.nombre} (${a.sigla})` }))}
+                    options={areas.map((a) => ({ value: String(a.id), label: `${a.nombre} (${a.codigo})` }))}
                     value={data.area_id}
                     onChange={(e) => setData('area_id', e.target.value)}
                     error={errors.area_id}

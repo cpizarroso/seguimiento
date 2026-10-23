@@ -2,13 +2,16 @@
 
 namespace App\Http\Requests\Users;
 
+use App\Http\Requests\Concerns\ValidaAreasHabilitadas;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
 {
+    use ValidaAreasHabilitadas;
+
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasPermission('usuarios', 'creacion') ?? false;
     }
 
     public function rules(): array
@@ -19,10 +22,10 @@ class StoreUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'profesion' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:5'],
-            'funcionario_id' => ['required', 'exists:funcionarios,id', 'unique:users,funcionario_id'],
+            'persona_id' => ['required', 'exists:personas,id', 'unique:users,persona_id'],
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
-            'puesto_id' => ['nullable', 'exists:puestos,id'],
+            ...$this->reglasAreasHabilitadas(),
         ];
     }
 }

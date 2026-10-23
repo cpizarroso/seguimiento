@@ -1,10 +1,14 @@
 import { Badge } from '@/components/ui/Badge';
 import { Table, type Column } from '@/components/ui/Table';
-import type { Derivacion } from '@/types/generated/Tramite';
+import type { Derivacion, Persona } from '@/types/generated/Tramite';
 
 interface TramiteTimelineProps {
     derivaciones: Derivacion[];
 }
+
+type UsuarioDerivacion = NonNullable<Derivacion['derivado_de']> & {
+    persona?: Persona | null;
+};
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
     derivado: 'warning',
@@ -20,13 +24,42 @@ const estadoLabels: Record<string, string> = {
     historico: 'Histórico',
 };
 
-function nombre(usuario: Derivacion['derivado_de']): string {
+function nombre(usuario: UsuarioDerivacion | null): string {
     if (!usuario) return '—';
-    const funcionario = (usuario as { funcionario?: { nombre?: string; apellidos?: string } | null }).funcionario;
-    if (funcionario?.nombre) {
-        return `${funcionario.nombre} ${funcionario.apellidos ?? ''}`.trim();
+
+    const persona = usuario.persona;
+
+    if (persona?.nombre_completo) {
+        return persona.nombre_completo;
     }
+
+    if (persona?.nombres) {
+        return `${persona.nombres} ${persona.apellidos ?? ''}`.trim();
+    }
+
     return usuario.name;
+}
+
+function detalle(usuario: UsuarioDerivacion | null): string {
+    const persona = usuario?.persona;
+    const puesto = persona?.puesto_activo?.puesto?.nombre ?? null;
+    const area = persona?.area;
+    const areaTexto = area ? `${area.codigo} - ${area.nombre}` : null;
+
+    return [puesto, areaTexto].filter(Boolean).join(' · ');
+}
+
+function UsuarioCelda({ usuario }: { usuario: UsuarioDerivacion | null }) {
+    const descripcion = detalle(usuario);
+
+    return (
+        <div className="min-w-[12rem] text-xs">
+            <div className="font-medium text-gray-900 dark:text-gray-100">{nombre(usuario)}</div>
+            {descripcion ? (
+                <div className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">{descripcion}</div>
+            ) : null}
+        </div>
+    );
 }
 
 const columns: Column<Derivacion>[] = [
@@ -46,32 +79,37 @@ const columns: Column<Derivacion>[] = [
         ),
     },
     {
-        key: 'de_para',
-        header: 'De → Para',
-        render: (d) => (
-            <span className="whitespace-nowrap text-xs">
-                {nombre(d.derivado_de)} <span className="text-gray-400">→</span> {nombre(d.derivado_a)}
-            </span>
-        ),
+        key: 'derivado_de',
+        header: 'Deriva',
+        render: (d) => <UsuarioCelda usuario={d.derivado_de} />,
+    },
+    {
+        key: 'derivado_a',
+        header: 'Recibe',
+        render: (d) => <UsuarioCelda usuario={d.derivado_a} />,
     },
     {
         key: 'fecha_derivacion',
-        header: 'Derivación',
+        header: 'Fecha derivación',
         render: (d) => <span className="whitespace-nowrap text-xs">{d.fecha_derivacion}</span>,
+    },
+    {
+        key: 'fecha_recepcion',
+        header: 'Fecha recepción',
+        render: (d) => <span className="whitespace-nowrap text-xs">{d.fecha_recepcion ?? '—'}</span>,
     },
     {
         key: 'glosa_derivacion',
         header: 'Glosa',
-        render: (d) => <span className="line-clamp-2 max-w-xs text-xs">{d.glosa_derivacion ?? '—'}</span>,
-    },
-    {
-        key: 'recepcion',
-        header: 'Recepción',
         render: (d) => (
-            <span className="text-xs">
-                {d.fecha_recepcion ?? '—'}
-                {d.glosa_recepcion ? <span className="block text-gray-500 dark:text-gray-400">{d.glosa_recepcion}</span> : null}
-            </span>
+            <div className="max-w-xs text-xs">
+                <span className="line-clamp-2">{d.glosa_derivacion ?? '—'}</span>
+                {d.glosa_recepcion ? (
+                    <span className="mt-1 block line-clamp-2 text-gray-500 dark:text-gray-400">
+                        {d.glosa_recepcion}
+                    </span>
+                ) : null}
+            </div>
         ),
     },
     {

@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Puesto;
+use App\Models\Persona;
 use App\Models\Rol;
 use App\Models\User;
-use App\Models\UserPuesto;
 use Illuminate\Database\Seeder;
 
 class UserSecretariaSeeder extends Seeder
@@ -14,26 +13,16 @@ class UserSecretariaSeeder extends Seeder
     {
         $email = 'erodriguez@'.config('app.user_domain');
 
+        $persona = Persona::where('ci', '1234567')->first()
+            ?? Persona::where('correo', $email)->first();
+
         $ericka = User::updateOrCreate(
             ['email' => $email],
             [
-                'name' => 'Erika Rodriguez',
+                'name' => $persona?->nombre_completo ?? 'Erika Rodriguez',
                 'password' => bcrypt('password'),
                 'role' => 'secretaria',
-            ]
-        );
-
-        $puestoId = $this->resolverPuestoSecretaria();
-
-        if ($puestoId === null) {
-            return;
-        }
-
-        UserPuesto::firstOrCreate(
-            [
-                'user_id' => $ericka->id,
-                'puesto_id' => $puestoId,
-                'fecha_inicio' => now()->toDateString(),
+                'persona_id' => $persona?->id,
             ]
         );
 
@@ -42,24 +31,5 @@ class UserSecretariaSeeder extends Seeder
         if ($rolId !== null) {
             $ericka->roles()->sync([$rolId]);
         }
-    }
-
-    private function resolverPuestoSecretaria(): ?int
-    {
-        $puestoDla = Puesto::where('nombre', 'Secretaria')
-            ->whereHas('area', fn ($q) => $q->where('sigla', 'DLA'))
-            ->value('id');
-
-        if ($puestoDla !== null) {
-            return $puestoDla;
-        }
-
-        $cualquiera = Puesto::where('nombre', 'Secretaria')->orderBy('id')->value('id');
-
-        if ($cualquiera !== null) {
-            return $cualquiera;
-        }
-
-        return Puesto::orderBy('id')->value('id');
     }
 }

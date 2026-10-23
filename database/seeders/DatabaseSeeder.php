@@ -2,14 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Area;
 use App\Models\ContadorTramite;
-use App\Models\Funcionario;
 use App\Models\Rol;
 use App\Models\Tramite;
 use App\Models\User;
-use Database\Seeders\RolesYPermisosSeeder;
-use Database\Factories\DerivacionFactory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -23,19 +19,22 @@ class DatabaseSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
         $tablas = [
+            'configuraciones',
+            'reportes',
             'derivaciones',
             'actuaciones',
             'tramites',
             'contador_tramites',
             'rol_permiso',
             'role_user',
+            'area_user',
             'permisos',
             'roles',
             'acciones',
             'modulos',
-            'user_puesto',
+            'persona_puesto',
             'users',
-            'funcionarios',
+            'personas',
             'puestos',
             'areas',
             'personal_access_tokens',
@@ -61,11 +60,13 @@ class DatabaseSeeder extends Seeder
 
         $this->call(RolesYPermisosSeeder::class);
 
+        $this->call(ConfiguracionSeeder::class);
+
         $this->call(AreaSeeder::class);
 
-        $this->call(AdminUserSeeder::class);
+        $this->call(PersonaSeeder::class);
 
-        $this->call(FuncionarioSeeder::class);
+        $this->call(AdminUserSeeder::class);
 
         $this->call(UserSeeder::class);
 
@@ -75,24 +76,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ActuacionSeeder::class);
 
-        $this->vincularUsuariosSinFuncionario();
-
         $this->sincronizarRoles();
 
+        $this->sincronizarAreasHabilitadas();
+
         $this->sincronizarContadores();
-    }
-
-    private function vincularUsuariosSinFuncionario(): void
-    {
-        $libres = Funcionario::whereDoesntHave('usuario')->orderBy('id')->pluck('id');
-
-        foreach (User::whereNull('funcionario_id')->orderBy('id')->get() as $u) {
-            $fid = $libres->shift();
-            if ($fid === null) {
-                break;
-            }
-            $u->update(['funcionario_id' => $fid]);
-        }
     }
 
     private function sincronizarRoles(): void
@@ -113,6 +101,19 @@ class DatabaseSeeder extends Seeder
                 $u->roles()->sync([$rolId]);
             }
         }
+    }
+
+    private function sincronizarAreasHabilitadas(): void
+    {
+        User::with('persona.puestoActivo.puesto')->get()->each(function (User $user) {
+            $areaId = $user->persona?->puestoActivo?->puesto?->area_id;
+
+            if (! $areaId) {
+                return;
+            }
+
+            $user->areasHabilitadas()->sync([$areaId => ['predeterminada' => true]]);
+        });
     }
 
     private function sincronizarContadores(): void

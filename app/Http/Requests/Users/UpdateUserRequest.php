@@ -2,14 +2,17 @@
 
 namespace App\Http\Requests\Users;
 
+use App\Http\Requests\Concerns\ValidaAreasHabilitadas;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
+    use ValidaAreasHabilitadas;
+
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasPermission('usuarios', 'edicion') ?? false;
     }
 
     public function rules(): array
@@ -20,10 +23,10 @@ class UpdateUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'profesion' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:5'],
-            'funcionario_id' => ['required', 'exists:funcionarios,id', Rule::unique('users', 'funcionario_id')->ignore($this->route('user'))],
+            'persona_id' => ['required', 'exists:personas,id', Rule::unique('users', 'persona_id')->ignore($this->route('user'))],
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
-            'puesto_id' => ['nullable', 'exists:puestos,id'],
+            ...$this->reglasAreasHabilitadas(),
         ];
     }
 }

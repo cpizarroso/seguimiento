@@ -1,0 +1,21 @@
+{
+  "name": "Seguimiento de Trámites",
+  "short_name": "Seguimiento",
+  "icons": [
+    {
+      "src": "/favicon/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#107C41",
+  "background_color": "#F3F2F1",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

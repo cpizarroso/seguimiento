@@ -8,17 +8,16 @@ use App\Http\Requests\Tramites\StoreTramiteRequest;
 use App\Http\Requests\Tramites\UpdateEstadoTramiteRequest;
 use App\Http\Requests\Tramites\UpdateTramiteRequest;
 use App\Http\Resources\AreaResource;
-use App\Http\Resources\FuncionarioResource;
 use App\Http\Resources\TramiteResource;
-use App\Http\Resources\UserResource;
+use App\Models\Area;
 use App\Models\Tramite;
 use App\Models\User;
 use App\Services\AreaService;
 use App\Services\DerivacionService;
-use App\Services\FuncionarioService;
 use App\Services\TramiteService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -31,13 +30,12 @@ class TramiteController extends Controller
         private readonly AreaService $areaService,
         private readonly DerivacionService $derivacionService,
         private readonly UserService $userService,
-        private readonly FuncionarioService $funcionarioService,
     ) {}
 
     public function index(): Response
     {
         $user = request()->user();
-        $filtros = request()->only(['search', 'estado', 'area_id', 'fecha_desde', 'fecha_hasta', 'urgente', 'hoy']);
+        $filtros = $this->filtros();
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
 
         return Inertia::render('Tramites/Index', [
@@ -45,24 +43,85 @@ class TramiteController extends Controller
                 $this->tramiteService->listar($filtros)
             ),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'areasCreacion' => AreaResource::collection($this->areasParaCrear($user)),
+            'destinatarios' => $this->destinatariosDerivacion($user),
         ]);
     }
 
     public function export(): BinaryFileResponse
     {
-        $filtros = request()->only(['search', 'estado', 'area_id', 'fecha_desde', 'fecha_hasta', 'urgente', 'hoy']);
-
         return Excel::download(
-            new TramitesExport($this->tramiteService, $filtros),
+            new TramitesExport($this->tramiteService, $this->filtros()),
             'tramites-'.now()->format('Ymd-His').'.xlsx'
         );
+    }
+
+    /**
+     * Filtros permitidos del listado y la exportación.
+     *
+     * @return array<string, mixed>
+     */
+    private function filtros(): array
+    {
+        request()->validate([
+            'fecha_desde' => ['nullable', 'date_format:Y-m-d'],
+            'fecha_hasta' => ['nullable', 'date_format:Y-m-d'],
+            'numero_tramite' => ['nullable', 'string', 'max:50'],
+            'numero_diamante' => ['nullable', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:5000'],
+            'recepcion' => ['nullable', 'in:todos,por_recepcionar,recepcionados'],
+        ]);
+
+        return request()->only([
+            'search',
+            'estado',
+            'area_id',
+            'numero_tramite',
+            'numero_diamante',
+            'descripcion',
+            'fecha_desde',
+            'fecha_hasta',
+            'urgente',
+            'hoy',
+            'recepcion',
+            'sort',
+            'direction',
+        ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Tramites/Create', [
-            'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'areas' => AreaResource::collection($this->areasParaCrear(request()->user())),
         ]);
+    }
+
+    /**
+     * Áreas en las que el usuario puede crear trámites (admin ve todas).
+     *
+     * @return Collection<int, Area>
+     */
+    private function areasParaCrear(User $user)
+    {
+        if ($user->esAdmin()) {
+            return $this->areaService->obtenerTodos();
+        }
+
+        return $user->areasHabilitadas()->orderBy('nombre')->get();
+    }
+
+    /**
+     * Personas con usuario que pueden recibir derivaciones.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function destinatariosDerivacion(?User $user): Collection
+    {
+        if (! $user || ! $user->hasPermission('tramites', 'edicion')) {
+            return collect();
+        }
+
+        return $this->derivacionService->destinatariosParaDerivar($user->id);
     }
 
     public function store(StoreTramiteRequest $request): RedirectResponse
@@ -82,9 +141,8 @@ class TramiteController extends Controller
 
         return Inertia::render('Tramites/Show', [
             'tramite' => new TramiteResource($tramite),
-            'usuarios' => UserResource::collection(User::all()),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
-            'funcionarios' => FuncionarioResource::collection($this->funcionarioService->obtenerTodos()),
+            'destinatarios' => $this->destinatariosDerivacion(request()->user()),
         ]);
     }
 
@@ -109,6 +167,14 @@ class TramiteController extends Controller
         $estado = $request->input('estado');
 
         if ($estado === 'observado') {
+            $usuarioId = (int) $request->user()?->id;
+
+            abort_if(
+                ! $this->derivacionService->puedeDerivar($tramite, $usuarioId) || $tramite->estado !== 'proceso',
+                403,
+                'No tienes permiso para observar este trámite.'
+            );
+
             $this->derivacionService->observar(
                 $tramite,
                 $request->input('derivado_a'),

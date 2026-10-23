@@ -1,16 +1,17 @@
 import { router } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { Select } from '@/components/ui/Select';
 import { SemanalChart } from '@/components/features/reporte/SemanalChart';
-import { TramitesPorFuncionarioChart } from '@/components/features/reporte/TramitesPorFuncionarioChart';
+import { TramitesPorUsuarioChart } from '@/components/features/reporte/TramitesPorUsuarioChart';
 import { TramitesPorAreaChart } from '@/components/features/reporte/TramitesPorAreaChart';
 
-interface FuncionarioOption {
+interface UsuarioOption {
     id: number;
     name: string;
 }
 
-interface FuncionarioTramite {
+interface UsuarioTramite {
     id: number;
     name: string;
     total: number;
@@ -21,7 +22,7 @@ interface UrgenteItem {
     numero_completo: string;
     descripcion: string;
     dias: number;
-    area_sigla: string;
+    area_codigo: string;
     estado: string;
 }
 
@@ -37,18 +38,18 @@ interface DashboardProps {
     por_estado: Record<string, number>;
     iniciados_por_dia: Record<number, number>;
     finalizados_por_dia: Record<number, number>;
-    tramites_por_funcionario: FuncionarioTramite[];
+    tramites_por_usuario: UsuarioTramite[];
     tramites_por_area: { name: string; total: number }[];
     tramites_urgentes: UrgentesData;
-    funcionarios: FuncionarioOption[];
-    filtro_funcionario_id: number | null;
+    usuarios: UsuarioOption[];
+    filtro_usuario_id: number | null;
 }
 
-const estadoConfig: Record<string, { label: string; color: string }> = {
-    iniciado: { label: 'Iniciados', color: 'text-blue-600' },
-    proceso: { label: 'En Proceso', color: 'text-patuju-yellow' },
-    observado: { label: 'Observados', color: 'text-gray-600' },
-    finalizado: { label: 'Finalizados', color: 'text-patuju-green' },
+const estadoConfig: Record<string, { label: string; color: string; accent: string; soft: string; icon: IconName }> = {
+    iniciado: { label: 'Iniciados', color: 'text-excel-blue', accent: 'border-l-excel-blue', soft: 'bg-[#e5f1fb] text-excel-blue dark:bg-excel-blue/10 dark:text-[#7cc0f5]', icon: 'info' },
+    proceso: { label: 'En Proceso', color: 'text-[#8a6700] dark:text-excel-gold', accent: 'border-l-excel-gold', soft: 'bg-[#fff8d6] text-[#8a6700] dark:bg-excel-gold/10 dark:text-excel-gold', icon: 'clock' },
+    observado: { label: 'Observados', color: 'text-excel-muted', accent: 'border-l-excel-border-strong', soft: 'bg-excel-surface-2 text-excel-muted dark:bg-gray-700 dark:text-gray-300', icon: 'warning' },
+    finalizado: { label: 'Finalizados', color: 'text-excel-green', accent: 'border-l-excel-green', soft: 'bg-excel-green-light text-excel-green dark:bg-excel-green/15 dark:text-[#6fd394]', icon: 'check' },
 };
 
 export default function Dashboard({
@@ -56,15 +57,15 @@ export default function Dashboard({
     por_estado,
     iniciados_por_dia,
     finalizados_por_dia,
-    tramites_por_funcionario,
+    tramites_por_usuario,
     tramites_por_area,
     tramites_urgentes,
-    funcionarios,
-    filtro_funcionario_id,
+    usuarios,
+    filtro_usuario_id,
 }: DashboardProps) {
     const handleFiltroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
-        router.get('/dashboard', { funcionario_id: value || undefined }, {
+        router.get('/dashboard', { usuario_id: value || undefined }, {
             preserveState: true,
             replace: true,
         });
@@ -72,41 +73,69 @@ export default function Dashboard({
 
     const options = [
         { value: '', label: 'Todos los usuarios' },
-        ...funcionarios.map((f) => ({ value: String(f.id), label: f.name })),
+        ...usuarios.map((u) => ({ value: String(u.id), label: u.name })),
     ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Dashboard</h2>
-                <div className="w-64">
+        <div className="space-y-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-excel-green">
+                        <Icon name="dashboard" size={13} />
+                        Panel de control
+                    </div>
+                    <h2 className="text-2xl font-semibold text-excel-text dark:text-gray-100">Dashboard</h2>
+                    <p className="mt-0.5 text-xs text-excel-muted dark:text-gray-400">
+                        Resumen general del estado de los trámites.
+                    </p>
+                </div>
+                <div className="w-full sm:w-64">
                     <Select
                         label="Filtrar por usuario"
                         options={options}
-                        value={filtro_funcionario_id ? String(filtro_funcionario_id) : ''}
+                        value={filtro_usuario_id ? String(filtro_usuario_id) : ''}
                         onChange={handleFiltroChange}
                     />
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Trámites</p>
-                    <p className="mt-1 text-3xl font-bold text-patuju-green">{total_tramites}</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <Card className="border-l-4 border-l-excel-green">
+                    <div className="flex items-start justify-between gap-2">
+                        <div>
+                            <p className="text-xs font-medium text-excel-muted dark:text-gray-400">Total Trámites</p>
+                            <p className="mt-1.5 text-3xl font-semibold tracking-tight text-excel-text dark:text-gray-100">{total_tramites}</p>
+                        </div>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-excel-green-light text-excel-green dark:bg-excel-green/15 dark:text-[#6fd394]">
+                            <Icon name="document" size={17} />
+                        </span>
+                    </div>
                 </Card>
                 {Object.entries(estadoConfig).map(([estado, config]) => (
-                    <Card key={estado}>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{config.label}</p>
-                        <p className={`mt-1 text-3xl font-bold ${config.color}`}>
-                            {por_estado[estado] ?? 0}
-                        </p>
+                    <Card key={estado} className={`border-l-4 ${config.accent}`}>
+                        <div className="flex items-start justify-between gap-2">
+                            <div>
+                                <p className="text-xs font-medium text-excel-muted dark:text-gray-400">{config.label}</p>
+                                <p className={`mt-1.5 text-3xl font-semibold tracking-tight ${config.color}`}>
+                                    {por_estado[estado] ?? 0}
+                                </p>
+                            </div>
+                            <span className={`flex h-8 w-8 items-center justify-center rounded-md ${config.soft}`}>
+                                <Icon name={config.icon} size={17} />
+                            </span>
+                        </div>
                     </Card>
                 ))}
             </div>
 
             {tramites_urgentes.lista.length > 0 && (
                 <Card>
-                    <h3 className="text-lg font-semibold text-patuju-green mb-4">Trámites Urgentes</h3>
+                    <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-excel-text dark:text-gray-100">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#fdecea] text-excel-red dark:bg-excel-red/10 dark:text-[#f28b82]">
+                            <Icon name="warning" size={15} />
+                        </span>
+                        Trámites Urgentes
+                    </h3>
                     <div className="flex gap-4 mb-4">
                         <div className="flex-1 text-center p-3 rounded-lg bg-patuju-yellow/10 border border-patuju-yellow/30">
                             <p className="text-2xl font-bold text-patuju-yellow">{tramites_urgentes.tres_dias}</p>
@@ -126,15 +155,15 @@ export default function Dashboard({
                             <a
                                 key={item.id}
                                 href={`/tramites/${item.id}`}
-                                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                className="flex items-center justify-between rounded-md border border-transparent p-2 transition-colors hover:border-excel-border hover:bg-excel-surface-2 dark:hover:border-gray-700 dark:hover:bg-gray-700/60"
                             >
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-patuju-green truncate">{item.numero_completo}</p>
                                     <p className="text-xs text-gray-500 truncate">{item.descripcion}</p>
                                 </div>
                                 <div className="flex items-center gap-2 ml-3">
-                                    {item.area_sigla && (
-                                        <span className="text-xs text-gray-400">{item.area_sigla}</span>
+                                    {item.area_codigo && (
+                                        <span className="text-xs text-gray-400">{item.area_codigo}</span>
                                     )}
                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
                                         item.dias >= 5 ? 'bg-patuju-red/10 text-patuju-red'
@@ -154,17 +183,17 @@ export default function Dashboard({
                 <SemanalChart
                     title="Trámites Iniciados por Día de la Semana"
                     data={iniciados_por_dia}
-                    color="#2D6A4F"
+                    color="#107C41"
                 />
                 <SemanalChart
                     title="Trámites Finalizados por Día de la Semana"
                     data={finalizados_por_dia}
-                    color="#C1121F"
+                    color="#C42B1C"
                 />
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <TramitesPorFuncionarioChart data={tramites_por_funcionario} />
+                <TramitesPorUsuarioChart data={tramites_por_usuario} />
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <TramitesPorAreaChart data={tramites_por_area} />

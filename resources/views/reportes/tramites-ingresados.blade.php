@@ -21,6 +21,10 @@
     <header>
         <div class="titulo">REPORTE DE TRAMITES INGRESADOS</div>
         <div class="subtitulo">Desde <strong>{{ $fechaDesde ?? '—' }}</strong> hasta <strong>{{ $fechaHasta ?? '—' }}</strong></div>
+        <div class="subtitulo">Gestión: <strong>{{ $gestion ?? 'Todas' }}</strong></div>
+        @if (! empty($numeroTramite ?? null))
+            <div class="subtitulo">N° trámite: <strong>{{ $numeroTramite }}</strong></div>
+        @endif
         <div class="subtitulo">Usuario: <strong>{{ $usuario }}</strong></div>
         <div class="subtitulo">Área: <strong>{{ $area ?? '—' }}</strong></div>
     </header>

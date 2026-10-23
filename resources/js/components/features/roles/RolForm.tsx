@@ -1,4 +1,4 @@
-import type { UseFormReturn } from '@inertiajs/react';
+import type { InertiaForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -10,7 +10,7 @@ export interface PermisoOption {
     accion_nombre: string;
 }
 
-export type RolFormType = UseFormReturn<{
+export type RolFormType = InertiaForm<{
     nombre: string;
     slug: string;
     descripcion: string;
@@ -26,7 +26,7 @@ interface RolFormProps {
     onCancel?: () => void;
 }
 
-const moduloOrder = ['dashboard', 'tramites', 'funcionarios', 'areas_puestos', 'reporte', 'configuracion', 'usuarios', 'roles'];
+const moduloOrder = ['dashboard', 'tramites', 'personas', 'areas_puestos', 'reporte', 'configuracion', 'usuarios', 'roles'];
 
 export function RolForm({ form, permisosAgrupados = {}, submitUrl, method = 'post', onSuccess, onCancel }: RolFormProps) {
     const { data, setData, post, put, processing, errors } = form;

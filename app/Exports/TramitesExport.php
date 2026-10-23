@@ -49,7 +49,7 @@ class TramitesExport implements FromCollection, ShouldAutoSize, WithHeadings, Wi
             $tramite->urgente ? 'Sí' : 'No',
             $tramite->created_at?->format('d/m/Y H:i'),
             $tramite->numero_diamante,
-            $tramite->area?->sigla,
+            $tramite->area?->codigo,
             $tramite->descripcion,
             $tramite->dias_transcurridos,
             $tramite->estado,

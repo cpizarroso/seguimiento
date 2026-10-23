@@ -6,7 +6,7 @@ use App\Services\DerivacionService;
 use App\Services\TramiteService;
 
 it('genera la derivacion inicial recepcionada al crear un tramite', function () {
-    $area = Area::factory()->create(['nombre' => 'Observer '.uniqid(), 'sigla' => 'OBS']);
+    $area = Area::factory()->create(['nombre' => 'Observer '.uniqid(), 'codigo' => 'OBS']);
     $creador = User::factory()->create();
 
     $tramite = app(TramiteService::class)->crear([
@@ -26,7 +26,7 @@ it('genera la derivacion inicial recepcionada al crear un tramite', function () 
 });
 
 it('la siguiente derivacion manual toma el numero 2', function () {
-    $area = Area::factory()->create(['nombre' => 'Observer2 '.uniqid(), 'sigla' => 'OB2']);
+    $area = Area::factory()->create(['nombre' => 'Observer2 '.uniqid(), 'codigo' => 'OB2']);
     $creador = User::factory()->create();
     $destino = User::factory()->create();
 
@@ -42,7 +42,7 @@ it('la siguiente derivacion manual toma el numero 2', function () {
 });
 
 it('crearPrimeraDerivacion es idempotente ante llamadas repetidas', function () {
-    $area = Area::factory()->create(['nombre' => 'Observer3 '.uniqid(), 'sigla' => 'OB3']);
+    $area = Area::factory()->create(['nombre' => 'Observer3 '.uniqid(), 'codigo' => 'OB3']);
     $creador = User::factory()->create();
 
     $tramite = app(TramiteService::class)->crear([
@@ -58,7 +58,7 @@ it('crearPrimeraDerivacion es idempotente ante llamadas repetidas', function () 
 });
 
 it('el detalle del tramite incluye el historial de derivaciones', function () {
-    $area = Area::factory()->create(['nombre' => 'Observer4 '.uniqid(), 'sigla' => 'OB4']);
+    $area = Area::factory()->create(['nombre' => 'Observer4 '.uniqid(), 'codigo' => 'OB4']);
     $creador = User::factory()->create();
 
     $tramite = app(TramiteService::class)->crear([

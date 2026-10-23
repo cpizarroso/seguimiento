@@ -14,11 +14,11 @@ class ReporteService
     public const PER_PAGE_DOCUMENTO = 15;
 
     /**
-     * Trámites del área del usuario en un rango de fechas.
-     * El filtro usa created_at (fecha de ingreso al sistema).
+     * Trámites del área en una gestión, rango de fechas y/o números de trámite.
+     * El filtro de fechas usa created_at (fecha de ingreso al sistema).
      * Sin área, el reporte queda vacío.
      *
-     * @param  array{fecha_desde?: ?string, fecha_hasta?: ?string}  $filtros
+     * @param  array{gestion?: ?int, fecha_desde?: ?string, fecha_hasta?: ?string, numero_tramite?: ?string}  $filtros
      */
     public function ingresadosQuery(?int $areaId, array $filtros = []): Builder
     {
@@ -28,16 +28,56 @@ class ReporteService
             return $query->whereRaw('0 = 1');
         }
 
-        return $query
+        $query
             ->where('area_id', $areaId)
+            ->when($filtros['gestion'] ?? null, fn ($q, $v) => $q->where('tramites.year', (int) $v))
             ->when($filtros['fecha_desde'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
-            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
+            ->when($filtros['fecha_hasta'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v));
+
+        if (filled($filtros['numero_tramite'] ?? null)) {
+            $this->aplicarFiltroNumeroTramite($query, (string) $filtros['numero_tramite']);
+        }
+
+        return $query
             ->orderBy('numero_tramite')
             ->orderBy('id');
     }
 
+    private function aplicarFiltroNumeroTramite(Builder $query, string $expresion): void
+    {
+        $segmentos = array_values(array_filter(
+            array_map('trim', explode(',', $expresion)),
+            fn (string $segmento) => $segmento !== '',
+        ));
+
+        if ($segmentos === []) {
+            return;
+        }
+
+        $query->where(function (Builder $subquery) use ($segmentos) {
+            foreach ($segmentos as $segmento) {
+                if (str_contains($segmento, '-')) {
+                    [$inicio, $fin] = array_map(
+                        fn (string $parte) => (int) trim($parte),
+                        explode('-', $segmento, 2),
+                    );
+
+                    if ($inicio > $fin) {
+                        [$inicio, $fin] = [$fin, $inicio];
+                    }
+
+                    $subquery->orWhereBetween('tramites.numero_tramite', [$inicio, $fin]);
+
+                    continue;
+                }
+
+                $subquery->orWhere('tramites.numero_tramite', (int) $segmento);
+            }
+        });
+    }
+
     /**
-     * @param  array{fecha_desde?: ?string, fecha_hasta?: ?string, per_page?: ?int}  $filtros
+     * @param  array{gestion?: ?int, fecha_desde?: ?string, fecha_hasta?: ?string, numero_tramite?: ?string, per_page?: ?int}  $filtros
      */
     public function ingresadosPaginados(?int $areaId, array $filtros = []): LengthAwarePaginator
     {
@@ -47,12 +87,13 @@ class ReporteService
     }
 
     /**
-     * @param  array{fecha_desde?: ?string, fecha_hasta?: ?string}  $filtros
+     * @param  array{gestion?: ?int, fecha_desde?: ?string, fecha_hasta?: ?string, numero_tramite?: ?string}  $filtros
      */
     public function ingresadosColeccion(?int $areaId, array $filtros = []): Collection
     {
         return $this->ingresadosQuery($areaId, $filtros)->get();
     }
+
     public function resumenGeneral(?int $userId = null): array
     {
         $query = Tramite::query();
@@ -74,7 +115,7 @@ class ReporteService
         ];
     }
 
-    public function tramitesPorDiaSemana(?int $funcionarioId = null): array
+    public function tramitesPorDiaSemana(?int $usuarioId = null): array
     {
         $queryIniciados = Tramite::selectRaw('DAYOFWEEK(fecha) as dia, COUNT(*) as total')
             ->whereNotNull('fecha')
@@ -87,9 +128,9 @@ class ReporteService
             ->groupBy('dia')
             ->orderBy('dia');
 
-        if ($funcionarioId) {
-            $queryIniciados->where('creado_por', $funcionarioId);
-            $queryFinalizados->where('creado_por', $funcionarioId);
+        if ($usuarioId) {
+            $queryIniciados->where('creado_por', $usuarioId);
+            $queryFinalizados->where('creado_por', $usuarioId);
         }
 
         $iniciados = $queryIniciados->pluck('total', 'dia');
@@ -108,7 +149,7 @@ class ReporteService
         ];
     }
 
-    public function tramitesPorFuncionario(?int $userId = null): array
+    public function tramitesPorUsuario(?int $userId = null): array
     {
         $query = User::query()
             ->selectRaw('users.id, users.name, COUNT(CASE WHEN tramites.estado != \'finalizado\' THEN 1 END) as total')
@@ -125,7 +166,7 @@ class ReporteService
 
     public function tramitesUrgentes(?int $userId = null): array
     {
-        $tramites = Tramite::with('area:id,sigla,nombre')
+        $tramites = Tramite::with('area:id,codigo,nombre')
             ->where('estado', '!=', 'finalizado')
             ->when($userId, fn ($q) => $q->where('creado_por', $userId))
             ->get()
@@ -146,19 +187,19 @@ class ReporteService
                     'numero_completo' => $t->numero_completo,
                     'descripcion' => Str::limit($t->descripcion, 80),
                     'dias' => $t->dias,
-                    'area_sigla' => $t->area?->sigla,
+                    'area_codigo' => $t->area?->codigo,
                     'estado' => $t->estado,
                 ]),
         ];
     }
 
-    public function tramitesPorArea(?int $funcionarioId = null): array
+    public function tramitesPorArea(?int $usuarioId = null): array
     {
         return Tramite::selectRaw('areas.nombre as name, COUNT(*) as total')
             ->join('areas', 'tramites.area_id', '=', 'areas.id')
             ->groupBy('areas.id', 'areas.nombre')
             ->orderByDesc('total')
-            ->when($funcionarioId, fn ($q) => $q->where('tramites.creado_por', $funcionarioId))
+            ->when($usuarioId, fn ($q) => $q->where('tramites.creado_por', $usuarioId))
             ->get()
             ->toArray();
     }

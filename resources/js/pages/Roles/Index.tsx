@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
 import { RolForm, type PermisoOption } from '@/components/features/roles/RolForm';
-import type { PaginatedData } from '@/types/generated/Tramite';
 
 interface RolPermiso {
     id: number;

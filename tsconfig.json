@@ -12,7 +12,7 @@
         "paths": {
             "@/*": ["./resources/js/*"]
         },
-        "baseUrl": ".",
+        "types": ["vite/client"],
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,

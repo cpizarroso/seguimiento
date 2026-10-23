@@ -2,8 +2,8 @@
 
 use App\Models\Actuacion;
 use App\Models\Area;
-use App\Models\Funcionario;
 use App\Models\Permiso;
+use App\Models\Persona;
 use App\Models\Rol;
 use App\Models\Tramite;
 use App\Models\User;
@@ -113,14 +113,14 @@ it('exige descripcion y area al editar un tramite', function () {
 });
 
 it('el indice entrega la ultima actuacion de cada tramite', function () {
-    $funcionario = Funcionario::factory()->create();
+    $persona = Persona::factory()->create();
     $tramite = Tramite::factory()->create();
     $derivacion = $tramite->crearPrimeraDerivacion();
 
     Actuacion::create([
         'derivacion_id' => $derivacion->id,
         'area_id' => $tramite->area_id,
-        'funcionario_id' => $funcionario->id,
+        'persona_id' => $persona->id,
         'glosa' => 'Primera actuación',
         'fecha_actuacion' => now()->subDays(3),
     ]);
@@ -128,7 +128,7 @@ it('el indice entrega la ultima actuacion de cada tramite', function () {
     $ultima = Actuacion::create([
         'derivacion_id' => $derivacion->id,
         'area_id' => $tramite->area_id,
-        'funcionario_id' => $funcionario->id,
+        'persona_id' => $persona->id,
         'glosa' => 'Actuación más reciente',
         'fecha_actuacion' => now()->subHour(),
     ]);

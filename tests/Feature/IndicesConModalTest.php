@@ -12,13 +12,14 @@ beforeEach(function () {
     $this->actingAs($this->admin);
 });
 
-it('el indice de funcionarios entrega areas y puestos para el modal de creacion', function () {
-    $this->get(route('funcionarios.index'))
+it('el indice de personas entrega areas y puestos para los modales', function () {
+    $this->get(route('personas.index'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Funcionarios/Index')
-            ->has('areas.data')
-            ->has('puestos.data'),
+            ->component('Personas/Index')
+            ->has('personas.data')
+            ->has('areas')
+            ->has('puestos'),
         );
 });
 
@@ -27,19 +28,19 @@ it('el indice de areas entrega el arbol para el modal de creacion', function () 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Areas/Index')
-            ->has('areasTree'),
+            ->has('areasTree')
+            ->has('areasOpciones')
+            ->has('responsables'),
         );
 });
 
-it('el indice de usuarios entrega areas, puestos, roles y funcionarios para el modal de creacion', function () {
+it('el indice de usuarios entrega roles y personas para el modal de creacion', function () {
     $this->get(route('users.index'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Users/Index')
-            ->has('areas.data')
-            ->has('puestos.data')
             ->has('roles.data')
-            ->has('funcionarios.data'),
+            ->has('personas.data'),
         );
 });
 
@@ -55,11 +56,13 @@ it('el indice de roles entrega los permisos agrupados para el modal de creacion'
 it('crear un area desde el listado vuelve al listado y no al detalle', function () {
     $response = $this->post(route('areas.store'), [
         'nombre' => 'Área desde modal',
-        'sigla' => 'AMD',
-        'estado' => true,
-        'puestos' => [],
+        'codigo' => 'AMD',
+        'activo' => true,
+        'puestos_estandar' => ['JEFE', 'PROFESIONAL'],
     ]);
 
     $response->assertRedirect(route('areas.index'));
-    $this->assertDatabaseHas('areas', ['nombre' => 'Área desde modal']);
+    $this->assertDatabaseHas('areas', ['nombre' => 'Área desde modal', 'codigo' => 'AMD']);
+    $this->assertDatabaseHas('puestos', ['codigo' => 'AMD-JEF']);
+    $this->assertDatabaseHas('puestos', ['codigo' => 'AMD-PRO']);
 });

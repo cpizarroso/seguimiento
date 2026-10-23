@@ -18,13 +18,13 @@ class PuestoResource extends JsonResource
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
-            'descripcion' => $this->descripcion,
-            'sigla' => $this->sigla,
             'codigo' => $this->codigo,
-            'estado' => $this->estado,
+            'descripcion' => $this->descripcion,
+            'activo' => (bool) $this->activo,
             'area_id' => $this->area_id,
             'area' => $this->whenLoaded('area') ? new AreaResource($this->area) : null,
-            'funcionarios_count' => $this->whenCounted('funcionarios'),
+            'personas_count' => $this->whenCounted('personaPuestos'),
+            'usuarios_count' => $this->when(isset($this->usuarios_count), fn () => (int) $this->usuarios_count),
             'created_at' => $this->created_at,
         ];
     }

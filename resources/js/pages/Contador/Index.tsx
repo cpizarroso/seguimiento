@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -8,7 +8,7 @@ import { useState } from 'react';
 interface AreaItem {
     id: number;
     nombre: string;
-    sigla: string;
+    codigo: string;
 }
 
 interface ContadorData {
@@ -52,7 +52,7 @@ export default function ContadorIndex({ contadores }: ContadorIndexProps) {
                     <Card key={item.area.id}>
                         <div className="flex flex-col h-full">
                             <h3 className="text-lg font-semibold text-patuju-green">{item.area.nombre}</h3>
-                            <p className="text-xs text-gray-400">{item.area.sigla}</p>
+                            <p className="text-xs text-gray-400">{item.area.codigo}</p>
 
                             <div className="mt-3 space-y-2 flex-1">
                                 <div className="flex justify-between text-sm">

@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Area;
+use App\Models\Persona;
+use App\Models\PersonaPuesto;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\User;
-use App\Models\UserPuesto;
 use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
@@ -13,17 +15,33 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $rolId = Rol::where('slug', 'user')->value('id');
+        $dlaId = Area::where('codigo', 'DLA')->value('id');
 
-        User::factory(5)->create()->each(function ($user) use ($rolId) {
-            UserPuesto::create([
-                'user_id' => $user->id,
-                'puesto_id' => Puesto::inRandomOrder()->value('id'),
+        $puestos = Puesto::where('area_id', '!=', $dlaId)
+            ->where('activo', true)
+            ->inRandomOrder()
+            ->take(5)
+            ->get();
+
+        foreach ($puestos as $puesto) {
+            $persona = Persona::factory()->create();
+
+            PersonaPuesto::create([
+                'persona_id' => $persona->id,
+                'puesto_id' => $puesto->id,
                 'fecha_inicio' => now()->toDateString(),
+                'fecha_fin' => null,
+            ]);
+
+            $user = User::factory()->create([
+                'name' => $persona->nombre_completo,
+                'email' => $persona->correo,
+                'persona_id' => $persona->id,
             ]);
 
             if ($rolId !== null) {
                 $user->roles()->syncWithoutDetaching([$rolId]);
             }
-        });
+        }
     }
 }

@@ -18,16 +18,22 @@ class AreaResource extends JsonResource
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
-            'descripcion' => $this->descripcion,
-            'sigla' => $this->sigla,
             'codigo' => $this->codigo,
-            'estado' => $this->estado,
-            'parent_id' => $this->parent_id,
-            'parent' => $this->whenLoaded('parent') ? new AreaResource($this->parent) : null,
-            'children' => AreaResource::collection($this->whenLoaded('children')),
+            'descripcion' => $this->descripcion,
+            'activo' => (bool) $this->activo,
+            'area_padre_id' => $this->area_padre_id,
+            'user_id' => $this->user_id,
+            'responsable' => $this->whenLoaded('responsable', fn () => $this->responsable ? [
+                'id' => $this->responsable->id,
+                'name' => $this->responsable->name,
+                'email' => $this->responsable->email,
+            ] : null),
             'puestos_count' => $this->whenCounted('puestos'),
-            'puestos' => PuestoResource::collection($this->whenLoaded('puestos')),
-            'created_at' => $this->created_at,
+            'children_count' => $this->whenCounted('children'),
+            'predeterminada' => $this->whenPivotLoaded('area_user', fn () => (bool) $this->pivot->predeterminada),
+            'puestos' => $this->whenLoaded('puestos', fn () => PuestoResource::collection($this->puestos)),
+            'children' => $this->whenLoaded('children', fn () => AreaResource::collection($this->children)),
+            'created_at' => $this->created_at?->format('d/m/Y'),
         ];
     }
 }
