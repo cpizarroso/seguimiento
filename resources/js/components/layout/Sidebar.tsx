@@ -18,6 +18,7 @@ const allMenuItems: MenuItem[] = [
     { label: 'Configuración', href: '/configuracion', icon: 'settings', permission: 'configuracion' },
     { label: 'Usuarios', href: '/users', icon: 'key', permission: 'usuarios' },
     { label: 'Roles', href: '/roles', icon: 'shield', permission: 'roles' },
+    { label: 'Backups', href: '/backups', icon: 'database', permission: 'backups' },
 ];
 
 interface SidebarProps {

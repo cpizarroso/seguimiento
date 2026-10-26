@@ -39,7 +39,14 @@ export type IconName =
     | 'folder'
     | 'refresh'
     | 'save'
-    | 'message';
+    | 'message'
+    | 'database'
+    | 'hard-drive'
+    | 'lock'
+    | 'unlock'
+    | 'restore'
+    | 'upload'
+    | 'history';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
     name: IconName;
@@ -210,6 +217,52 @@ const paths: Record<IconName, ReactNode> = {
         <>
             <path d="M4 5h16v11H9l-5 4V5z" />
             <path d="M8 9h8M8 12h5" />
+        </>
+    ),
+    database: (
+        <>
+            <ellipse cx="12" cy="6" rx="8" ry="3" />
+            <path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
+            <path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+        </>
+    ),
+    'hard-drive': (
+        <>
+            <rect x="3" y="5" width="18" height="6" rx="1.5" />
+            <rect x="3" y="13" width="18" height="6" rx="1.5" />
+            <path d="M7 8h.01M7 16h.01M11 8h6M11 16h6" />
+        </>
+    ),
+    lock: (
+        <>
+            <rect x="4.5" y="10.5" width="15" height="10" rx="1.5" />
+            <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+        </>
+    ),
+    unlock: (
+        <>
+            <rect x="4.5" y="10.5" width="15" height="10" rx="1.5" />
+            <path d="M8 10.5V7a4 4 0 0 1 7.5-2" />
+        </>
+    ),
+    restore: (
+        <>
+            <path d="M4 12a8 8 0 1 0 2.6-5.9" />
+            <path d="M4 4v4.5h4.5" />
+            <path d="M12 8v4l3 2" />
+        </>
+    ),
+    upload: (
+        <>
+            <path d="M12 16V4M7.5 8.5L12 4l4.5 4.5" />
+            <path d="M4 19.5h16" />
+        </>
+    ),
+    history: (
+        <>
+            <path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3" />
+            <path d="M3.5 4.5V9H8" />
+            <path d="M12 8v4.5l3 1.8" />
         </>
     ),
 };

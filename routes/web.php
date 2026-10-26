@@ -3,6 +3,8 @@
 use App\Http\Controllers\Actuaciones\ActuacionController;
 use App\Http\Controllers\Areas\AreaController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Backups\BackupController;
+use App\Http\Controllers\Backups\BackupRestauracionController;
 use App\Http\Controllers\Configuracion\ConfiguracionController;
 use App\Http\Controllers\Contador\ContadorController;
 use App\Http\Controllers\DashboardController;
@@ -63,6 +65,40 @@ Route::middleware('auth')->group(function () {
     Route::get('reporte/vista-previa', [ReporteController::class, 'vistaPrevia'])->name('reporte.vista-previa');
     Route::post('reporte/guardar', [ReporteController::class, 'guardar'])->name('reporte.guardar');
     Route::get('reporte/descargar', [ReporteController::class, 'descargar'])->name('reporte.descargar');
+
+    Route::middleware('permission:backups')->group(function () {
+        Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::get('backups/espacio', [BackupController::class, 'espacio'])->name('backups.espacio');
+        Route::get('backups/eventos', [BackupController::class, 'eventos'])->name('backups.eventos');
+    });
+
+    Route::middleware('permission:backups,creacion')->group(function () {
+        Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
+    });
+
+    Route::middleware('permission:backups,edicion')->group(function () {
+        Route::put('backups/automatizacion', [BackupController::class, 'updateAutomatizacion'])
+            ->name('backups.automatizacion');
+        Route::put('backups/{backup}/proteger', [BackupController::class, 'proteger'])
+            ->name('backups.proteger');
+    });
+
+    Route::middleware('permission:backups,baja')->group(function () {
+        Route::delete('backups/{backup}', [BackupController::class, 'destroy'])->name('backups.destroy');
+    });
+
+    Route::middleware('permission:backups,descarga')->group(function () {
+        Route::get('backups/{backup}/descargar', [BackupController::class, 'descargar'])
+            ->name('backups.descargar');
+    });
+
+    Route::middleware('permission:backups,restauracion')->group(function () {
+        Route::post('backups/restaurar-archivo', [BackupRestauracionController::class, 'restaurarArchivo'])
+            ->name('backups.restaurar-archivo');
+        Route::post('backups/{backup}/restaurar', [BackupRestauracionController::class, 'restaurar'])
+            ->name('backups.restaurar');
+    });
+
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 

@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        'backups' => [
+            'driver' => 'local',
+            'root' => env('BACKUP_PATH') ?: storage_path('app/private/backups-'.config('backups.app_slug')),
+            'throw' => true,
+            'report' => false,
+            'serve' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

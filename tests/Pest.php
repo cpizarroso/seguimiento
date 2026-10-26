@@ -1,11 +1,17 @@
 <?php
 
+use App\Backups\Contrato\Dumper;
+use App\Backups\FakeDumper;
 use App\Models\Area;
+use App\Models\Backup;
 use App\Models\Persona;
 use App\Models\PersonaPuesto;
 use App\Models\Puesto;
+use App\Models\Rol;
 use App\Models\User;
+use App\Services\BackupService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class)->in('Feature', 'Unit');
@@ -50,4 +56,37 @@ function crearUsuarioConPuesto(?Area $area = null, array $userAttrs = [], array 
     ]);
 
     return [$user, $persona, $persona->puestoActivo->puesto->area];
+}
+
+function crearAdminBackups(): User
+{
+    $admin = User::factory()->create();
+
+    $admin->roles()->attach(Rol::create([
+        'nombre' => 'Administrador',
+        'slug' => 'admin',
+        'descripcion' => 'Acceso total',
+        'es_sistema' => true,
+    ]));
+
+    return $admin->fresh();
+}
+
+function usarDumperFalso(): FakeDumper
+{
+    $fake = new FakeDumper();
+
+    app()->instance(Dumper::class, $fake);
+
+    return $fake;
+}
+
+function prepararAlmacenBackups(): void
+{
+    Storage::fake((string) config('backups.disk'));
+}
+
+function crearBackupDePrueba(string $tipo = Backup::TIPO_MANUAL, ?int $userId = null, bool $protegido = false): Backup
+{
+    return app(BackupService::class)->crear($tipo, $userId, null, $protegido);
 }
