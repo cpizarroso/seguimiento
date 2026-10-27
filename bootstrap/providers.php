@@ -3,7 +3,14 @@
 use App\Providers\AppServiceProvider;
 use App\Providers\TypeScriptTransformerServiceProvider;
 
-return [
+$providers = [
     AppServiceProvider::class,
-    TypeScriptTransformerServiceProvider::class,
 ];
+
+// El transformer solo existe con dependencias de desarrollo (require-dev).
+// En producción (composer install --no-dev) no se registra.
+if (class_exists(\Spatie\LaravelTypeScriptTransformer\TypeScriptTransformerApplicationServiceProvider::class)) {
+    $providers[] = TypeScriptTransformerServiceProvider::class;
+}
+
+return $providers;
