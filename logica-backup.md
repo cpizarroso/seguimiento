@@ -125,6 +125,10 @@ Tabla de decisiones cerradas con el usuario (sirve como criterio de réplica en 
 | 18 | Reemplazo de datos | Restauración = reemplazo total (drop de todas las tablas) con rollback automático si el import falla |
 | 19 | Modo mantenimiento | `register_shutdown_function` garantiza el `up`; comando `backups:recuperar` para desbloqueo manual |
 | 20 | Identidad de la carpeta | Slug estable `BACKUP_APP_SLUG`, independiente de `APP_NAME` |
+| 21 | Sesión tras restaurar | Redirect a `backups.index` con flash, **sin** logout forzado (§13.6) |
+| 22 | Historial por backup | `GET /backups/{backup}/eventos` (JSON) alimenta el modal "Ver historial" de cada fila (§12.2) |
+| 23 | Diagnóstico monitoreable | `backups:diagnostico` devuelve código `1` si binarios, base de datos o escritura fallan (§19) |
+| 24 | Recuperación tras corte | `backups:recuperar` marca `fallido` todo `en_proceso` de más de 1 h y `--limpiar` elimina huérfanos del disco (§19) |
 
 ---
 
@@ -799,6 +803,7 @@ DELETE /backups/{id}      (permiso backups.baja)
 
 - Columna **Autor** en la lista (`Sistema` si `user_id` es null).
 - Acción **"Ver historial"** por backup → modal con sus eventos (fecha, acción, usuario, IP).
+- El modal se alimenta de `GET /backups/{backup}/eventos` (§18), que devuelve los últimos 100 eventos del backup. La consulta filtra por `backup_id` y, además, por `backup_nombre`: si el registro se perdió en una restauración previa (la tabla `backups` se respalda solo como estructura), la bitácora sigue apareciendo.
 - La bitácora **no** tiene opción de borrar ni editar desde la aplicación.
 - Consulta directa para auditoría externa:
 
@@ -1196,6 +1201,11 @@ Ruta `/backups`, permiso `backups.consulta`.
 
 Componentes: `pages/Backups/Index.tsx` (orquesta) + `components/features/backups/*` (presentacionales) + `hooks/useBackups.ts` + `services/backupService.ts`.
 
+Dos elementos adicionales de la versión implementada:
+
+- **Actividad reciente**: tarjeta bajo la tabla con los últimos 8 eventos globales (acción, nombre del backup, usuario y fecha). Se alimenta de la prop `historial` que envía el controlador con la carga inicial, sin petición extra, y evita abrir el modal de cada fila para saber qué pasó.
+- **Contadores en las pestañas**: la pestaña *Backups* muestra el número de registros y *Automatización* la frecuencia activa; a la derecha se indica `N backup(s) · M archivo(s) sin registrar` (huérfanos).
+
 Permisos por acción visible (el botón sin permiso se muestra deshabilitado con tooltip, no se oculta):
 
 | Acción | Permiso |
@@ -1244,7 +1254,8 @@ Errores esperados:
 | `php artisan backups:diagnostico` | Verifica binarios, ruta, permisos, espacio, configuración y último backup |
 | `php artisan backups:diagnostico --importar=<ruta>` | Importa y restaura un archivo local del servidor (para archivos > límite de subida) |
 | `php artisan backups:diagnostico --limpiar-temporales` | Elimina temporales de más de 24 h |
-| `php artisan backups:recuperar` | Levanta la app si quedó en mantenimiento, muestra el último `pre_restauracion`, verifica la conexión e informa el último evento |
+| `php artisan backups:recuperar` | Levanta la app si quedó en mantenimiento, verifica la conexión, muestra el último `pre_restauracion` y el último evento, y marca `fallido` todo backup `en_proceso` con más de 1 h (proceso interrumpido) |
+| `php artisan backups:recuperar --limpiar` | Hace lo anterior y además elimina los archivos del disco que no tienen registro en `backups` (huérfanos) |
 
 Salida de referencia de `backups:diagnostico`:
 
@@ -1259,7 +1270,7 @@ Automatización    : activa (diaria 02:00) — última 26/10/2026 02:00         
 Último backup     : completado, 1.1 MB, hace 12 h                                   OK
 ```
 
-Código de salida `1` si alguna verificación falla (útil para monitoreo).
+Código de salida `1` si alguna verificación falla (útil para monitoreo). Aplica a binarios, base de datos y escritura en `backups:diagnostico`, y a la conexión en `backups:recuperar`; así ambos comandos sirven igual en un cron de vigilancia que en una revisión manual.
 
 ---
 
@@ -1472,12 +1483,13 @@ app/Models/BackupEvento.php
 app/Services/BackupService.php
 app/Services/BackupProgramacionService.php
 app/Services/BackupEspacioService.php
+app/Services/BackupRestauracionService.php
 app/Services/BackupValidador.php
 app/Backups/Contrato/Dumper.php
 app/Backups/CliMySqlDumper.php
 app/Backups/FakeDumper.php
 app/Support/BinarioMysql.php
-app/Console/Commands/BackupsAutomaticos.php
+app/Console/Commands/BackupsAuto.php
 app/Console/Commands/BackupsDiagnostico.php
 app/Console/Commands/BackupsRecuperar.php
 app/Http/Middleware/EjecutarBackupVencido.php
@@ -1493,6 +1505,7 @@ resources/js/pages/Backups/Index.tsx
 resources/js/components/features/backups/*
 resources/js/hooks/useBackups.ts
 resources/js/services/backupService.ts
+resources/js/types/backups.ts
 ```
 
 ### 24.3 Puntos de integración a modificar
@@ -1507,6 +1520,7 @@ resources/js/services/backupService.ts
 [ ] .env.example               → variables BACKUP_* (incluida BACKUP_APP_SLUG)
 [ ] Tabla `configuraciones`    → si no existe, crearla (clave única + valor)
 [ ] Seeder de roles           → ejecutar PermisosBackupsSeeder
+[ ] AppServiceProvider        → enlazar Dumper::class con CliMySqlDumper
 ```
 
 ### 24.4 Diferencias que hay que adaptar
@@ -1550,48 +1564,66 @@ resources/js/services/backupService.ts
 
 ## 26. Inventario de archivos
 
+Estado al 27/10/2026: módulo implementado y verificado contra MySQL 8.4.7 (`seguimiento_adm`). Un backup manual produjo 76.559 bytes con 30 `CREATE TABLE`, datos de negocio y ninguna fila de `backups`/`backup_eventos`; la restauración de ese archivo devolvió conteos idénticos (`users` 9, `personas` 13, `areas` 4, `tramites` 111, `derivaciones` 912) y dejó el `pre_restauracion` protegido. Suites en verde: 194 Pest, 89 Vitest, `tsc --noEmit` limpio y build correcto.
+
 ### Backend
 
 | Archivo | Responsabilidad |
 |---|---|
-| `app/Models/Backup.php` | Registro del archivo; scopes `completados`, `noProtegidos` |
-| `app/Models/BackupEvento.php` | Bitácora |
-| `app/Services/BackupService.php` | Generar, restaurar, eliminar, retención, ejecutar si vencido |
-| `app/Services/BackupProgramacionService.php` | Próxima ejecución, vencimiento, día efectivo del mes |
+| `app/Models/Backup.php` | Registro del archivo; scopes `completados`, `noProtegidos`, constantes de tipo/estado |
+| `app/Models/BackupEvento.php` | Bitácora inmutable |
+| `app/Services/BackupService.php` | Generar, eliminar, retención, pre-restauración, eventos, ejecutar si vencido |
+| `app/Services/BackupProgramacionService.php` | Próxima ejecución, vencimiento, día efectivo del mes, configuración vigente |
 | `app/Services/BackupEspacioService.php` | Disco, cuota, tamaño por archivo, proyección, alertas |
+| `app/Services/BackupRestauracionService.php` | Restauración interna y externa: pre-restauración, mantenimiento, reemplazo total, rollback |
 | `app/Services/BackupValidador.php` | Validación de archivos importados |
 | `app/Backups/Contrato/Dumper.php` | Interfaz `volcar()` / `importar()` |
 | `app/Backups/CliMySqlDumper.php` | Implementación con `proc_open` y `my.cnf` temporal |
 | `app/Backups/FakeDumper.php` | Implementación para tests (genera SQL mínimo) |
 | `app/Support/BinarioMysql.php` | Autodetección y caché de binarios |
-| `app/Console/Commands/BackupsAutomaticos.php` | `backups:auto` |
-| `app/Console/Commands/BackupsDiagnostico.php` | `backups:diagnostico` |
-| `app/Console/Commands/BackupsRecuperar.php` | `backups:recuperar`: `up` de emergencia, último pre_restauracion, verificación |
+| `app/Console/Commands/BackupsAuto.php` | `backups:auto` |
+| `app/Console/Commands/BackupsDiagnostico.php` | `backups:diagnostico` (`--importar`, `--limpiar-temporales`) |
+| `app/Console/Commands/BackupsRecuperar.php` | `backups:recuperar` (`--limpiar`): `up` de emergencia, conexión, último `pre_restauracion`, interrumpidos |
 | `app/Http/Middleware/EjecutarBackupVencido.php` | Disparo perezoso |
-| `app/Http/Controllers/Backups/BackupController.php` | Listado, crear, descargar, proteger, eliminar, espacio, eventos, automatización |
+| `app/Http/Controllers/Backups/BackupController.php` | Listado, crear, descargar, proteger, eliminar, espacio, eventos por backup, automatización |
 | `app/Http/Controllers/Backups/BackupRestauracionController.php` | Restaurar interno y externo |
-| `app/Http/Requests/Backups/StoreBackupRequest.php` | — |
 | `app/Http/Requests/Backups/UpdateAutomatizacionRequest.php` | Valida frecuencia, hora, días, tope, cuota, umbral |
 | `app/Http/Requests/Backups/RestaurarBackupRequest.php` | `RESTAURAR` + contraseña |
 | `app/Http/Requests/Backups/RestaurarDesdeArchivoRequest.php` | Archivo + `RESTAURAR` + contraseña |
 | `app/Http/Resources/BackupResource.php` | Serialización para Inertia |
+
+El backup manual no necesita Form Request propio: no recibe datos del cliente (`POST /backups` sin cuerpo).
+
+### Migraciones, seeders y configuración
+
+| Archivo | Responsabilidad |
+|---|---|
+| `database/migrations/*_create_backups_table.php` | Tabla `backups` (sin FK a `users`, ver §3.1) |
+| `database/migrations/*_create_backup_eventos_table.php` | Tabla `backup_eventos` |
+| `database/seeders/PermisosBackupsSeeder.php` | Módulo `backups`, 6 acciones y permisos; idempotente |
+| `database/seeders/DatabaseSeeder.php` | Limpia `backups`/`backup_eventos` y ejecuta el seeder de permisos |
+| `config/backups.php` | Slug, disco, binarios, timeouts, tablas sin datos, listas de validación |
+| `config/filesystems.php` | Disco `backups` (root desde `.env`) |
+| `app/Providers/AppServiceProvider.php` | Enlace `Dumper` → `CliMySqlDumper` |
 
 ### Frontend
 
 | Archivo | Responsabilidad |
 |---|---|
 | `resources/js/pages/Backups/Index.tsx` | Orquesta la pantalla (sin lógica de negocio) |
-| `resources/js/components/features/backups/BackupTable.tsx` | Lista y acciones |
-| `resources/js/components/features/backups/PanelAutomatizacion.tsx` | Formulario de frecuencia y límites |
-| `resources/js/components/features/backups/EstadoAlmacenamiento.tsx` | Contenedor del panel de espacio |
-| `resources/js/components/features/backups/DonaDisco.tsx` | Gráfico de disco |
-| `resources/js/components/features/backups/BarraCuota.tsx` | Barra de cuota |
-| `resources/js/components/features/backups/EvolucionTamano.tsx` | Tamaño de cada backup + línea de cuota |
+| `resources/js/components/features/backups/TablaBackups.tsx` | Lista y acciones por fila |
+| `resources/js/components/features/backups/FormAutomatizacion.tsx` | Frecuencia, hora, día, tope, cuota y umbral |
+| `resources/js/components/features/backups/EstadoAlmacenamiento.tsx` | Panel de espacio: dona del disco, barra de cuota y tamaño por backup |
 | `resources/js/components/features/backups/ModalRestaurar.tsx` | Advertencia + `RESTAURAR` + contraseña |
-| `resources/js/components/features/backups/DropzoneArchivo.tsx` | Selector/arrastre de archivo |
-| `resources/js/components/features/backups/AlertaEspacio.tsx` | Banners de alerta |
+| `resources/js/components/features/backups/ModalRestaurarArchivo.tsx` | Selector/arrastre de archivo para restaurar |
+| `resources/js/components/features/backups/ModalEliminar.tsx` | Confirmación de borrado |
+| `resources/js/components/features/backups/ModalHistorial.tsx` | Eventos de un backup |
+| `resources/js/components/features/backups/formato.ts` | Formato de bytes, fechas y etiquetas de acción |
 | `resources/js/hooks/useBackups.ts` | Estado + acciones |
-| `resources/js/services/backupService.ts` | Llamadas Inertia |
+| `resources/js/services/backupService.ts` | Llamadas Inertia y JSON |
+| `resources/js/types/backups.ts` | Tipos del módulo (props, backup, espacio, automatización, eventos) |
+
+Los tres gráficos viven dentro de `EstadoAlmacenamiento.tsx`; no se separaron en componentes propios porque comparten el mismo estado y escala.
 
 ### Tests
 
@@ -1599,13 +1631,13 @@ resources/js/services/backupService.ts
 |---|---|
 | `tests/Feature/BackupTest.php` | Crear, permisos, retención, protegido, descarga |
 | `tests/Feature/BackupRestauracionTest.php` | Password, `RESTAURAR`, pre-restauración, reemplazo total, rollback automático, config preservada |
-| `tests/Feature/BackupRecuperacionTest.php` | `backups:recuperar` y salida garantizada del modo mantenimiento |
+| `tests/Feature/BackupRecuperacionTest.php` | `backups:recuperar`, interrumpidos y salida garantizada del modo mantenimiento |
 | `tests/Feature/BackupArchivoExternoTest.php` | Validaciones y archivado del archivo importado |
 | `tests/Feature/BackupProgramacionTest.php` | Diaria/semanal/mensual, día 31, atrasos, doble ejecución |
 | `tests/Feature/BackupEspacioTest.php` | Datos del panel, alertas, hostings restringidos |
-| `resources/js/tests/Backups/Index.test.tsx` | Render, acciones, carga de archivo |
-| `resources/js/tests/Backups/ModalRestaurar.test.tsx` | Confirmación bloqueada hasta texto+contraseña |
-| `resources/js/tests/Backups/EstadoAlmacenamiento.test.tsx` | Gráficos y semáforo |
+| `resources/js/tests/Backups/Index.test.tsx` | Render, permisos deshabilitados, confirmación de restauración, guardado de automatización |
+
+Total al cierre: 41 pruebas Pest del módulo (194 en la suite completa) y 4 pruebas Vitest (89 en la suite completa).
 
 ---
 
@@ -1676,3 +1708,4 @@ SELECT id, nombre, ruta FROM backups WHERE estado = 'completado';
 |---|---|---|
 | 1.0 | 2026-10-26 | Versión inicial: decisiones 1–17, flujos, DDL, panel de almacenamiento, portabilidad |
 | 1.1 | 2026-10-26 | Revisión experta: 6 permisos (`baja` para eliminar, `edicion` para proteger), protección acotada del `pre_restauracion`, reemplazo total con rollback automático, `backups:recuperar` + shutdown handler, slug estable `BACKUP_APP_SLUG`, gráfico por tamaño de archivo en lugar de serie acumulada |
+| 1.2 | 2026-10-27 | Implementación: redirect a `backups.index` con flash en lugar de logout forzado tras restaurar (§13.6), historial de eventos por backup vía `GET /backups/{backup}/eventos` (§12.2), `backups:recuperar --limpiar` y códigos de salida de los comandos (§19), corrección del ejemplo de vencimiento mensual día 31 (§9.2), inventario real de archivos y estado de la implementación (§26) |
