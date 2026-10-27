@@ -121,7 +121,7 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 - `php artisan db:seed --class=PersonaSeeder` — personas de ejemplo
 - `php artisan db:seed --class=AdminUserSeeder` — usuarios administradores
 - `php artisan db:seed --class=UserSeeder` / `UserSecretariaSeeder` — usuarios de prueba por puesto y secretaría
-- `php artisan db:seed --class=TramiteSeeder` — trámites con derivaciones y actuaciones (`crearParaUsuario($user, $cantidad)` para lotes a medida)
+- `php artisan db:seed --class=TramiteSeeder` — trámites con derivaciones y actuaciones (`crearParaUsuario($user, $cantidad)` para lotes a medida). Asume que ya existen usuarios y áreas sembrados
 - `php artisan db:seed --class=ActuacionSeeder` — actuaciones adicionales
 
 ### Usuarios
