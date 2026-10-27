@@ -1472,7 +1472,7 @@ Checklist para replicar el comportamiento exacto en otra instalación (Laravel +
 [ ] exec / proc_open habilitados
 [ ] Escritura en storage/app/private
 [ ] Zona horaria de la app definida (America/La_Paz o la local)
-[ ] references: Laravel 11+ (para Schedule en routes/console.php y middleware terminate)
+[ ] Laravel 11+ (este proyecto usa 13.x): Schedule en routes/console.php y middleware terminate
 ```
 
 ### 24.2 Archivos a copiar
