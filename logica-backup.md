@@ -884,7 +884,8 @@ Caso especial — archivo demasiado grande para el límite de subida:
 [13] Reinsertar registros de auditoría que el import pudo borrar (§15)
 [14] Evento: accion=restauracion, detalle="origen=<interno|externo>; archivo=<nombre>; duración=<n>s"
 [15] Invalidar cache de espacio
-[16] Logout forzado + redirect a /login con flash: "Base de datos restaurada desde <nombre>"
+[16] Redirect a /backups con flash: "Base de datos restaurada desde <nombre>"
+        │  (decisión de implementación: no se fuerza logout; ver §13.6)
         │
         └── si falla [6], [7] u [8]:
             [F1] ROLLBACK AUTOMÁTICO (config('backups.rollback_automatico') = true):
@@ -959,6 +960,19 @@ php artisan backups:recuperar
 ```
 
 Se documenta en §23 y en el procedimiento de emergencia (§21).
+
+### 13.6 Sesión y mensaje posterior a la restauración
+
+Decisión de implementación: al terminar con éxito, el controlador redirige a `backups.index` con el flash de confirmación y **no** fuerza el logout del usuario que ejecutó la restauración.
+
+Motivos:
+
+- La tabla `sessions` está en `tablas_sin_datos` (§10): el dump solo lleva su estructura, así que la sesión en curso desaparece con el reemplazo total. Cerrar sesión de forma explícita no aporta nada que el propio reemplazo no haga ya.
+- El flash se escribe al final de la misma petición, cuando Laravel persiste la sesión. Redirigir a `/login` en ese momento dejaría el mensaje sin destinatario visible y el operador perdería la confirmación (nombre del backup restaurado y copia previa).
+- Dejar la pantalla de backups a la vista permite verificar de inmediato el estado del disco, el `pre_restauracion` creado y el evento de auditoría de la restauración.
+
+Si se prefiere el comportamiento contrario, basta con cerrar la sesión en el controlador antes del redirect; los eventos de auditoría se reinsertan después del import (§15), por lo que la bitácora no se pierde en ninguno de los dos casos.
+
 
 ---
 
@@ -1207,8 +1221,8 @@ Permisos por acción visible (el botón sin permiso se muestra deshabilitado con
 | PUT | `/backups/{backup}/proteger` | `backups.proteger` | `backups.edicion` | Redirect + flash |
 | DELETE | `/backups/{backup}` | `backups.destroy` | `backups.baja` | Redirect + flash |
 | PUT | `/backups/automatizacion` | `backups.automatizacion` | `backups.edicion` | Redirect + flash |
-| POST | `/backups/{backup}/restaurar` | `backups.restaurar` | `backups.restauracion` | Redirect a login |
-| POST | `/backups/restaurar-archivo` | `backups.restaurar-archivo` | `backups.restauracion` | Redirect a login |
+| POST | `/backups/{backup}/restaurar` | `backups.restaurar` | `backups.restauracion` | Redirect a `backups.index` + flash (§13.6) |
+| POST | `/backups/restaurar-archivo` | `backups.restaurar-archivo` | `backups.restauracion` | Redirect a `backups.index` + flash (§13.6) |
 
 Errores esperados:
 
