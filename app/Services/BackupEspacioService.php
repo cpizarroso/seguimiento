@@ -42,7 +42,11 @@ class BackupEspacioService
         $config = $this->programacion->configuracion();
 
         $disco = Storage::disk((string) config('backups.disk'));
-        $ruta = rtrim($disco->path(''), '/\\');
+        $ruta = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, rtrim($disco->path(''), '/\\'));
+
+        if (! is_dir($ruta)) {
+            @mkdir($ruta, 0755, true);
+        }
 
         $total = @disk_total_space($ruta);
         $libre = @disk_free_space($ruta);

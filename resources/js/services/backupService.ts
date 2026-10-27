@@ -44,7 +44,7 @@ export const backupService = {
         window.location.assign(backupService.urls.descargar(id));
     },
 
-    guardarAutomatizacion(datos: Record<string, unknown>, opciones: OpcionesInertia = {}) {
+    guardarAutomatizacion(datos: Record<string, string | number | boolean | null | undefined>, opciones: OpcionesInertia = {}) {
         router.put(backupService.urls.automatizacion, datos, {
             preserveScroll: true,
             ...opciones,

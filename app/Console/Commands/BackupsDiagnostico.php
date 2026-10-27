@@ -6,11 +6,11 @@ use App\Models\Backup;
 use App\Services\BackupEspacioService;
 use App\Services\BackupProgramacionService;
 use App\Services\BackupRestauracionService;
-use App\Services\BackupService;
 use App\Support\BinarioMysql;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Throwable;
 
 class BackupsDiagnostico extends Command
 {
@@ -18,18 +18,25 @@ class BackupsDiagnostico extends Command
                             {--importar= : Ruta absoluta de un archivo .sql o .sql.gz para importar}
                             {--limpiar-temporales : Elimina archivos temporales de más de 24 horas}';
 
-    protected $description = 'Muestra el estado de los backups y permite importar un archivo del servidor';
+    protected $description = 'Verifica binarios, base de datos, disco, configuración y backups';
 
     public function handle(
         BinarioMysql $binarios,
         BackupProgramacionService $programacion,
         BackupEspacioService $espacio,
-        BackupService $backups,
         BackupRestauracionService $restauracion,
     ): int {
-        $this->mostrarBinarios($binarios);
+        $fallos = 0;
+
+        $binariosOk = $this->mostrarBinarios($binarios);
+        $dbOk = $this->mostrarBaseDatos();
+        $discoOk = $this->mostrarEspacio($espacio);
+
+        if (! $binariosOk || ! $dbOk || ! $discoOk) {
+            $fallos++;
+        }
+
         $this->mostrarConfiguracion($programacion);
-        $this->mostrarEspacio($espacio);
         $this->mostrarBackups();
 
         if ($this->option('limpiar-temporales')) {
@@ -39,13 +46,23 @@ class BackupsDiagnostico extends Command
         $ruta = $this->option('importar');
 
         if (is_string($ruta) && $ruta !== '') {
-            $this->importar($ruta, $restauracion, $backups);
+            $this->importar($ruta, $restauracion);
         }
+
+        if ($fallos > 0) {
+            $this->newLine();
+            $this->error('Diagnóstico con problemas: revise las líneas marcadas como FALLÓ.');
+
+            return self::FAILURE;
+        }
+
+        $this->newLine();
+        $this->info('Diagnóstico OK.');
 
         return self::SUCCESS;
     }
 
-    private function mostrarBinarios(BinarioMysql $binarios): void
+    private function mostrarBinarios(BinarioMysql $binarios): bool
     {
         $this->info('Binarios de MySQL');
 
@@ -57,11 +74,62 @@ class BackupsDiagnostico extends Command
 
         if ($mysqldump === null || $mysql === null) {
             $this->warn('  Configure BACKUP_MYSQLDUMP_PATH y BACKUP_MYSQL_PATH en .env');
-        } else {
-            $this->line('  versión:   '.($binarios->version($mysqldump) ?? 'desconocida'));
+
+            return false;
+        }
+
+        $this->line('  versión:   '.($binarios->version($mysqldump) ?? 'desconocida'));
+        $this->newLine();
+
+        return true;
+    }
+
+    private function mostrarBaseDatos(): bool
+    {
+        $this->info('Base de datos');
+
+        $conexion = (array) config('database.connections.mysql');
+
+        try {
+            $pdo = DB::connection()->getPdo();
+            $pdo->query('SELECT 1');
+            $version = (string) $pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
+
+            $this->line('  base:    '.($conexion['database'] ?? '—'));
+            $this->line('  versión: '.$version);
+            $this->newLine();
+
+            return true;
+        } catch (Throwable $e) {
+            $this->error('  conexión FALLÓ: '.$e->getMessage());
+            $this->newLine();
+
+            return false;
+        }
+    }
+
+    private function mostrarEspacio(BackupEspacioService $espacio): bool
+    {
+        $datos = $espacio->calcular();
+
+        $this->info('Almacenamiento');
+
+        $ruta = $datos['disco']['ruta'];
+        $escribible = is_dir($ruta) && is_writable($ruta);
+
+        $this->line('  ruta:      '.$ruta);
+        $this->line('  escritura: '.($escribible ? 'OK' : 'FALLÓ (sin permisos de escritura)'));
+        $this->line('  libre:     '.$this->mb((int) ($datos['disco']['libre_bytes'] ?? 0)));
+        $this->line('  backups:   '.$datos['backups']['cantidad'].' ('.$this->mb((int) $datos['backups']['total_bytes']).')');
+        $this->line('  huérfanos: '.$datos['backups']['huerfanos']);
+
+        foreach ($datos['alertas'] as $alerta) {
+            $this->warn("  [{$alerta['nivel']}] {$alerta['mensaje']}");
         }
 
         $this->newLine();
+
+        return $escribible;
     }
 
     private function mostrarConfiguracion(BackupProgramacionService $programacion): void
@@ -75,22 +143,6 @@ class BackupsDiagnostico extends Command
         $this->line('  máximo:     '.$config['maximo']);
         $this->line('  última:     '.($config['ultima_ejecucion']?->format('d/m/Y H:i') ?? 'nunca'));
         $this->line('  próxima:    '.($config['proxima_ejecucion']?->format('d/m/Y H:i') ?? 'no programada'));
-        $this->newLine();
-    }
-
-    private function mostrarEspacio(BackupEspacioService $espacio): void
-    {
-        $datos = $espacio->calcular();
-
-        $this->info('Almacenamiento');
-        $this->line('  ruta: '.$datos['disco']['ruta']);
-        $this->line('  libre: '.$this->mb((int) ($datos['disco']['libre_bytes'] ?? 0)));
-        $this->line('  backups: '.$datos['backups']['cantidad'].' ('.$this->mb((int) $datos['backups']['total_bytes']).')');
-
-        foreach ($datos['alertas'] as $alerta) {
-            $this->warn("  [{$alerta['nivel']}] {$alerta['mensaje']}");
-        }
-
         $this->newLine();
     }
 
@@ -134,7 +186,7 @@ class BackupsDiagnostico extends Command
         $this->info("Temporales eliminados: {$eliminados}");
     }
 
-    private function importar(string $ruta, BackupRestauracionService $restauracion, BackupService $backups): void
+    private function importar(string $ruta, BackupRestauracionService $restauracion): void
     {
         $this->warn('IMPORTANTE: esta operación reemplaza los datos actuales.');
         $this->line("Archivo: {$ruta}");

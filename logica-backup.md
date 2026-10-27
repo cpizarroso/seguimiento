@@ -615,7 +615,8 @@ proximaEjecucion(ultima, frecuencia, hora, diaSemana, diaMes):
 | Diaria 02:00 | 2026-10-25 02:00 | 2026-10-26 10:00 | **Vence** (una sola ejecución, no acumula) |
 | Semanal lunes 03:00 | 2026-10-19 03:00 | 2026-10-26 03:01 | **Vence** |
 | Semanal lunes 03:00 | 2026-10-26 03:00 | 2026-10-27 09:00 | No vence (próxima 02/11) |
-| Mensual día 31 04:00 | 2026-09-30 04:00 | 2026-10-01 05:00 | **Vence** (septiembre usó el día 30) |
+| Mensual día 31 04:00 | 2026-09-30 04:00 | 2026-10-01 05:00 | No vence (próxima 31/10 04:00) |
+| Mensual día 31 04:00 | 2026-09-30 04:00 | 2026-10-31 05:00 | **Vence** (octubre usa el día 31) |
 | Mensual día 31 04:00 | 2026-10-31 04:00 | 2026-11-01 05:00 | No vence (noviembre usa el día 30) |
 | Cualquiera, `ultima` null | null | cualquiera | No vence; se fija línea base |
 

@@ -80,7 +80,7 @@ export function EstadoAlmacenamiento({ espacio }: Props) {
                                             <Cell key={entrada.nombre} fill={COLORES_DONA[indice]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(valor: number) => formatearBytes(valor)} />
+                                    <Tooltip formatter={(valor) => formatearBytes(Number(valor))} />
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -195,7 +195,7 @@ export function EstadoAlmacenamiento({ espacio }: Props) {
                                     unit=" MB"
                                 />
                                 <Tooltip
-                                    formatter={(valor: number) => [`${valor.toFixed(2)} MB`, 'Tamaño']}
+                                    formatter={(valor) => [`${Number(valor).toFixed(2)} MB`, 'Tamaño']}
                                     labelFormatter={(_etiqueta, carga) => {
                                         const primero = carga[0]?.payload as { nombre?: string; tipo?: string } | undefined;
                                         return primero?.nombre ? `${primero.nombre} (${primero.tipo ?? ''})` : '';

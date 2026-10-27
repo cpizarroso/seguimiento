@@ -69,7 +69,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:backups')->group(function () {
         Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
         Route::get('backups/espacio', [BackupController::class, 'espacio'])->name('backups.espacio');
-        Route::get('backups/eventos', [BackupController::class, 'eventos'])->name('backups.eventos');
+        Route::get('backups/{backup}/eventos', [BackupController::class, 'eventos'])
+            ->name('backups.eventos');
     });
 
     Route::middleware('permission:backups,creacion')->group(function () {

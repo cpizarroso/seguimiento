@@ -83,9 +83,13 @@ class BackupController extends Controller
         return response()->json($this->espacio->datos());
     }
 
-    public function eventos(): JsonResponse
+    public function eventos(Backup $backup): JsonResponse
     {
         $eventos = BackupEvento::with('user')
+            ->where('backup_id', $backup->id)
+            ->orWhere(function ($query) use ($backup): void {
+                $query->whereNull('backup_id')->where('backup_nombre', $backup->nombre);
+            })
             ->latest('created_at')
             ->latest('id')
             ->limit(100)

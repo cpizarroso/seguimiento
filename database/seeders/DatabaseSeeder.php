@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
         $tablas = [
+            'backup_eventos',
+            'backups',
             'configuraciones',
             'reportes',
             'derivaciones',
@@ -59,6 +61,8 @@ class DatabaseSeeder extends Seeder
         $this->limpiarTablas();
 
         $this->call(RolesYPermisosSeeder::class);
+
+        $this->call(PermisosBackupsSeeder::class);
 
         $this->call(ConfiguracionSeeder::class);
 
