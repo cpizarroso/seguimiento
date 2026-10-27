@@ -4,6 +4,7 @@ namespace App\Backups;
 
 use App\Backups\Contrato\Dumper;
 use App\Support\BinarioMysql;
+use App\Support\EntornoProceso;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Symfony\Component\Process\Process;
@@ -79,7 +80,7 @@ class CliMySqlDumper implements Dumper
                 '--local-infile=0',
                 '--default-character-set=utf8mb4',
                 $this->baseDatos(),
-            ]);
+            ], null, EntornoProceso::paraBinariosMysql());
 
             $proceso->setTimeout((float) config('backups.timeout', 3600));
             $proceso->setInput($entrada);
@@ -128,7 +129,7 @@ class CliMySqlDumper implements Dumper
                 $this->baseDatos(),
                 '-e',
                 $sql,
-            ]);
+            ], null, EntornoProceso::paraBinariosMysql());
 
             $proceso->setTimeout((float) config('backups.timeout', 3600));
             $proceso->run();
@@ -214,7 +215,7 @@ class CliMySqlDumper implements Dumper
         $error = '';
 
         try {
-            $proceso = new Process($comando);
+            $proceso = new Process($comando, null, EntornoProceso::paraBinariosMysql());
             $proceso->setTimeout((float) config('backups.timeout', 3600));
             $proceso->run(function (string $tipo, string $buffer) use ($salida, &$error): void {
                 if ($tipo === Process::ERR) {

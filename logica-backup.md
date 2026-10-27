@@ -1457,6 +1457,7 @@ Resultado esperado: base idéntica al momento del backup, auditoría completa y 
 | Día 31 no se ejecuta en febrero | Comportamiento definido | Usa el último día del mes; es intencional |
 | Gráfico de disco «No disponible» | `disk_free_space` deshabilitado por hosting | Esperado; la cuota y el tamaño por archivo siguen informando |
 | Archivos en disco sin registro | Restauración de un backup antiguo o copia manual | Se muestran como «huérfanos»; decidir conservar o borrar |
+| `Can't create TCP/IP socket (10106)` al generar el backup desde la pantalla | En SAPI web (`cli-server`, `php-fpm`, Apache) `$_SERVER` y `$_ENV` no traen las variables de Windows, Symfony Process arma el hijo sin `SystemRoot` ni `PATH` y Winsock no inicializa | Resuelto: `App\Support\EntornoProceso::paraBinariosMysql()` inyecta esas variables en cada `Process`. Si reaparece, verificar que los tres procesos de `CliMySqlDumper` lo reciban; por CLI nunca se reproduce |
 
 ---
 
@@ -1489,6 +1490,7 @@ app/Backups/Contrato/Dumper.php
 app/Backups/CliMySqlDumper.php
 app/Backups/FakeDumper.php
 app/Support/BinarioMysql.php
+app/Support/EntornoProceso.php
 app/Console/Commands/BackupsAuto.php
 app/Console/Commands/BackupsDiagnostico.php
 app/Console/Commands/BackupsRecuperar.php
@@ -1566,6 +1568,8 @@ resources/js/types/backups.ts
 
 Estado al 27/10/2026: módulo implementado y verificado contra MySQL 8.4.7 (`seguimiento_adm`). Un backup manual produjo 76.559 bytes con 30 `CREATE TABLE`, datos de negocio y ninguna fila de `backups`/`backup_eventos`; la restauración de ese archivo devolvió conteos idénticos (`users` 9, `personas` 13, `areas` 4, `tramites` 111, `derivaciones` 912) y dejó el `pre_restauracion` protegido. Suites en verde: 194 Pest, 89 Vitest, `tsc --noEmit` limpio y build correcto.
 
+Corrección posterior (27/10/2026): el primer backup generado desde la pantalla falló con `Can't create TCP/IP socket (10106)` porque en SAPI web el proceso hijo de `Symfony Process` quedaba sin `SystemRoot` ni `PATH`. Se agregó `app/Support/EntornoProceso.php` y los tres procesos de `CliMySqlDumper` lo reciben; el volcado se verificó de nuevo desde `php -S` (366 KB, 30 `CREATE TABLE`). Suites: 197 Pest (1 omitida por SO), 89 Vitest.
+
 ### Backend
 
 | Archivo | Responsabilidad |
@@ -1581,6 +1585,7 @@ Estado al 27/10/2026: módulo implementado y verificado contra MySQL 8.4.7 (`seg
 | `app/Backups/CliMySqlDumper.php` | Implementación con `proc_open` y `my.cnf` temporal |
 | `app/Backups/FakeDumper.php` | Implementación para tests (genera SQL mínimo) |
 | `app/Support/BinarioMysql.php` | Autodetección y caché de binarios |
+| `app/Support/EntornoProceso.php` | Entorno de Windows (`SystemRoot`, `PATH`, …) para los `Process` de `mysqldump`/`mysql`; evita el error 10106 en SAPI web |
 | `app/Console/Commands/BackupsAuto.php` | `backups:auto` |
 | `app/Console/Commands/BackupsDiagnostico.php` | `backups:diagnostico` (`--importar`, `--limpiar-temporales`) |
 | `app/Console/Commands/BackupsRecuperar.php` | `backups:recuperar` (`--limpiar`): `up` de emergencia, conexión, último `pre_restauracion`, interrumpidos |
@@ -1635,9 +1640,10 @@ Los tres gráficos viven dentro de `EstadoAlmacenamiento.tsx`; no se separaron e
 | `tests/Feature/BackupArchivoExternoTest.php` | Validaciones y archivado del archivo importado |
 | `tests/Feature/BackupProgramacionTest.php` | Diaria/semanal/mensual, día 31, atrasos, doble ejecución |
 | `tests/Feature/BackupEspacioTest.php` | Datos del panel, alertas, hostings restringidos |
+| `tests/Unit/EntornoProcesoTest.php` | Entorno de Windows completo para los binarios (regresión del error 10106) |
 | `resources/js/tests/Backups/Index.test.tsx` | Render, permisos deshabilitados, confirmación de restauración, guardado de automatización |
 
-Total al cierre: 41 pruebas Pest del módulo (194 en la suite completa) y 4 pruebas Vitest (89 en la suite completa).
+Total al cierre: 44 pruebas Pest del módulo (197 en la suite completa, 1 omitida por sistema operativo) y 4 pruebas Vitest (89 en la suite completa).
 
 ---
 
@@ -1709,3 +1715,4 @@ SELECT id, nombre, ruta FROM backups WHERE estado = 'completado';
 | 1.0 | 2026-10-26 | Versión inicial: decisiones 1–17, flujos, DDL, panel de almacenamiento, portabilidad |
 | 1.1 | 2026-10-26 | Revisión experta: 6 permisos (`baja` para eliminar, `edicion` para proteger), protección acotada del `pre_restauracion`, reemplazo total con rollback automático, `backups:recuperar` + shutdown handler, slug estable `BACKUP_APP_SLUG`, gráfico por tamaño de archivo en lugar de serie acumulada |
 | 1.2 | 2026-10-27 | Implementación: redirect a `backups.index` con flash en lugar de logout forzado tras restaurar (§13.6), historial de eventos por backup vía `GET /backups/{backup}/eventos` (§12.2), `backups:recuperar --limpiar` y códigos de salida de los comandos (§19), corrección del ejemplo de vencimiento mensual día 31 (§9.2), inventario real de archivos y estado de la implementación (§26) |
+| 1.3 | 2026-10-27 | Corrección del error `Can't create TCP/IP socket (10106)` al generar backups desde la pantalla: `App\Support\EntornoProceso` completa `SystemRoot`/`PATH` en los procesos de `mysqldump`/`mysql`; fila nueva en §23, inventario y test de regresión |
