@@ -1,12 +1,14 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { TramiteForm, type TramiteAreaOption } from '@/components/features/tramites/TramiteForm';
+import type { SecuenciasPorArea } from '@/types/tramites';
 
 interface CreateProps {
     areas: { data: (TramiteAreaOption & { predeterminada?: boolean })[] };
+    secuencias?: SecuenciasPorArea;
 }
 
-export default function TramitesCreate({ areas }: CreateProps) {
+export default function TramitesCreate({ areas, secuencias }: CreateProps) {
     const areaPredeterminada = areas.data.find((area) => area.predeterminada) ?? areas.data[0];
 
     const form = useForm({
@@ -23,7 +25,7 @@ export default function TramitesCreate({ areas }: CreateProps) {
             <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Nuevo Trámite</h2>
 
             <Card>
-                <TramiteForm form={form} areas={areas.data} submitUrl="/tramites" />
+                <TramiteForm form={form} areas={areas.data} secuencias={secuencias} submitUrl="/tramites" />
             </Card>
         </div>
     );

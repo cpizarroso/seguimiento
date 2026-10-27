@@ -36,6 +36,7 @@ export default function TramitesEdit({ tramite, areas }: EditProps) {
                     submitUrl={`/tramites/${tramite.id}`}
                     method="put"
                     submitLabel="Actualizar"
+                    numeroAsignado={tramite.numero_completo}
                     onCancel={() => window.history.back()}
                 />
             </Card>

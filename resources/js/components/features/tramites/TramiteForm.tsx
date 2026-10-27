@@ -2,6 +2,7 @@ import type { InertiaForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import type { SecuenciasPorArea } from '@/types/tramites';
 
 export interface TramiteAreaOption {
     id: number;
@@ -24,6 +25,10 @@ interface TramiteFormProps {
     submitLabel?: string;
     onSuccess?: () => void;
     onCancel?: () => void;
+    /** Secuencias vigentes por área; solo se usa al crear un trámite. */
+    secuencias?: SecuenciasPorArea;
+    /** Número ya asignado al trámite; solo se usa al editar. */
+    numeroAsignado?: string;
 }
 
 export function TramiteForm({
@@ -34,8 +39,27 @@ export function TramiteForm({
     submitLabel = 'Guardar',
     onSuccess,
     onCancel,
+    secuencias,
+    numeroAsignado,
 }: TramiteFormProps) {
     const { data, setData, post, put, processing, errors } = form;
+
+    const secuencia = secuencias?.[String(data.area_id)];
+    const numeroInfo = numeroAsignado
+        ? {
+            rotulo: 'N° de trámite',
+            principal: numeroAsignado,
+            secundario: null as string | null,
+            nota: 'Número asignado a este trámite.',
+        }
+        : secuencia
+            ? {
+                rotulo: 'Próximo N° de trámite',
+                principal: secuencia.numero_completo,
+                secundario: secuencia.ultimo_completo ? `Último emitido: ${secuencia.ultimo_completo}` : null,
+                nota: 'El número se asigna al guardar.',
+            }
+            : null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,6 +76,31 @@ export function TramiteForm({
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {numeroInfo && (
+                    <div
+                        id="tramite-numero"
+                        aria-live="polite"
+                        className="rounded-lg border border-excel-border bg-excel-surface-2 px-3 py-2.5 dark:border-gray-700 dark:bg-gray-800/60 sm:col-span-2"
+                    >
+                        <div className="flex flex-wrap items-baseline justify-between gap-1">
+                            <span className="text-xs font-semibold text-excel-muted dark:text-gray-300">
+                                {numeroInfo.rotulo}
+                            </span>
+                            <span className="font-mono text-sm font-semibold text-excel-text dark:text-white">
+                                {numeroInfo.principal}
+                            </span>
+                        </div>
+                        {numeroInfo.secundario && (
+                            <p className="mt-0.5 text-xs text-excel-muted dark:text-gray-400">
+                                {numeroInfo.secundario}
+                            </p>
+                        )}
+                        <p className="mt-0.5 text-xs italic text-excel-muted dark:text-gray-400">
+                            {numeroInfo.nota}
+                        </p>
+                    </div>
+                )}
+
                 <Select
                     label="Área"
                     required

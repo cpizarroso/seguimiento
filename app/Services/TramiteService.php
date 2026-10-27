@@ -172,9 +172,8 @@ class TramiteService
 
         if (! in_array($sort, $columnas, true)) {
             return $query
-                ->orderBy('areas.codigo')
-                ->orderBy('tramites.year')
-                ->orderBy('tramites.numero_tramite');
+                ->orderByDesc('tramites.created_at')
+                ->orderBy('tramites.id');
         }
 
         if ($sort === 'area') {

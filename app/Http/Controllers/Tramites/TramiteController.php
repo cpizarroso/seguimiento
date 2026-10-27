@@ -13,6 +13,7 @@ use App\Models\Area;
 use App\Models\Tramite;
 use App\Models\User;
 use App\Services\AreaService;
+use App\Services\ContadorTramiteService;
 use App\Services\DerivacionService;
 use App\Services\TramiteService;
 use App\Services\UserService;
@@ -30,6 +31,7 @@ class TramiteController extends Controller
         private readonly AreaService $areaService,
         private readonly DerivacionService $derivacionService,
         private readonly UserService $userService,
+        private readonly ContadorTramiteService $contadorService,
     ) {}
 
     public function index(): Response
@@ -37,13 +39,15 @@ class TramiteController extends Controller
         $user = request()->user();
         $filtros = $this->filtros();
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
+        $areasCreacion = $this->areasParaCrear($user);
 
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
                 $this->tramiteService->listar($filtros)
             ),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
-            'areasCreacion' => AreaResource::collection($this->areasParaCrear($user)),
+            'areasCreacion' => AreaResource::collection($areasCreacion),
+            'secuencias' => $this->contadorService->secuenciasParaAreas($areasCreacion),
             'destinatarios' => $this->destinatariosDerivacion($user),
         ]);
     }
@@ -91,8 +95,11 @@ class TramiteController extends Controller
 
     public function create(): Response
     {
+        $areas = $this->areasParaCrear(request()->user());
+
         return Inertia::render('Tramites/Create', [
-            'areas' => AreaResource::collection($this->areasParaCrear(request()->user())),
+            'areas' => AreaResource::collection($areas),
+            'secuencias' => $this->contadorService->secuenciasParaAreas($areas),
         ]);
     }
 

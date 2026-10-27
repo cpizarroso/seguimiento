@@ -16,11 +16,13 @@ import { DerivarModal } from '@/components/features/derivaciones/DerivarModal';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { Tramite, PaginatedData, Area } from '@/types/generated/Tramite';
 import type { DestinatarioDerivacion } from '@/types/derivaciones';
+import type { SecuenciasPorArea } from '@/types/tramites';
 
 interface TramitesIndexProps {
     tramites: PaginatedData<Tramite>;
     areas: { data: Area[] };
     areasCreacion?: { data: (Area & { predeterminada?: boolean })[] };
+    secuencias?: SecuenciasPorArea;
     destinatarios?: DestinatarioDerivacion[];
 }
 
@@ -38,7 +40,8 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
-const DEFAULT_SORT = 'area';
+const DEFAULT_SORT = 'created_at';
+const DEFAULT_DIRECTION: SortDirection = 'desc';
 
 type FiltroRecepcion = 'todos' | 'por_recepcionar' | 'recepcionados';
 
@@ -76,7 +79,7 @@ const SORTABLE_KEYS = [
     'estado',
 ];
 
-export default function TramitesIndex({ tramites, areas, areasCreacion, destinatarios }: TramitesIndexProps) {
+export default function TramitesIndex({ tramites, areas, areasCreacion, secuencias, destinatarios }: TramitesIndexProps) {
     const { url } = usePage();
     const { auth } = usePage().props;
     const { can } = usePermissions();
@@ -104,12 +107,17 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, destinat
             : 'todos',
     );
     const sortParam = params.get('sort');
-    const [sortBy, setSortBy] = useState(
-        sortParam && SORTABLE_KEYS.includes(sortParam) ? sortParam : DEFAULT_SORT,
-    );
-    const [sortDirection, setSortDirection] = useState<SortDirection>(
-        params.get('direction') === 'desc' ? 'desc' : 'asc',
-    );
+    const sortValido = sortParam !== null && SORTABLE_KEYS.includes(sortParam);
+    const [sortBy, setSortBy] = useState(sortValido ? (sortParam as string) : DEFAULT_SORT);
+    const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+        const directionParam = params.get('direction');
+
+        if (directionParam === 'asc' || directionParam === 'desc') {
+            return directionParam;
+        }
+
+        return sortValido ? 'asc' : DEFAULT_DIRECTION;
+    });
     const [createOpen, setCreateOpen] = useState(false);
 
     const miAreaId = auth.user?.area_id != null ? String(auth.user.area_id) : '';
@@ -164,6 +172,7 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, destinat
     const abrirCreacion = () => {
         createForm.setData('area_id', areaPredeterminada ? String(areaPredeterminada.id) : '');
         createForm.clearErrors();
+        router.reload({ only: ['secuencias'] });
         setCreateOpen(true);
     };
 
@@ -368,7 +377,25 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, destinat
         },
         { key: 'created_at', header: 'Fecha creación', sortable: true, render: (t: Tramite) => t.created_at ?? '—' },
         { key: 'numero_diamante', header: 'N° Diamante', sortable: true, render: (t: Tramite) => resaltar(t.numero_diamante, numeroDiamante) },
-        { key: 'area', header: 'Área', sortable: true, render: (t: Tramite) => resaltar(t.area?.codigo ?? t.area?.nombre, '') },
+        {
+            key: 'area',
+            header: 'Área',
+            sortable: true,
+            render: (t: Tramite) => {
+                if (!t.area) {
+                    return <span className="text-xs text-gray-400 dark:text-gray-500">Sin área</span>;
+                }
+
+                return (
+                    <div className="max-w-[220px]">
+                        <div className="truncate text-sm">{resaltar(t.area.nombre, '')}</div>
+                        <div className="text-xs font-medium text-excel-muted dark:text-gray-400">
+                            {t.area.codigo}
+                        </div>
+                    </div>
+                );
+            },
+        },
         {
             key: 'descripcion',
             header: 'Descripción',
@@ -622,6 +649,7 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, destinat
                 <TramiteForm
                     form={createForm}
                     areas={areasCreacionData}
+                    secuencias={secuencias}
                     submitUrl="/tramites"
                     onSuccess={() => {
                         setCreateOpen(false);

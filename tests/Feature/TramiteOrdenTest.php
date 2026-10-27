@@ -5,18 +5,18 @@ use App\Models\Tramite;
 use App\Models\User;
 use App\Services\TramiteService;
 
-it('el listado ordena por código de area, anio y numero de menor a mayor sin priorizar urgentes', function () {
+it('el listado ordena por fecha de creación descendente sin priorizar urgentes', function () {
     $user = User::factory()->create();
     $areaZZ = Area::factory()->create(['nombre' => 'Área Zeta', 'codigo' => 'ZZ']);
     $areaAA = Area::factory()->create(['nombre' => 'Área Alfa', 'codigo' => 'AA']);
 
-    // Urgente con número alto en ZZ: con el orden viejo saldría primero;
-    // con el nuevo debe quedar después de todos los de AA.
+    // Urgente antiguo: debe quedar debajo de los más recientes.
     $urgenteZZ = Tramite::factory()->create([
         'area_id' => $areaZZ->id,
         'year' => 2026,
         'numero_tramite' => 99,
         'urgente' => true,
+        'created_at' => now()->subDays(2),
         'creado_por' => $user->id,
         'derivado_a' => $user->id,
     ]);
@@ -25,6 +25,7 @@ it('el listado ordena por código de area, anio y numero de menor a mayor sin pr
         'year' => 2025,
         'numero_tramite' => 50,
         'urgente' => false,
+        'created_at' => now()->subDays(5),
         'creado_por' => $user->id,
         'derivado_a' => $user->id,
     ]);
@@ -33,6 +34,7 @@ it('el listado ordena por código de area, anio y numero de menor a mayor sin pr
         'year' => 2026,
         'numero_tramite' => 3,
         'urgente' => false,
+        'created_at' => now()->subDay(),
         'creado_por' => $user->id,
         'derivado_a' => $user->id,
     ]);
@@ -41,13 +43,14 @@ it('el listado ordena por código de area, anio y numero de menor a mayor sin pr
         'year' => 2026,
         'numero_tramite' => 27,
         'urgente' => false,
+        'created_at' => now(),
         'creado_por' => $user->id,
         'derivado_a' => $user->id,
     ]);
 
     $ids = app(TramiteService::class)->listar()->getCollection()->pluck('id')->all();
 
-    expect($ids)->toBe([$viejoAA->id, $nuevoChicoAA->id, $nuevoGrandeAA->id, $urgenteZZ->id]);
+    expect($ids)->toBe([$nuevoGrandeAA->id, $nuevoChicoAA->id, $urgenteZZ->id, $viejoAA->id]);
 });
 
 it('ordena por numero de tramite ascendente', function () {
@@ -174,8 +177,8 @@ it('ignora un campo de orden no permitido y mantiene el orden por defecto', func
     $areaAA = Area::factory()->create(['nombre' => 'Área Segura A', 'codigo' => 'SA']);
     $areaZZ = Area::factory()->create(['nombre' => 'Área Segura Z', 'codigo' => 'SZ']);
 
-    $deZZ = Tramite::factory()->create(['area_id' => $areaZZ->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
-    $deAA = Tramite::factory()->create(['area_id' => $areaAA->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
+    $deZZ = Tramite::factory()->create(['area_id' => $areaZZ->id, 'numero_tramite' => 10, 'created_at' => now()->subDay(), 'creado_por' => $user->id, 'derivado_a' => $user->id]);
+    $deAA = Tramite::factory()->create(['area_id' => $areaAA->id, 'numero_tramite' => 20, 'created_at' => now(), 'creado_por' => $user->id, 'derivado_a' => $user->id]);
 
     $ids = app(TramiteService::class)->listar(['sort' => 'descripcion; DROP TABLE tramites', 'direction' => 'desc'])->getCollection()->pluck('id')->all();
 

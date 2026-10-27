@@ -3,13 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const routerGet = vi.fn();
+const routerReload = vi.fn();
 let mockUrl = '/tramites';
 let mockAuthUser: any = { id: 1, name: 'Test', area_id: null };
 
 vi.mock('@inertiajs/react', () => ({
     Link: ({ children, href }: { children: React.ReactNode; href: string }) =>
         React.createElement('a', { href }, children),
-    router: { get: (...args: unknown[]) => routerGet(...args) },
+    router: { get: (...args: unknown[]) => routerGet(...args), reload: (...args: unknown[]) => routerReload(...args) },
     useForm: (initial: unknown) => ({
         data: initial,
         setData: vi.fn(),
@@ -450,7 +451,7 @@ describe('Tramites Index', () => {
         );
     });
 
-    it('al hacer clic en una columna envia el orden y la direccion', () => {
+    it('al hacer clic en la columna activa (fecha de creación) alterna a ascendente', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
         fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
@@ -473,6 +474,25 @@ describe('Tramites Index', () => {
 
         expect(filtros).toEqual(expect.objectContaining({ numero_diamante: '777', sort: 'created_at' }));
         expect(filtros).not.toHaveProperty('descripcion');
+    });
+
+    it('refresca las secuencias al abrir el modal de creacion', () => {
+        render(React.createElement(TramitesIndex, {
+            ...props(),
+            areasCreacion: { data: [{ id: 7, nombre: 'Dirección Legal', codigo: 'DLA', predeterminada: true }] },
+            secuencias: {},
+        } as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Nuevo Trámite' }));
+
+        expect(routerReload).toHaveBeenCalledWith({ only: ['secuencias'] });
+    });
+
+    it('muestra el nombre y el codigo del area del tramite', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        expect(screen.getByText('Dirección Legal')).toBeInTheDocument();
+        expect(screen.getByText('DLA')).toBeInTheDocument();
     });
 
     it('solo habilita el checkbox de los tramites derivables por el usuario', () => {
