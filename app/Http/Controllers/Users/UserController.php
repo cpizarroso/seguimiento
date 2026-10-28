@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Users;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\ResetPasswordRequest;
 use App\Http\Requests\Users\StoreUserRequest;
+use App\Http\Requests\Users\UpdateEstadoUsuarioRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\AreaResource;
 use App\Http\Resources\PersonaResource;
@@ -32,7 +33,7 @@ class UserController extends Controller
         return Inertia::render('Users/Index', [
             'users' => UserResource::collection(
                 $this->userService->listar(
-                    request()->only(['search', 'role_id', 'area_id', 'con_persona', 'per_page'])
+                    request()->only(['search', 'role_id', 'area_id', 'per_page'])
                 )
             ),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
@@ -54,7 +55,14 @@ class UserController extends Controller
     {
         $this->userService->crear($request->validated());
 
-        return to_route('users.index')
+        // Desde la página de creación se vuelve a ella para mostrar el reporte
+        // de acceso conservando el estado del formulario; desde el índice se
+        // recarga el listado y el modal muestra el mismo reporte.
+        $destino = $request->query('desde') === 'create'
+            ? route('users.create')
+            : route('users.index');
+
+        return redirect()->to($destino)
             ->with('success', 'Usuario creado exitosamente.');
     }
 
@@ -102,9 +110,24 @@ class UserController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request, User $user): RedirectResponse
     {
-        $this->userService->resetPassword($user, $request->input('password'));
+        // Si el admin resetea su propia contraseña, conserva la sesión en curso
+        // para no perder el reporte recién generado.
+        $exceptSessionId = $user->is($request->user()) ? $request->session()->getId() : null;
 
-        return to_route('users.show', $user->id)
-            ->with('success', 'Contraseña reseteada exitosamente.');
+        $this->userService->resetPassword($user, $request->input('password'), $exceptSessionId);
+
+        return back()->with('success', 'Contraseña reseteada exitosamente.');
+    }
+
+    public function cambiarEstado(UpdateEstadoUsuarioRequest $request, User $user): RedirectResponse
+    {
+        $activo = $request->boolean('activo');
+
+        $this->userService->cambiarEstado($user, $activo);
+
+        return back()->with(
+            'success',
+            $activo ? 'Usuario activado exitosamente.' : 'Usuario desactivado exitosamente.'
+        );
     }
 }

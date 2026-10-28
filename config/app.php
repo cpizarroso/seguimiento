@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Modo;
+
 return [
 
     /*
@@ -84,7 +86,21 @@ return [
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
-    'user_domain' => env('APP_USER_DOMAIN', 'seguimiento.gob.bo'),
+    'user_domain' => env('APP_USER_DOMAIN', 'seguimiento.com'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Modo de ejecución
+    |--------------------------------------------------------------------------
+    |
+    | Selecciona la base de datos de negocio y el badge de la interfaz.
+    | Valores permitidos: dev, prod, capacitacion.
+    |
+    */
+
+    'modo' => env('SISTEMA_MODO', Modo::DEV),
+
+    'nota_capacitacion' => env('SISTEMA_NOTA_CAPACITACION') ?: null,
 
     /*
     |--------------------------------------------------------------------------

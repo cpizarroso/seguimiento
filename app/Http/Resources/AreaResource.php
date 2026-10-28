@@ -25,7 +25,7 @@ class AreaResource extends JsonResource
             'user_id' => $this->user_id,
             'responsable' => $this->whenLoaded('responsable', fn () => $this->responsable ? [
                 'id' => $this->responsable->id,
-                'name' => $this->responsable->name,
+                'name' => $this->responsable->nombre_completo,
                 'email' => $this->responsable->email,
             ] : null),
             'puestos_count' => $this->whenCounted('puestos'),

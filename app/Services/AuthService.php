@@ -10,18 +10,27 @@ class AuthService
 {
     public function login(array $credentials): User
     {
-        $login = $credentials['email'];
+        $login = mb_strtolower(trim((string) ($credentials['login'] ?? $credentials['email'] ?? '')));
 
-        $user = User::where('email', $login)->first();
+        $user = str_contains($login, '@')
+            ? User::where('email', $login)->first()
+            : User::where('username', $login)->first();
 
+        // Compatibilidad: si no existe el username, se intenta el prefijo
+        // del correo institucional (login histórico por local-part).
         if (! $user && ! str_contains($login, '@')) {
-            $email = $login.'@'.config('app.user_domain');
-            $user = User::where('email', $email)->first();
+            $user = User::where('email', $login.'@'.config('app.user_domain'))->first();
         }
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Las credenciales ingresadas no coinciden con nuestros registros.'],
+                'login' => ['Las credenciales ingresadas no coinciden con nuestros registros.'],
+            ]);
+        }
+
+        if (! $user->activo) {
+            throw ValidationException::withMessages([
+                'login' => ['Tu cuenta está inactiva. Contacta al administrador.'],
             ]);
         }
 

@@ -143,11 +143,12 @@ class TramiteSeeder extends Seeder
             return User::findOrFail($usuario);
         }
 
-        $email = str_contains($usuario, '@')
-            ? $usuario
-            : $usuario.'@'.config('app.user_domain');
+        if (str_contains($usuario, '@')) {
+            return User::where('email', $usuario)->firstOrFail();
+        }
 
-        return User::where('email', $email)->firstOrFail();
+        return User::where('username', $usuario)->first()
+            ?? User::where('email', $usuario.'@'.config('app.user_domain'))->firstOrFail();
     }
 
     private function crearTramite(array $t, array $areaIds, ?User $usuarioFijo = null): Tramite

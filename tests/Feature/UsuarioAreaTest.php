@@ -25,12 +25,3 @@ it('el area es nula cuando la persona no tiene puesto vigente', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('auth.user.area', null));
 });
-
-it('el area es nula cuando el usuario no tiene persona', function () {
-    $user = User::factory()->create(['persona_id' => null]);
-
-    $this->actingAs($user)
-        ->get(route('tramites.index'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('auth.user.area', null));
-});

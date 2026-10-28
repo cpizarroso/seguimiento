@@ -36,7 +36,7 @@ class BackupController extends Controller
 
         return Inertia::render('Backups/Index', [
             'backups' => BackupResource::collection(
-                Backup::with('user')->latest('created_at')->latest('id')->limit(100)->get()
+                Backup::with('user.persona')->latest('created_at')->latest('id')->limit(100)->get()
             ),
             'espacio' => $this->espacio->datos(),
             'automatizacion' => [
@@ -52,7 +52,7 @@ class BackupController extends Controller
                 'proxima_ejecucion' => $config['proxima_ejecucion']?->format('d/m/Y H:i'),
                 'habilitado_en' => $config['habilitado_en']?->format('d/m/Y H:i'),
             ],
-            'historial' => BackupEvento::with('user')
+            'historial' => BackupEvento::with('user.persona')
                 ->latest('created_at')
                 ->latest('id')
                 ->limit(50)
@@ -61,7 +61,7 @@ class BackupController extends Controller
                     'id' => $evento->id,
                     'backup_nombre' => $evento->backup_nombre,
                     'accion' => $evento->accion,
-                    'usuario' => $evento->user?->name ?? 'Sistema',
+                    'usuario' => $evento->user?->nombre_completo ?? 'Sistema',
                     'ip' => $evento->ip,
                     'detalle' => $evento->detalle,
                     'fecha' => $evento->created_at?->format('d/m/Y H:i:s'),
@@ -85,7 +85,7 @@ class BackupController extends Controller
 
     public function eventos(Backup $backup): JsonResponse
     {
-        $eventos = BackupEvento::with('user')
+        $eventos = BackupEvento::with('user.persona')
             ->where('backup_id', $backup->id)
             ->orWhere(function ($query) use ($backup): void {
                 $query->whereNull('backup_id')->where('backup_nombre', $backup->nombre);
@@ -98,7 +98,7 @@ class BackupController extends Controller
                 'id' => $evento->id,
                 'backup_nombre' => $evento->backup_nombre,
                 'accion' => $evento->accion,
-                'usuario' => $evento->user?->name ?? 'Sistema',
+                'usuario' => $evento->user?->nombre_completo ?? 'Sistema',
                 'ip' => $evento->ip,
                 'detalle' => $evento->detalle,
                 'fecha' => $evento->created_at?->format('d/m/Y H:i:s'),

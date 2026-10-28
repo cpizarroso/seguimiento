@@ -14,18 +14,33 @@ class StoreUserRequest extends FormRequest
         return $this->user()?->hasPermission('usuarios', 'creacion') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'username' => $this->filled('username') ? mb_strtolower(trim((string) $this->input('username'))) : null,
+            'email' => $this->filled('email') ? mb_strtolower(trim((string) $this->input('email'))) : null,
+        ]);
+    }
+
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:50', 'regex:/^[a-z0-9._-]+$/', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'profesion' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:5'],
             'persona_id' => ['required', 'exists:personas,id', 'unique:users,persona_id'],
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
             ...$this->reglasAreasHabilitadas(),
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'username.regex' => 'El usuario solo puede contener letras minúsculas, números, puntos, guiones y guiones bajos.',
+            'username.unique' => 'Ese nombre de usuario ya está en uso.',
+            'persona_id.unique' => 'La persona seleccionada ya tiene un usuario vinculado.',
         ];
     }
 }

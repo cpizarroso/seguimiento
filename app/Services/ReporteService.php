@@ -22,7 +22,10 @@ class ReporteService
      */
     public function ingresadosQuery(?int $areaId, array $filtros = []): Builder
     {
-        $query = Tramite::with('creador:id,name');
+        $query = Tramite::with([
+            'creador:id,persona_id,username,email',
+            'creador.persona:id,nombres,apellidos',
+        ]);
 
         if ($areaId === null) {
             return $query->whereRaw('0 = 1');
@@ -151,17 +154,20 @@ class ReporteService
 
     public function tramitesPorUsuario(?int $userId = null): array
     {
-        $query = User::query()
-            ->selectRaw('users.id, users.name, COUNT(CASE WHEN tramites.estado != \'finalizado\' THEN 1 END) as total')
-            ->leftJoin('tramites', 'tramites.creado_por', '=', 'users.id')
-            ->groupBy('users.id', 'users.name')
-            ->orderByDesc('total');
-
-        if ($userId) {
-            $query->where('users.id', $userId);
-        }
-
-        return $query->get()->toArray();
+        return User::query()
+            ->with('persona:id,nombres,apellidos')
+            ->withCount([
+                'tramitesCreados as total' => fn (Builder $query) => $query->where('estado', '!=', 'finalizado'),
+            ])
+            ->when($userId, fn ($query) => $query->where('users.id', $userId))
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->nombre_completo,
+                'total' => (int) $user->total,
+            ])
+            ->toArray();
     }
 
     public function tramitesUrgentes(?int $userId = null): array

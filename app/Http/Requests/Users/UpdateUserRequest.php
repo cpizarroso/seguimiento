@@ -15,18 +15,51 @@ class UpdateUserRequest extends FormRequest
         return $this->user()?->hasPermission('usuarios', 'edicion') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'username' => $this->filled('username') ? mb_strtolower(trim((string) $this->input('username'))) : null,
+            'email' => $this->filled('email') ? mb_strtolower(trim((string) $this->input('email'))) : null,
+        ]);
+    }
+
     public function rules(): array
     {
+        $userId = $this->route('user')->id ?? $this->route('user');
+
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'profesion' => ['nullable', 'string', 'max:255'],
+            'username' => [
+                'required',
+                'string',
+                'max:50',
+                'regex:/^[a-z0-9._-]+$/',
+                Rule::unique('users', 'username')->ignore($userId),
+            ],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($userId),
+            ],
             'password' => ['nullable', 'string', 'min:5'],
-            'persona_id' => ['required', 'exists:personas,id', Rule::unique('users', 'persona_id')->ignore($this->route('user'))],
+            'persona_id' => [
+                'required',
+                'exists:personas,id',
+                Rule::unique('users', 'persona_id')->ignore($userId),
+            ],
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
             ...$this->reglasAreasHabilitadas(),
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'username.regex' => 'El usuario solo puede contener letras minúsculas, números, puntos, guiones y guiones bajos.',
+            'username.unique' => 'Ese nombre de usuario ya está en uso.',
+            'persona_id.unique' => 'La persona seleccionada ya tiene un usuario vinculado.',
         ];
     }
 }

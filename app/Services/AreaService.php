@@ -296,7 +296,7 @@ class AreaService
                 'user_id' => $a->user_id,
                 'responsable' => $a->responsable ? [
                     'id' => $a->responsable->id,
-                    'name' => $a->responsable->name,
+                    'name' => $a->responsable->nombre_completo,
                     'email' => $a->responsable->email,
                 ] : null,
                 'puestos_count' => $a->puestos->count(),

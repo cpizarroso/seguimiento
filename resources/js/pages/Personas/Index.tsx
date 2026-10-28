@@ -141,7 +141,7 @@ export default function PersonasIndex({ personas, areas, puestos, filters }: Per
             key: 'usuario',
             header: 'Usuario',
             render: (persona) => persona.user
-                ? <Badge variant="info">{persona.user.email}</Badge>
+                ? <Badge variant="info">@{persona.user.username}</Badge>
                 : <span className="text-xs text-gray-400">Sin usuario</span>,
         },
         {
@@ -294,10 +294,14 @@ export default function PersonasIndex({ personas, areas, puestos, filters }: Per
                             <div><span className="text-gray-500">CI:</span> {verPersona.ci}</div>
                             <div><span className="text-gray-500">Teléfono:</span> {verPersona.telefono ?? '—'}</div>
                             <div><span className="text-gray-500">Correo:</span> {verPersona.correo ?? '—'}</div>
+                            <div><span className="text-gray-500">Profesión:</span> {verPersona.profesion ?? '—'}</div>
                             <div><span className="text-gray-500">Dirección:</span> {verPersona.direccion ?? '—'}</div>
                             <div><span className="text-gray-500">Área:</span> {verPersona.area?.nombre ?? '—'}</div>
                             <div><span className="text-gray-500">Puesto vigente:</span> {verPersona.puesto_activo?.puesto?.nombre ?? '—'}</div>
-                            <div><span className="text-gray-500">Usuario:</span> {verPersona.user?.email ?? 'Sin usuario'}</div>
+                            <div>
+                                <span className="text-gray-500">Usuario:</span>{' '}
+                                {verPersona.user ? `@${verPersona.user.username} · ${verPersona.user.email}` : 'Sin usuario'}
+                            </div>
                             <div><span className="text-gray-500">Estado:</span> {verPersona.activo ? 'Activa' : 'Inactiva'}</div>
                         </div>
 

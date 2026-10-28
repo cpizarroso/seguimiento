@@ -19,14 +19,13 @@ class UserSecretariaSeeder extends Seeder
         $ericka = User::updateOrCreate(
             ['email' => $email],
             [
-                'name' => $persona?->nombre_completo ?? 'Erika Rodriguez',
+                'username' => 'erodriguez',
                 'password' => bcrypt('password'),
-                'role' => 'secretaria',
                 'persona_id' => $persona?->id,
             ]
         );
 
-        $rolId = Rol::where('slug', $ericka->role)->value('id');
+        $rolId = Rol::where('slug', 'secretaria')->value('id');
 
         if ($rolId !== null) {
             $ericka->roles()->sync([$rolId]);

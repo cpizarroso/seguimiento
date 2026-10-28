@@ -70,6 +70,7 @@ const persona: Persona = {
     ci: '1234567',
     telefono: '70000000',
     correo: 'erodriguez@ejemplo.gob.bo',
+    profesion: 'Abogada',
     direccion: 'La Paz',
     activo: true,
     puesto_activo: {
@@ -82,7 +83,7 @@ const persona: Persona = {
         vigente: true,
     },
     area: { id: 1, nombre: 'Dirección Legal', codigo: 'DLA' },
-    user: { id: 3, name: 'Erika Rodriguez', email: 'erodriguez@ejemplo.gob.bo' },
+    user: { id: 3, username: 'erodriguez', email: 'erodriguez@ejemplo.gob.bo' },
     historial_puestos: [
         {
             id: 20,

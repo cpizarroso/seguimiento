@@ -11,6 +11,13 @@ vi.mock('@inertiajs/react', () => ({
             auth: {
                 user: { name: 'Ana Pérez', email: 'ana@ejemplo.gob.bo', puesto: 'Jefa de área' },
             },
+            sistema: {
+                modo: 'dev',
+                entorno: 'local',
+                etiqueta: 'Desarrollo',
+                variante: 'info',
+                nota: null,
+            },
         },
     }),
 }));
@@ -18,6 +25,12 @@ vi.mock('@inertiajs/react', () => ({
 import { Header } from '@/components/layout/Header';
 
 describe('Header', () => {
+    it('muestra el badge del modo de ejecución', () => {
+        render(React.createElement(Header, { onMenuClick: vi.fn() }));
+
+        expect(screen.getByText('Desarrollo')).toBeInTheDocument();
+    });
+
     it('muestra Mi Perfil y Cerrar sesión en el menú del usuario', () => {
         render(React.createElement(Header, { onMenuClick: vi.fn() }));
 

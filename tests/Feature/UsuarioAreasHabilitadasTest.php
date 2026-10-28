@@ -16,13 +16,23 @@ beforeEach(function () {
 function payloadUsuario(Persona $persona, array $overrides = []): array
 {
     return array_merge([
-        'name' => 'Usuario de Prueba',
+        'username' => 'usuario.prueba',
         'email' => 'usuario.prueba@ejemplo.gob.bo',
         'password' => 'secret123',
         'persona_id' => $persona->id,
         'role_ids' => [],
     ], $overrides);
 }
+
+it('exige una persona al crear un usuario', function () {
+    $this->actingAs($this->admin)->post(route('users.store'), [
+        'username' => 'sin.persona',
+        'email' => 'sin.persona@ejemplo.gob.bo',
+        'password' => 'secret123',
+    ])->assertSessionHasErrors('persona_id');
+
+    $this->assertDatabaseMissing('users', ['username' => 'sin.persona']);
+});
 
 it('crea un usuario con areas habilitadas y una predeterminada', function () {
     $persona = Persona::factory()->create();
@@ -70,7 +80,7 @@ it('actualiza las areas habilitadas y mueve la predeterminada', function () {
     $user->areasHabilitadas()->sync([$areaA->id => ['predeterminada' => true]]);
 
     $this->actingAs($this->admin)->put(route('users.update', $user), payloadUsuario($persona, [
-        'name' => $user->name,
+        'username' => $user->username,
         'email' => $user->email,
         'password' => '',
         'area_ids' => [$areaB->id, $areaC->id],
@@ -107,7 +117,7 @@ it('solo muestra las areas habilitadas al crear un tramite', function () {
     $areaNoHabilitada = crearArea('OTR');
 
     $persona = Persona::factory()->create();
-    $user = User::factory()->create(['persona_id' => $persona->id, 'role' => 'secretaria']);
+    $user = User::factory()->create(['persona_id' => $persona->id]);
     $user->roles()->sync([$secretaria->id]);
     $user->areasHabilitadas()->sync([$areaHabilitada->id => ['predeterminada' => true]]);
 
@@ -127,7 +137,7 @@ it('restringe la creacion de tramites a las areas habilitadas', function () {
     $areaNoHabilitada = crearArea('OTR');
 
     $persona = Persona::factory()->create();
-    $user = User::factory()->create(['persona_id' => $persona->id, 'role' => 'secretaria']);
+    $user = User::factory()->create(['persona_id' => $persona->id]);
     $user->roles()->sync([$secretaria->id]);
     $user->areasHabilitadas()->sync([$areaHabilitada->id => ['predeterminada' => true]]);
 
@@ -151,7 +161,7 @@ it('restringe la creacion de tramites a las areas habilitadas', function () {
 it('un usuario sin areas habilitadas no puede crear tramites', function () {
     $secretaria = Rol::where('slug', 'secretaria')->first();
     $persona = Persona::factory()->create();
-    $user = User::factory()->create(['persona_id' => $persona->id, 'role' => 'secretaria']);
+    $user = User::factory()->create(['persona_id' => $persona->id]);
     $user->roles()->sync([$secretaria->id]);
     $area = crearArea('AAA');
 

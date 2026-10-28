@@ -74,12 +74,13 @@ export interface Persona {
     nombre_completo: string;
     ci: string;
     telefono: string | null;
-    correo: string | null;
+    correo: string;
+    profesion: string | null;
     direccion: string | null;
     activo: boolean;
     puesto_activo: PersonaPuesto | null;
     area: { id: number; nombre: string; codigo: string } | null;
-    user: { id: number; name: string; email: string } | null;
+    user: { id: number; username: string; email: string } | null;
     historial_puestos?: PersonaPuesto[];
     created_at?: string;
 }

@@ -10,6 +10,21 @@
     <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png">
     <link rel="manifest" href="/favicon/site.webmanifest">
     <meta name="theme-color" content="#107C41">
+    <script>
+        // Aplica el tema guardado antes del primer pintado para evitar el destello claro.
+        (function () {
+            try {
+                var guardado = localStorage.getItem('theme');
+                var oscuro = guardado === 'dark'
+                    || (guardado !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+                if (oscuro) {
+                    document.documentElement.classList.add('dark');
+                    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#111111');
+                }
+            } catch (e) {}
+        })();
+    </script>
     @viteReactRefresh
     @vite(['resources/js/app.tsx'])
     @inertiaHead

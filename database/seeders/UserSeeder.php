@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
             ]);
 
             $user = User::factory()->create([
-                'name' => $persona->nombre_completo,
+                'username' => User::usernameDesdeEmail($persona->correo),
                 'email' => $persona->correo,
                 'persona_id' => $persona->id,
             ]);

@@ -17,12 +17,11 @@ class UserResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $this->nombre_completo,
+            'username' => $this->username,
             'email' => $this->email,
-            'phone' => $this->phone,
-            'profesion' => $this->profesion,
-            'role' => $this->role,
             'persona_id' => $this->persona_id,
+            'activo' => (bool) $this->activo,
             'persona' => $this->whenLoaded('persona', fn () => $persona ? new PersonaResource($persona) : null),
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->map(fn (Rol $r) => [
                 'id' => $r->id,

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\ContadorTramite;
-use App\Models\Rol;
 use App\Models\Tramite;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -80,31 +79,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ActuacionSeeder::class);
 
-        $this->sincronizarRoles();
-
         $this->sincronizarAreasHabilitadas();
 
         $this->sincronizarContadores();
-    }
-
-    private function sincronizarRoles(): void
-    {
-        $adminRol = Rol::where('slug', 'admin')->first();
-        $userRol = Rol::where('slug', 'user')->first();
-        $secretariaRol = Rol::where('slug', 'secretaria')->first();
-        $jefeRol = Rol::where('slug', 'jefe')->first();
-
-        foreach (User::all() as $u) {
-            $rolId = match ($u->role) {
-                'admin' => $adminRol?->id,
-                'secretaria' => $secretariaRol?->id,
-                'jefe' => $jefeRol?->id,
-                default => $userRol?->id,
-            };
-            if ($rolId) {
-                $u->roles()->sync([$rolId]);
-            }
-        }
     }
 
     private function sincronizarAreasHabilitadas(): void

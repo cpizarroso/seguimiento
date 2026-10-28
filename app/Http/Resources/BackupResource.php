@@ -27,7 +27,7 @@ class BackupResource extends JsonResource
             'tamano_mb' => $this->tamano_mb,
             'hash_sha256' => $this->hash_sha256,
             'error' => $this->error,
-            'autor' => $this->whenLoaded('user', fn () => $this->user?->name ?? 'Sistema'),
+            'autor' => $this->whenLoaded('user', fn () => $this->user?->nombre_completo ?? 'Sistema'),
             'autor_id' => $this->user_id,
             'creado_en' => $this->created_at?->format('d/m/Y H:i'),
             'creado_iso' => $this->created_at?->toIso8601String(),

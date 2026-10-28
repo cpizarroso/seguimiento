@@ -23,6 +23,7 @@ class PersonaResource extends JsonResource
             'ci' => $this->ci,
             'telefono' => $this->telefono,
             'correo' => $this->correo,
+            'profesion' => $this->profesion,
             'direccion' => $this->direccion,
             'activo' => (bool) $this->activo,
             'puesto_activo' => $this->whenLoaded('puestoActivo', fn () => $this->puestoActivo ? new PersonaPuestoResource($this->puestoActivo) : null),
@@ -33,7 +34,7 @@ class PersonaResource extends JsonResource
             ] : null),
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
-                'name' => $this->user->name,
+                'username' => $this->user->username,
                 'email' => $this->user->email,
             ] : null),
             'historial_puestos' => $this->whenLoaded('historialPuestos', fn () => PersonaPuestoResource::collection($this->historialPuestos)),

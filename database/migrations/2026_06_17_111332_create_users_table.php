@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('profesion', 255)->nullable();
             $table->string('cargo', 255)->nullable();
             $table->foreignId('persona_id')->nullable()->unique();
+            $table->boolean('activo')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

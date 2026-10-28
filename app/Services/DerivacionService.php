@@ -168,7 +168,7 @@ class DerivacionService
 
                 return [
                     'user_id' => $usuario->id,
-                    'name' => $usuario->name,
+                    'name' => $usuario->nombre_completo,
                     'persona' => trim($persona->nombres.' '.$persona->apellidos),
                     'area_id' => $area->id,
                     'area_codigo' => $area->codigo,

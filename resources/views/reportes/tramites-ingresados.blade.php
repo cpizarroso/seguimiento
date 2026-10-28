@@ -46,7 +46,7 @@
                 <tr>
                     <td class="center" style="font-size: 18px; font-weight: bold; font-family: Courier, monospace;">{{ $tramite->numero_tramite }}</td>
                     <td class="center">{{ $tramite->year }}</td>
-                    <td>{{ $tramite->creador?->name ?? '—' }}</td>
+                    <td>{{ $tramite->creador?->nombre_completo ?? '—' }}</td>
                     <td class="center">{{ $tramite->urgente ? 'Sí' : 'No' }}</td>
                     <td>{{ $tramite->created_at?->format('d/m/Y H:i') }}</td>
                     <td>{{ $tramite->numero_diamante ?? '—' }}</td>

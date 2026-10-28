@@ -14,28 +14,24 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
+        $dominio = (string) config('app.user_domain');
+
         $admins = [
             [
-                'name' => 'Admin',
-                'email' => 'admin@seguimiento.gob.bo',
-                'role' => 'admin',
+                'email' => 'admin@'.$dominio,
                 'persona' => ['nombres' => 'Carlos', 'apellidos' => 'Mendoza López', 'ci' => '1000001', 'correo' => 'cmendoza@ejemplo.gob.bo'],
                 'area' => 'DLA',
                 'puesto' => 'JEFE',
             ],
             [
-                'name' => 'Alfredo Montoya Calderón',
-                'email' => 'amontoya@seguimiento.gob.bo',
-                'role' => 'admin',
-                'persona' => ['nombres' => 'Alfredo', 'apellidos' => 'Montoya Calderón', 'ci' => '2000001', 'correo' => 'amontoya@seguimiento.gob.bo'],
+                'email' => 'amontoya@'.$dominio,
+                'persona' => ['nombres' => 'Alfredo', 'apellidos' => 'Montoya Calderón', 'ci' => '2000001', 'correo' => 'amontoya@'.$dominio],
                 'area' => 'SEMPLA',
                 'puesto' => 'JEFE',
             ],
             [
-                'name' => 'Cristian Marcelo Pizarroso Peredo',
-                'email' => 'cpizarroso@seguimiento.gob.bo',
-                'role' => 'admin',
-                'persona' => ['nombres' => 'Cristian Marcelo', 'apellidos' => 'Pizarroso Peredo', 'ci' => '2000002', 'correo' => 'cpizarroso@seguimiento.gob.bo'],
+                'email' => 'cpizarroso@'.$dominio,
+                'persona' => ['nombres' => 'Cristian Marcelo', 'apellidos' => 'Pizarroso Peredo', 'ci' => '2000002', 'correo' => 'cpizarroso@'.$dominio],
                 'area' => 'SEMPLA',
                 'puesto' => 'PROFESIONAL',
             ],
@@ -47,9 +43,8 @@ class AdminUserSeeder extends Seeder
             $user = User::updateOrCreate(
                 ['email' => $data['email']],
                 [
-                    'name' => $data['name'],
+                    'username' => User::usernameDesdeEmail($data['email']),
                     'password' => bcrypt('password'),
-                    'role' => $data['role'],
                     'persona_id' => $persona->id,
                 ]
             );

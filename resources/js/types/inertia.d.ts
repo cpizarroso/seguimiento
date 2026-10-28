@@ -1,11 +1,12 @@
 import '@inertiajs/core';
+import type { SistemaInfo } from '@/types/sistema';
 
 interface AuthUser {
     id: number;
     name: string;
+    username: string;
     email: string;
-    role: string;
-    persona_id: number | null;
+    persona_id: number;
     puesto?: string | null;
     area?: string | null;
     area_id?: number | null;
@@ -18,6 +19,9 @@ declare module '@inertiajs/core' {
             auth: {
                 user: AuthUser | null;
             };
+            sistema: SistemaInfo;
+            /** Dominio con el que se construye el email de acceso (APP_USER_DOMAIN). */
+            dominio_usuario: string;
         };
         flashDataType: {
             success?: string;

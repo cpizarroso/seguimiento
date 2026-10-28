@@ -21,6 +21,7 @@ export function PersonaFormModal({ open, onClose, persona, areas, puestos }: Per
         ci: '',
         telefono: '',
         correo: '',
+        profesion: '',
         direccion: '',
         activo: true,
         area_id: '' as string,
@@ -39,6 +40,7 @@ export function PersonaFormModal({ open, onClose, persona, areas, puestos }: Per
             ci: persona?.ci ?? '',
             telefono: persona?.telefono ?? '',
             correo: persona?.correo ?? '',
+            profesion: persona?.profesion ?? '',
             direccion: persona?.direccion ?? '',
             activo: persona?.activo ?? true,
             area_id: puestoActivo?.area_id ? String(puestoActivo.area_id) : (persona?.area?.id ? String(persona.area.id) : ''),
@@ -82,7 +84,8 @@ export function PersonaFormModal({ open, onClose, persona, areas, puestos }: Per
             apellidos: data.apellidos,
             ci: data.ci,
             telefono: data.telefono || null,
-            correo: data.correo || null,
+            correo: data.correo,
+            profesion: data.profesion || null,
             direccion: data.direccion || null,
             activo: data.activo,
             puesto_id: data.puesto_id ? Number(data.puesto_id) : null,
@@ -140,9 +143,16 @@ export function PersonaFormModal({ open, onClose, persona, areas, puestos }: Per
                     <Input
                         label="Correo electrónico"
                         type="email"
+                        required
                         value={form.data.correo}
                         onChange={(event) => form.setData('correo', event.target.value)}
                         error={form.errors.correo}
+                    />
+                    <Input
+                        label="Profesión"
+                        value={form.data.profesion}
+                        onChange={(event) => form.setData('profesion', event.target.value)}
+                        error={form.errors.profesion}
                     />
                     <Input
                         label="Dirección"

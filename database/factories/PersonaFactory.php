@@ -20,6 +20,7 @@ class PersonaFactory extends Factory
             'ci' => fake()->unique()->numerify('########'),
             'telefono' => fake()->optional()->phoneNumber(),
             'correo' => fake()->unique()->safeEmail(),
+            'profesion' => fake()->optional()->jobTitle(),
             'direccion' => fake()->optional()->address(),
             'activo' => true,
         ];

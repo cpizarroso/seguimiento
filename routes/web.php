@@ -135,6 +135,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserController::class);
         Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])
             ->name('users.reset-password');
+        Route::put('users/{user}/estado', [UserController::class, 'cambiarEstado'])
+            ->name('users.estado.update');
     });
 
     Route::middleware('permission:roles')->group(function () {

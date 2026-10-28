@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { BadgeEntorno } from '@/components/features/sistema/BadgeEntorno';
 import { Icon } from '@/components/ui/Icon';
 
 interface HeaderProps {
@@ -74,9 +75,8 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
 
             <div className="flex items-center gap-2.5">
-                <div className="hidden items-center gap-1.5 rounded-full border border-excel-border bg-excel-surface-2 px-2.5 py-1 text-[11px] font-medium text-excel-muted dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 sm:flex">
-                    <span className="h-1.5 w-1.5 rounded-full bg-excel-green" />
-                    En línea
+                <div className="hidden sm:block">
+                    <BadgeEntorno />
                 </div>
 
                 <div className="relative" ref={menuRef}>

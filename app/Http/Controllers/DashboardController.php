@@ -23,7 +23,15 @@ class DashboardController extends Controller
             'tramites_por_usuario' => $this->reporteService->tramitesPorUsuario(),
             'tramites_por_area' => $this->reporteService->tramitesPorArea($usuarioId),
             'tramites_urgentes' => $this->reporteService->tramitesUrgentes($usuarioId),
-            'usuarios' => User::orderBy('name')->get(['id', 'name']),
+            'usuarios' => User::query()
+                ->with('persona:id,nombres,apellidos')
+                ->get()
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->nombre_completo,
+                ])
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values(),
             'filtro_usuario_id' => $usuarioId,
         ]);
     }

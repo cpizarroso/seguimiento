@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
@@ -20,13 +21,11 @@ class User extends Authenticatable
     public const ROL_ADMIN = 'admin';
 
     protected $fillable = [
-        'name',
+        'username',
         'email',
-        'phone',
-        'profesion',
         'password',
-        'role',
         'persona_id',
+        'activo',
         'settings',
     ];
 
@@ -40,8 +39,40 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'activo' => 'boolean',
             'settings' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if (blank($user->username) && filled($user->email)) {
+                $user->username = self::usernameDesdeEmail((string) $user->email);
+            }
+        });
+    }
+
+    public static function usernameDesdeEmail(string $email): string
+    {
+        $base = strtolower((string) Str::before($email, '@'));
+        $base = preg_replace('/[^a-z0-9._-]/', '', $base) ?? '';
+        $base = trim($base, '.-_');
+
+        return $base !== '' ? $base : 'usuario';
+    }
+
+    public function getNombreCompletoAttribute(): string
+    {
+        return $this->persona?->nombre_completo ?? $this->email;
+    }
+
+    /**
+     * Alias de compatibilidad para vistas y componentes que ya usaban $user->name.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->nombre_completo;
     }
 
     public function tramitesCreados(): HasMany

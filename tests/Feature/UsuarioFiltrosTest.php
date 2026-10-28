@@ -12,9 +12,15 @@ beforeEach(function () {
     $this->actingAs($this->admin);
 });
 
-it('busca usuarios por nombre y email', function () {
-    crearUsuarioConPuesto(null, ['name' => 'Buscado Uno', 'email' => 'buscado@ejemplo.gob.bo']);
-    User::factory()->create(['name' => 'Otro Usuario', 'email' => 'otro@ejemplo.gob.bo']);
+it('busca usuarios por nombre de la persona, username y email', function () {
+    crearUsuarioConPuesto(null, ['username' => 'buscado', 'email' => 'buscado@ejemplo.gob.bo'], [
+        'nombres' => 'Buscado',
+        'apellidos' => 'Uno',
+    ]);
+    crearUsuarioConPuesto(null, ['username' => 'otro', 'email' => 'otro@ejemplo.gob.bo'], [
+        'nombres' => 'Otro',
+        'apellidos' => 'Usuario',
+    ]);
 
     $this->get(route('users.index', ['search' => 'Buscado']))
         ->assertOk()
@@ -27,10 +33,16 @@ it('busca usuarios por nombre y email', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('users.data', 1)
             ->where('users.data.0.name', 'Otro Usuario'));
+
+    $this->get(route('users.index', ['search' => 'buscado']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.username', 'buscado'));
 });
 
 it('busca usuarios por datos de la persona vinculada', function () {
-    crearUsuarioConPuesto(null, ['name' => 'Cuenta Persona'], [
+    crearUsuarioConPuesto(null, ['username' => 'cuenta.persona'], [
         'nombres' => 'Lucía',
         'apellidos' => 'Fernández',
         'ci' => '8765432',
@@ -46,7 +58,7 @@ it('busca usuarios por datos de la persona vinculada', function () {
 });
 
 it('busca usuarios por la combinacion de nombres y apellidos', function () {
-    crearUsuarioConPuesto(null, ['name' => 'Cuenta Persona'], [
+    crearUsuarioConPuesto(null, ['username' => 'cuenta.persona'], [
         'nombres' => 'Lucía',
         'apellidos' => 'Fernández',
         'ci' => '8765432',
@@ -64,7 +76,7 @@ it('busca usuarios por la combinacion de nombres y apellidos', function () {
 });
 
 it('filtra usuarios por rol', function () {
-    crearUsuarioConPuesto(null, ['name' => 'Sin Rol']);
+    crearUsuarioConPuesto(null, ['username' => 'sin.rol']);
 
     $rolAdmin = Rol::where('slug', 'admin')->first();
 
@@ -79,37 +91,14 @@ it('filtra usuarios por area del puesto vigente de su persona', function () {
     $areaA = crearArea('AAA', 'Área A');
     $areaB = crearArea('BBB', 'Área B');
 
-    crearUsuarioConPuesto($areaA, ['name' => 'Usuario A']);
-    crearUsuarioConPuesto($areaB, ['name' => 'Usuario B']);
+    crearUsuarioConPuesto($areaA, ['username' => 'usuario.a']);
+    crearUsuarioConPuesto($areaB, ['username' => 'usuario.b']);
 
     $this->get(route('users.index', ['area_id' => $areaA->id]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('users.data', 1)
-            ->where('users.data.0.name', 'Usuario A'));
-});
-
-it('filtra usuarios segun su vinculacion con una persona', function () {
-    User::factory()->create(['name' => 'Sin Persona', 'persona_id' => null]);
-    crearUsuarioConPuesto(null, ['name' => 'Con Persona']);
-
-    $this->get(route('users.index', ['con_persona' => '0']))
-        ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('users.data', function ($data) {
-                $nombres = collect($data)->pluck('name');
-
-                return $nombres->contains('Sin Persona') && ! $nombres->contains('Con Persona');
-            }));
-
-    $this->get(route('users.index', ['con_persona' => '1']))
-        ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('users.data', function ($data) {
-                $nombres = collect($data)->pluck('name');
-
-                return $nombres->contains('Con Persona') && ! $nombres->contains('Sin Persona');
-            }));
+            ->where('users.data.0.username', 'usuario.a'));
 });
 
 it('entrega las areas para los filtros del listado', function () {

@@ -16,10 +16,9 @@ interface UserRoleData {
 interface UserProfile {
     id: number;
     name: string;
+    username: string;
     email: string;
-    phone: string | null;
-    profesion: string | null;
-    role: string;
+    persona_id: number;
     roles: UserRoleData[];
     persona: {
         id: number;
@@ -27,7 +26,9 @@ interface UserProfile {
         apellidos: string;
         nombre_completo: string;
         ci: string;
+        telefono: string | null;
         correo: string | null;
+        profesion: string | null;
         activo: boolean;
         area: { id: number; nombre: string; codigo: string } | null;
     } | null;
@@ -102,16 +103,20 @@ export default function ProfileShow({ user }: ProfileProps) {
                         <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
+                        <dt className="text-sm text-gray-500 dark:text-gray-400">Usuario</dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">@{user.username}</dd>
+                    </div>
+                    <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Email</dt>
                         <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.email}</dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Teléfono</dt>
-                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.phone ?? '—'}</dd>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.persona?.telefono ?? '—'}</dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Profesión</dt>
-                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.profesion ?? '—'}</dd>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.persona?.profesion ?? '—'}</dd>
                     </div>
                     <div className="flex justify-between sm:flex-col">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Rol</dt>

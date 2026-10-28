@@ -9,7 +9,7 @@ use Database\Seeders\RolesYPermisosSeeder;
 
 beforeEach(function () {
     $this->seed(RolesYPermisosSeeder::class);
-    $this->admin = User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com']);
+    $this->admin = User::factory()->create(['email' => 'admin@test.com']);
     $this->admin->roles()->sync([Rol::where('slug', 'admin')->first()->id]);
     $this->actingAs($this->admin);
 });
@@ -50,6 +50,7 @@ it('puede crear una persona sin puesto', function () {
         'nombres' => 'Ana',
         'apellidos' => 'Rojas',
         'ci' => '8888888',
+        'correo' => 'arojas@ejemplo.gob.bo',
     ])->assertRedirect(route('personas.index'));
 
     expect(Persona::where('ci', '8888888')->firstOrFail()->puestoActivo)->toBeNull();
@@ -57,7 +58,7 @@ it('puede crear una persona sin puesto', function () {
 
 it('valida campos requeridos al crear', function () {
     $this->post(route('personas.store'), [])
-        ->assertSessionHasErrors(['nombres', 'apellidos', 'ci']);
+        ->assertSessionHasErrors(['nombres', 'apellidos', 'ci', 'correo']);
 });
 
 it('valida cédula única', function () {
@@ -67,7 +68,25 @@ it('valida cédula única', function () {
         'nombres' => 'Test',
         'apellidos' => 'Test',
         'ci' => '1234567',
+        'correo' => 'test-unico@ejemplo.gob.bo',
     ])->assertSessionHasErrors(['ci']);
+});
+
+it('valida correo único y obligatorio', function () {
+    $persona = Persona::factory()->create();
+
+    $this->post(route('personas.store'), [
+        'nombres' => 'Test',
+        'apellidos' => 'Test',
+        'ci' => '7654321',
+        'correo' => $persona->correo,
+    ])->assertSessionHasErrors(['correo']);
+
+    $this->post(route('personas.store'), [
+        'nombres' => 'Test',
+        'apellidos' => 'Test',
+        'ci' => '7654322',
+    ])->assertSessionHasErrors(['correo']);
 });
 
 it('puede actualizar una persona y conservar el puesto si no cambia', function () {
@@ -78,6 +97,7 @@ it('puede actualizar una persona y conservar el puesto si no cambia', function (
         'nombres' => 'Actualizado',
         'apellidos' => $persona->apellidos,
         'ci' => $persona->ci,
+        'correo' => $persona->correo,
         'puesto_id' => $puestoId,
     ])->assertRedirect(route('personas.index'));
 
@@ -161,7 +181,7 @@ it('puede filtrar personas por estado', function () {
             ->where('personas.data.0.nombres', 'Inactiva'));
 });
 
-it('sincroniza el correo de la persona con su usuario vinculado', function () {
+it('no cambia el email de acceso al editar el correo de la persona', function () {
     $persona = crearPersonaConPuesto();
 
     $user = User::factory()->create([
@@ -174,12 +194,10 @@ it('sincroniza el correo de la persona con su usuario vinculado', function () {
         'apellidos' => $persona->apellidos,
         'ci' => $persona->ci,
         'correo' => 'nuevo@ejemplo.gob.bo',
-    ]);
+    ])->assertRedirect(route('personas.index'));
 
-    $this->assertDatabaseHas('users', [
-        'id' => $user->id,
-        'email' => 'nuevo@ejemplo.gob.bo',
-    ]);
+    expect($persona->fresh()->correo)->toBe('nuevo@ejemplo.gob.bo')
+        ->and($user->fresh()->email)->toBe('anterior@ejemplo.gob.bo');
 });
 
 it('no permite acceso a usuarios sin permiso de personas', function () {

@@ -14,6 +14,13 @@ vi.mock('@inertiajs/react', () => ({
     usePage: vi.fn(() => ({
         props: {
             auth: { user: null },
+            sistema: {
+                modo: 'dev',
+                entorno: 'local',
+                etiqueta: 'Desarrollo',
+                variante: 'info',
+                nota: null,
+            },
             errors: {},
         },
     })),

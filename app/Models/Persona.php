@@ -20,6 +20,7 @@ class Persona extends Model
         'ci',
         'telefono',
         'correo',
+        'profesion',
         'direccion',
         'activo',
     ];

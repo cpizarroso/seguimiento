@@ -11,7 +11,7 @@ use Database\Seeders\RolesYPermisosSeeder;
 
 beforeEach(function () {
     $this->seed(RolesYPermisosSeeder::class);
-    $this->admin = User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com']);
+    $this->admin = User::factory()->create(['email' => 'admin@test.com']);
     $this->admin->roles()->sync([Rol::where('slug', 'admin')->first()->id]);
     $this->actingAs($this->admin);
 });

@@ -7,34 +7,35 @@ use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class UserService
 {
     public function listar(array $filtros = []): LengthAwarePaginator
     {
-        return User::with(['persona.puestoActivo.puesto.area', 'roles', 'areasHabilitadas'])
+        return User::query()
+            ->with(['persona.puestoActivo.puesto.area', 'roles', 'areasHabilitadas'])
+            ->leftJoin('personas', 'personas.id', '=', 'users.persona_id')
+            ->select('users.*')
             ->when($filtros['search'] ?? null, function ($q, $v) {
                 $terminos = preg_split('/\s+/', trim($v), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
-                $q->where(function ($query) use ($v, $terminos) {
-                    $query->where(function ($usuario) use ($v) {
-                        $usuario->where('name', 'like', "%{$v}%")
-                            ->orWhere('email', 'like', "%{$v}%")
-                            ->orWhere('phone', 'like', "%{$v}%")
-                            ->orWhere('profesion', 'like', "%{$v}%");
-                    });
+                if ($terminos === []) {
+                    return;
+                }
 
-                    if (! empty($terminos)) {
-                        $query->orWhere(function ($personaQuery) use ($terminos) {
-                            $personaQuery->whereHas('persona', function ($persona) use ($terminos) {
-                                foreach ($terminos as $termino) {
-                                    $persona->where(function ($sub) use ($termino) {
-                                        $sub->where('nombres', 'like', "%{$termino}%")
-                                            ->orWhere('apellidos', 'like', "%{$termino}%")
-                                            ->orWhere('ci', 'like', "%{$termino}%");
-                                    });
-                                }
-                            });
+                $q->where(function ($query) use ($terminos) {
+                    foreach ($terminos as $termino) {
+                        $query->where(function ($sub) use ($termino) {
+                            $sub->where('users.username', 'like', "%{$termino}%")
+                                ->orWhere('users.email', 'like', "%{$termino}%")
+                                ->orWhere('personas.nombres', 'like', "%{$termino}%")
+                                ->orWhere('personas.apellidos', 'like', "%{$termino}%")
+                                ->orWhere('personas.ci', 'like', "%{$termino}%")
+                                ->orWhere('personas.correo', 'like', "%{$termino}%")
+                                ->orWhere('personas.telefono', 'like', "%{$termino}%")
+                                ->orWhere('personas.profesion', 'like', "%{$termino}%");
                         });
                     }
                 });
@@ -45,17 +46,9 @@ class UserService
             ->when($filtros['area_id'] ?? null, function ($q, $v) {
                 $q->whereHas('persona.puestoActivo.puesto', fn ($puesto) => $puesto->where('area_id', $v));
             })
-            ->when(
-                isset($filtros['con_persona']) && $filtros['con_persona'] !== '' && $filtros['con_persona'] !== null,
-                function ($q) use ($filtros) {
-                    if (filter_var($filtros['con_persona'], FILTER_VALIDATE_BOOLEAN)) {
-                        $q->whereNotNull('persona_id');
-                    } else {
-                        $q->whereNull('persona_id');
-                    }
-                }
-            )
-            ->orderBy('name')
+            ->orderBy('personas.apellidos')
+            ->orderBy('personas.nombres')
+            ->orderBy('users.email')
             ->paginate(min((int) ($filtros['per_page'] ?? 10), 100));
     }
 
@@ -66,13 +59,10 @@ class UserService
 
         return DB::transaction(function () use ($data, $roleIds) {
             $user = User::create([
-                'name' => $data['name'],
+                'username' => $data['username'] ?? User::usernameDesdeEmail($data['email']),
                 'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'profesion' => $data['profesion'] ?? null,
                 'password' => Hash::make($data['password']),
-                'role' => 'user',
-                'persona_id' => $data['persona_id'] ?? null,
+                'persona_id' => $data['persona_id'],
             ]);
 
             $user->roles()->sync($roleIds);
@@ -89,11 +79,9 @@ class UserService
 
         return DB::transaction(function () use ($user, $data, $roleIds) {
             $updateData = [
-                'name' => $data['name'],
+                'username' => $data['username'] ?? User::usernameDesdeEmail($data['email']),
                 'email' => $data['email'],
-                'phone' => $data['phone'] ?? $user->phone,
-                'profesion' => $data['profesion'] ?? $user->profesion,
-                'persona_id' => $data['persona_id'] ?? $user->persona_id,
+                'persona_id' => $data['persona_id'],
             ];
 
             if (! empty($data['password'])) {
@@ -152,10 +140,11 @@ class UserService
             ->findOrFail($id);
     }
 
-    public function resetPassword(User $user, string $password): void
+    public function resetPassword(User $user, string $password, ?string $exceptSessionId = null): void
     {
         $user->update([
             'password' => Hash::make($password),
+            'remember_token' => Str::random(60),
         ]);
 
         Reseteo::create([
@@ -164,6 +153,42 @@ class UserService
         ]);
 
         $user->tokens()->delete();
+
+        // Obliga al usuario a iniciar sesión de nuevo en sus otras sesiones.
+        $this->cerrarSesiones($user, $exceptSessionId);
+    }
+
+    public function cambiarEstado(User $user, bool $activo): User
+    {
+        $user->update([
+            'activo' => $activo,
+            'remember_token' => $activo ? $user->remember_token : Str::random(60),
+        ]);
+
+        if (! $activo) {
+            $user->tokens()->delete();
+            $this->cerrarSesiones($user);
+        }
+
+        return $user;
+    }
+
+    /**
+     * Elimina las sesiones del usuario cuando la tabla existe.
+     * Permite conservar la sesión del administrador que hace el cambio.
+     */
+    public function cerrarSesiones(User $user, ?string $exceptSessionId = null): void
+    {
+        $tabla = (string) config('session.table', 'sessions');
+
+        if (! Schema::hasTable($tabla)) {
+            return;
+        }
+
+        DB::table($tabla)
+            ->where('user_id', $user->id)
+            ->when($exceptSessionId, fn ($query) => $query->where('id', '!=', $exceptSessionId))
+            ->delete();
     }
 
     public function getSetting(User $user, string $key, mixed $default = null): mixed

@@ -26,7 +26,16 @@ class AreaController extends Controller
         return Inertia::render('Areas/Index', [
             'areasTree' => $this->areaService->obtenerArbolCompleto(),
             'areasOpciones' => $this->areaService->obtenerOpciones(),
-            'responsables' => User::orderBy('name')->get(['id', 'name', 'email']),
+            'responsables' => User::query()
+                ->with('persona:id,nombres,apellidos')
+                ->get()
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->nombre_completo,
+                    'email' => $user->email,
+                ])
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values(),
         ]);
     }
 

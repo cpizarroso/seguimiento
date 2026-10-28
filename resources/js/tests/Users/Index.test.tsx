@@ -4,16 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routerGet = vi.fn();
 let mockUrl = '/users';
+let mockPermisos: string[] = ['usuarios.consulta', 'usuarios.edicion'];
+let mockUserId = 99;
 
 vi.mock('@inertiajs/react', () => ({
     Link: ({ children, href }: { children: React.ReactNode; href: string }) =>
         React.createElement('a', { href }, children),
     router: {
         get: (...args: unknown[]) => routerGet(...args),
+        put: vi.fn(),
         delete: vi.fn(),
     },
     useForm: (initial: unknown) => ({
-        data: initial,
+        data: typeof initial === 'function' ? (initial as () => unknown)() : initial,
         setData: vi.fn(),
         reset: vi.fn(),
         clearErrors: vi.fn(),
@@ -22,7 +25,10 @@ vi.mock('@inertiajs/react', () => ({
         processing: false,
         errors: {},
     }),
-    usePage: () => ({ url: mockUrl, props: { auth: { user: { id: 1, name: 'Admin' } } } }),
+    usePage: () => ({
+        url: mockUrl,
+        props: { auth: { user: { id: mockUserId, name: 'Admin', permisos: mockPermisos } } },
+    }),
 }));
 
 vi.mock('@/components/ui/SearchableSelect', () => ({
@@ -40,7 +46,19 @@ vi.mock('@/components/ui/SearchableSelect', () => ({
 }));
 
 vi.mock('@/components/features/users/UserForm', () => ({
-    UserForm: () => null,
+    UserForm: ({ onCreated }: { onCreated?: (creado: unknown) => void }) =>
+        React.createElement(
+            'button',
+            {
+                type: 'button',
+                onClick: () => onCreated?.({
+                    nombre: 'Ana Pérez',
+                    username: 'ana.perez',
+                    reporte: 'ACCESO AL SISTEMA\nContraseña: X48213!',
+                }),
+            },
+            'Simular alta',
+        ),
 }));
 
 import UsersIndex from '@/pages/Users/Index';
@@ -49,7 +67,7 @@ function props() {
     return {
         users: {
             data: [
-                { id: 1, name: 'Ana Pérez', email: 'ana@ejemplo.gob.bo', phone: null, profesion: null, persona_id: null, persona: null, roles: [] },
+                { id: 1, name: 'Ana Pérez', username: 'ana.perez', email: 'ana@ejemplo.gob.bo', persona_id: 5, activo: true, persona: null, roles: [] },
             ],
             meta: { current_page: 1, last_page: 1, per_page: 10, total: 1, from: 1, to: 1 },
         },
@@ -63,6 +81,8 @@ describe('Users Index', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockUrl = '/users';
+        mockPermisos = ['usuarios.consulta', 'usuarios.edicion'];
+        mockUserId = 99;
     });
 
     it('muestra el buscador y las opciones de filtros', () => {
@@ -71,7 +91,6 @@ describe('Users Index', () => {
         expect(screen.getByLabelText('Buscar usuarios')).toBeInTheDocument();
         expect(screen.getByLabelText('Rol')).toBeInTheDocument();
         expect(screen.getByLabelText('Área')).toBeInTheDocument();
-        expect(screen.getByLabelText('Vinculación')).toBeInTheDocument();
         expect(screen.getByText('DLA · Dirección Legal')).toBeInTheDocument();
     });
 
@@ -112,18 +131,6 @@ describe('Users Index', () => {
         );
     });
 
-    it('filtra por vinculación con persona', () => {
-        render(React.createElement(UsersIndex, props() as any));
-
-        fireEvent.change(screen.getByLabelText('Vinculación'), { target: { value: '1' } });
-
-        expect(routerGet).toHaveBeenCalledWith(
-            '/users',
-            expect.objectContaining({ con_persona: '1', page: 1 }),
-            expect.anything(),
-        );
-    });
-
     it('limpiar reinicia todos los filtros', () => {
         render(React.createElement(UsersIndex, props() as any));
 
@@ -131,5 +138,50 @@ describe('Users Index', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
 
         expect(routerGet).toHaveBeenLastCalledWith('/users', {}, expect.anything());
+    });
+
+    it('abre el modal de reseteo de contraseña desde la acción de la fila', () => {
+        render(React.createElement(UsersIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Resetear contraseña de Ana Pérez' }));
+
+        expect(screen.getByText('Resetear contraseña')).toBeInTheDocument();
+        expect(screen.getByLabelText(/^Contraseña/)).toBeInTheDocument();
+    });
+
+    it('oculta la acción de reseteo sin permiso de edición', () => {
+        mockPermisos = ['usuarios.consulta'];
+
+        render(React.createElement(UsersIndex, props() as any));
+
+        expect(screen.queryByRole('button', { name: 'Resetear contraseña de Ana Pérez' })).not.toBeInTheDocument();
+    });
+
+    it('muestra el estado del usuario y abre el modal de desactivación', () => {
+        render(React.createElement(UsersIndex, props() as any));
+
+        expect(screen.getByText('Activo')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Desactivar usuario Ana Pérez' }));
+
+        expect(screen.getByText('Desactivar usuario')).toBeInTheDocument();
+    });
+
+    it('oculta la acción de estado para la propia cuenta', () => {
+        mockUserId = 1;
+
+        render(React.createElement(UsersIndex, props() as any));
+
+        expect(screen.queryByRole('button', { name: 'Desactivar usuario Ana Pérez' })).not.toBeInTheDocument();
+    });
+
+    it('muestra el reporte de acceso después de crear un usuario', () => {
+        render(React.createElement(UsersIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Nuevo usuario' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Simular alta' }));
+
+        expect(screen.getByText('Usuario creado')).toBeInTheDocument();
+        expect(screen.getByLabelText('Reporte de acceso')).toHaveTextContent('Contraseña: X48213!');
     });
 });

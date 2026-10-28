@@ -5,11 +5,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     error?: string;
     leftElement?: ReactNode;
     rightElement?: ReactNode;
+    /** Padding derecho del input; se amplía cuando hay varios elementos a la derecha. */
+    rightPaddingClassName?: string;
     append?: string;
     labelAdornment?: ReactNode;
 }
 
-export function Input({ label, error, leftElement, rightElement, append, labelAdornment, className = '', id, required, ...props }: InputProps) {
+export function Input({ label, error, leftElement, rightElement, rightPaddingClassName = 'pr-9', append, labelAdornment, className = '', id, required, ...props }: InputProps) {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -32,7 +34,7 @@ export function Input({ label, error, leftElement, rightElement, append, labelAd
                 <input
                     id={inputId}
                     required={required}
-                    className={`block h-9 w-full rounded-md border bg-excel-surface px-3 text-sm text-excel-text shadow-sm transition-colors placeholder:text-excel-muted/70 focus:border-excel-green focus:outline-none focus:ring-2 focus:ring-excel-green/20 disabled:bg-excel-surface-2 disabled:text-excel-muted dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 ${leftElement && !append ? 'pl-9' : ''} ${rightElement && !append ? 'pr-9' : ''} ${append ? 'rounded-r-none' : ''} ${error ? 'border-excel-red' : 'border-excel-border-strong dark:border-gray-600'} ${className}`}
+                    className={`block h-9 w-full rounded-md border bg-excel-surface px-3 text-sm text-excel-text shadow-sm transition-colors placeholder:text-excel-muted/70 focus:border-excel-green focus:outline-none focus:ring-2 focus:ring-excel-green/20 disabled:bg-excel-surface-2 disabled:text-excel-muted dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 ${leftElement && !append ? 'pl-9' : ''} ${rightElement && !append ? rightPaddingClassName : ''} ${append ? 'rounded-r-none' : ''} ${error ? 'border-excel-red' : 'border-excel-border-strong dark:border-gray-600'} ${className}`}
                     {...props}
                 />
                 {rightElement && !append && (

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Persona;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -24,15 +25,15 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $username = Str::lower((string) fake()->unique()->userName());
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->userName().'@'.config('app.user_domain'),
-            'role' => 'user',
-            'phone' => fake()->phoneNumber(),
-            'profesion' => fake()->jobTitle(),
-            'cargo' => fake()->jobTitle(),
+            'username' => $username,
+            'email' => $username.'@'.config('app.user_domain'),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'persona_id' => Persona::factory(),
+            'activo' => true,
             'remember_token' => Str::random(10),
         ];
     }

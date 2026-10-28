@@ -58,7 +58,7 @@ class ReporteController extends Controller
         return Inertia::render('Reporte/Index', [
             'auth_usuario' => [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => $user->nombre_completo,
                 'area' => $contexto['areaUsuario']?->nombre,
                 'area_id' => $contexto['areaUsuario']?->id,
             ],
@@ -76,7 +76,7 @@ class ReporteController extends Controller
             'vista_previa_url' => $quiereReporte
                 ? $this->generarVistaPrevia(
                     $user->id,
-                    $user->name,
+                    $user->nombre_completo,
                     $contexto['area']?->nombre,
                     $contexto['areaId'],
                     $filtros,
@@ -164,7 +164,7 @@ class ReporteController extends Controller
             $tramites = $this->reporteService->ingresadosColeccion($contexto['areaId'], $filtros);
             Storage::disk('local')->put(
                 $tmpRuta,
-                $this->pdfBytes($user->name, $contexto['area']?->nombre, $filtros, $tramites)
+                $this->pdfBytes($user->nombre_completo, $contexto['area']?->nombre, $filtros, $tramites)
             );
         }
 

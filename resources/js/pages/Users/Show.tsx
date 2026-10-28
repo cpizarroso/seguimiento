@@ -1,16 +1,23 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Icon } from '@/components/ui/Icon';
+import { EstadoUsuarioModal } from '@/components/features/users/EstadoUsuarioModal';
+import type { EstadoUsuarioTarget } from '@/components/features/users/EstadoUsuarioModal';
+import { ResetPasswordModal, resetPasswordTarget } from '@/components/features/users/ResetPasswordModal';
+import type { ResetPasswordTarget } from '@/components/features/users/ResetPasswordModal';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { PersonaPuesto } from '@/types/generated/Tramite';
 
 interface UserShowData {
     id: number;
     name: string;
+    username: string;
     email: string;
-    phone: string | null;
-    profesion: string | null;
-    persona_id: number | null;
+    persona_id: number;
+    activo: boolean;
     persona: {
         id: number;
         nombres: string;
@@ -19,6 +26,7 @@ interface UserShowData {
         ci: string;
         telefono: string | null;
         correo: string | null;
+        profesion: string | null;
         direccion: string | null;
         activo: boolean;
         area: { id: number; nombre: string; codigo: string } | null;
@@ -34,14 +42,45 @@ interface UsersShowProps {
 }
 
 export default function UsersShow({ user }: UsersShowProps) {
+    const { can } = usePermissions();
+    const { props } = usePage();
+    const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
+    const [estadoTarget, setEstadoTarget] = useState<EstadoUsuarioTarget | null>(null);
+    const usuarioActualId = props.auth.user?.id ?? null;
+
     return (
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-patuju-green">{user.name}</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="text-2xl font-bold text-patuju-green">{user.name}</h1>
+                        <Badge variant={user.activo ? 'success' : 'danger'}>
+                            {user.activo ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username} · {user.email}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    {can('usuarios', 'edicion') && user.id !== usuarioActualId && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => setEstadoTarget({
+                                id: user.id,
+                                nombre: user.name,
+                                username: user.username,
+                                activo: user.activo,
+                            })}
+                        >
+                            <Icon name={user.activo ? 'lock' : 'unlock'} size={15} />
+                            {user.activo ? 'Desactivar' : 'Activar'}
+                        </Button>
+                    )}
+                    {can('usuarios', 'edicion') && (
+                        <Button variant="secondary" onClick={() => setResetTarget(resetPasswordTarget(user))}>
+                            <Icon name="key" size={15} />
+                            Resetear contraseña
+                        </Button>
+                    )}
                     <Link href={`/users/${user.id}/edit`}>
                         <Button variant="secondary">Editar</Button>
                     </Link>
@@ -52,23 +91,19 @@ export default function UsersShow({ user }: UsersShowProps) {
             </div>
 
             <Card>
-                <h2 className="mb-4 text-lg font-semibold text-patuju-green">Datos del usuario</h2>
+                <h2 className="mb-4 text-lg font-semibold text-patuju-green">Datos de la cuenta</h2>
                 <dl className="grid gap-4 sm:grid-cols-2">
                     <div>
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Nombre</dt>
                         <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</dd>
                     </div>
                     <div>
-                        <dt className="text-sm text-gray-500 dark:text-gray-400">Correo</dt>
+                        <dt className="text-sm text-gray-500 dark:text-gray-400">Usuario</dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">@{user.username}</dd>
+                    </div>
+                    <div>
+                        <dt className="text-sm text-gray-500 dark:text-gray-400">Email de acceso</dt>
                         <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.email}</dd>
-                    </div>
-                    <div>
-                        <dt className="text-sm text-gray-500 dark:text-gray-400">Teléfono</dt>
-                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.phone ?? '—'}</dd>
-                    </div>
-                    <div>
-                        <dt className="text-sm text-gray-500 dark:text-gray-400">Profesión</dt>
-                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.profesion ?? '—'}</dd>
                     </div>
                     <div className="sm:col-span-2">
                         <dt className="text-sm text-gray-500 dark:text-gray-400">Roles</dt>
@@ -130,6 +165,14 @@ export default function UsersShow({ user }: UsersShowProps) {
                             <dt className="text-sm text-gray-500 dark:text-gray-400">Correo de la persona</dt>
                             <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.persona.correo ?? '—'}</dd>
                         </div>
+                        <div>
+                            <dt className="text-sm text-gray-500 dark:text-gray-400">Teléfono</dt>
+                            <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.persona.telefono ?? '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-sm text-gray-500 dark:text-gray-400">Profesión</dt>
+                            <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.persona.profesion ?? '—'}</dd>
+                        </div>
                     </dl>
                 ) : (
                     <p className="text-sm text-gray-400 dark:text-gray-500">Este usuario no tiene persona vinculada.</p>
@@ -156,6 +199,22 @@ export default function UsersShow({ user }: UsersShowProps) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">Sin historial registrado.</p>
                 )}
             </Card>
+
+            {resetTarget && (
+                <ResetPasswordModal
+                    key={resetTarget.id}
+                    user={resetTarget}
+                    onClose={() => setResetTarget(null)}
+                />
+            )}
+
+            {estadoTarget && (
+                <EstadoUsuarioModal
+                    key={estadoTarget.id}
+                    user={estadoTarget}
+                    onClose={() => setEstadoTarget(null)}
+                />
+            )}
         </div>
     );
 }

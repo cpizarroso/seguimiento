@@ -125,9 +125,15 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 - `php artisan db:seed --class=ActuacionSeeder` — actuaciones adicionales
 
 ### Usuarios
-- Admin: `admin@seguimiento.gob.bo` / `password` (Carlos Mendoza)
-- También son admin: `amontoya@seguimiento.gob.bo` y `cpizarroso@seguimiento.gob.bo`, misma contraseña
-- Secretaría: `erodriguez@seguimiento.gob.bo` / `password` (el dominio sale de `APP_USER_DOMAIN`, por defecto `seguimiento.gob.bo`)
+- El dominio institucional de las cuentas es `APP_USER_DOMAIN` (`.env`; por defecto `seguimiento.com`) y se expone al frontend como `dominio_usuario`
+- Admin: `admin@seguimiento.com` / `password` (Carlos Mendoza)
+- También son admin: `amontoya@seguimiento.com` y `cpizarroso@seguimiento.com`, misma contraseña
+- Secretaría: `erodriguez@seguimiento.com` / `password`
+- El login acepta el correo completo, el `username` o la parte local del correo institucional
+- `users.activo` (por defecto `true`): un usuario inactivo no puede iniciar sesión
+- Activar/desactivar se hace desde el modal de estado en el index, edit y show (permiso `usuarios.edicion`); al desactivar se cierran sus sesiones abiertas y se revocan sus tokens API. Un admin no puede desactivar su propia cuenta
+- Al resetear una contraseña se cierran las sesiones del usuario para obligarlo a iniciar sesión de nuevo (si el admin resetea la propia, conserva su sesión en curso)
+- Al crear un usuario se ofrecen las mismas sugerencias de contraseña que en el reseteo (aleatoria, clásica, CI y nombre + año) y, tras el alta, se muestra un reporte copiable con nombre, cargo, área, usuario y contraseña
 - Resto de usuarios: `User::factory()` (`password` por defecto, email `{usuario}@{app.user_domain}`)
 
 ### Estados de trámites

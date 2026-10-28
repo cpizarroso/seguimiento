@@ -7,19 +7,25 @@ import { Icon } from '@/components/ui/Icon';
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Select } from '@/components/ui/Select';
 import { Table, type Column } from '@/components/ui/Table';
+import { EstadoUsuarioModal } from '@/components/features/users/EstadoUsuarioModal';
+import type { EstadoUsuarioTarget } from '@/components/features/users/EstadoUsuarioModal';
+import { ReporteAccesoModal } from '@/components/features/users/ReporteAccesoModal';
+import { ResetPasswordModal, resetPasswordTarget } from '@/components/features/users/ResetPasswordModal';
+import type { ResetPasswordTarget } from '@/components/features/users/ResetPasswordModal';
 import { UserForm } from '@/components/features/users/UserForm';
-import type { RolOption } from '@/components/features/users/UserForm';
+import type { RolOption, UsuarioCreado } from '@/components/features/users/UserForm';
+import { generarPassword } from '@/components/features/users/passwordReset';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { Area, PaginatedData, Persona } from '@/types/generated/Tramite';
 
 interface UserRow {
     id: number;
     name: string;
+    username: string;
     email: string;
-    phone: string | null;
-    profesion: string | null;
-    persona_id: number | null;
+    persona_id: number;
+    activo: boolean;
     persona?: Persona | null;
     roles?: { id: number; nombre: string }[];
     areas?: { id: number; predeterminada: boolean }[];
@@ -33,26 +39,26 @@ interface UsersIndexProps {
     areas?: { data: Area[] };
 }
 
-const VINCULACION_OPTIONS = [
-    { value: '', label: 'Todas' },
-    { value: '1', label: 'Con persona' },
-    { value: '0', label: 'Sin persona' },
-];
-
 export default function UsersIndex({ users, roles, personas, areas }: UsersIndexProps) {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const { can } = usePermissions();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
 
     const [search, setSearch] = useState(params.get('search') ?? '');
     const [roleId, setRoleId] = useState(params.get('role_id') ?? '');
     const [areaId, setAreaId] = useState(params.get('area_id') ?? '');
-    const [conPersona, setConPersona] = useState(params.get('con_persona') ?? '');
     const [createOpen, setCreateOpen] = useState(false);
+    const [usuarioCreado, setUsuarioCreado] = useState<UsuarioCreado | null>(null);
     const [editUser, setEditUser] = useState<UserRow | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+    const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
+    const [estadoTarget, setEstadoTarget] = useState<EstadoUsuarioTarget | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
-    const hayFiltros = search !== '' || roleId !== '' || areaId !== '' || conPersona !== '';
+    const puedeResetear = can('usuarios', 'edicion');
+    const usuarioActualId = props.auth.user?.id ?? null;
+
+    const hayFiltros = search !== '' || roleId !== '' || areaId !== '';
 
     const rolOptions = (roles?.data ?? []).map((rol) => ({
         value: String(rol.id),
@@ -64,23 +70,19 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
         label: `${area.codigo} · ${area.nombre}`,
     }));
 
-    const createForm = useForm({
-        name: '',
+    const createForm = useForm(() => ({
+        username: '',
         email: '',
-        phone: '',
-        profesion: '',
-        password: '',
+        password: generarPassword(),
         persona_id: '',
         role_ids: [] as number[],
         area_ids: [] as number[],
         area_predeterminada_id: '',
-    });
+    }));
 
     const editForm = useForm({
-        name: '',
+        username: '',
         email: '',
-        phone: '',
-        profesion: '',
         password: '',
         persona_id: '',
         role_ids: [] as number[],
@@ -92,7 +94,6 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
         search: search || undefined,
         role_id: roleId || undefined,
         area_id: areaId || undefined,
-        con_persona: conPersona || undefined,
         ...overrides,
     });
 
@@ -134,19 +135,10 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
         });
     };
 
-    const filtrarVinculacion = (value: string) => {
-        setConPersona(value);
-        router.get('/users', filtrosActuales({ con_persona: value || undefined, page: 1 }), {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
-
     const limpiarFiltros = () => {
         setSearch('');
         setRoleId('');
         setAreaId('');
-        setConPersona('');
         router.get('/users', {}, { preserveState: true, preserveScroll: true });
         searchInputRef.current?.focus();
     };
@@ -160,10 +152,8 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                 : '';
 
         editForm.setData({
-            name: user.name,
+            username: user.username,
             email: user.email,
-            phone: user.phone ?? '',
-            profesion: user.profesion ?? '',
             password: '',
             persona_id: user.persona_id ? String(user.persona_id) : '',
             role_ids: (user.roles ?? []).map((rol) => rol.id),
@@ -183,7 +173,7 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                     <Link href={`/users/${user.id}`} className="font-medium text-patuju-green hover:underline">
                         {user.name}
                     </Link>
-                    <p className="text-xs text-gray-400">{user.email}</p>
+                    <p className="text-xs text-gray-400">@{user.username} · {user.email}</p>
                 </div>
             ),
         },
@@ -214,6 +204,15 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
             ),
         },
         {
+            key: 'estado',
+            header: 'Estado',
+            render: (user) => (
+                <Badge variant={user.activo ? 'success' : 'danger'}>
+                    {user.activo ? 'Activo' : 'Inactivo'}
+                </Badge>
+            ),
+        },
+        {
             key: 'acciones',
             header: 'Acciones',
             headClassName: 'text-right',
@@ -224,6 +223,33 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                         <Button size="sm" variant="secondary">Ver</Button>
                     </Link>
                     <Button size="sm" variant="secondary" onClick={() => abrirEdicion(user)}>Editar</Button>
+                    {puedeResetear && (
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setResetTarget(resetPasswordTarget(user))}
+                            title="Resetear contraseña"
+                            aria-label={`Resetear contraseña de ${user.name}`}
+                        >
+                            <Icon name="key" size={14} />
+                        </Button>
+                    )}
+                    {puedeResetear && user.id !== usuarioActualId && (
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setEstadoTarget({
+                                id: user.id,
+                                nombre: user.name,
+                                username: user.username,
+                                activo: user.activo,
+                            })}
+                            title={user.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                            aria-label={`${user.activo ? 'Desactivar' : 'Activar'} usuario ${user.name}`}
+                        >
+                            <Icon name={user.activo ? 'lock' : 'unlock'} size={14} />
+                        </Button>
+                    )}
                     <Button size="sm" variant="danger" onClick={() => setDeleteTarget(user)}>Eliminar</Button>
                 </div>
             ),
@@ -313,13 +339,6 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                             showPath={false}
                             className="w-full sm:w-60"
                         />
-                        <Select
-                            aria-label="Vinculación"
-                            value={conPersona}
-                            onChange={(e) => filtrarVinculacion(e.target.value)}
-                            options={VINCULACION_OPTIONS}
-                            className="w-full sm:w-40"
-                        />
                         {hayFiltros && (
                             <Button variant="ghost" size="sm" onClick={limpiarFiltros}>
                                 <Icon name="close" size={14} />
@@ -357,10 +376,27 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                     personas={personas}
                     areas={areas}
                     submitUrl="/users"
-                    onSuccess={() => setCreateOpen(false)}
+                    onCreated={(creado) => {
+                        setCreateOpen(false);
+                        setUsuarioCreado(creado);
+                    }}
                     onCancel={() => setCreateOpen(false)}
                 />
             </Modal>
+
+            {usuarioCreado && (
+                <ReporteAccesoModal
+                    titulo="Usuario creado"
+                    mensaje={(
+                        <>
+                            El usuario <strong>{usuarioCreado.nombre}</strong> fue creado. Copia el reporte y
+                            entrégalo al usuario junto con su contraseña inicial.
+                        </>
+                    )}
+                    reporte={usuarioCreado.reporte}
+                    onClose={() => setUsuarioCreado(null)}
+                />
+            )}
 
             <Modal open={editUser !== null} onClose={() => setEditUser(null)} title="Editar usuario" maxWidth="2xl">
                 {editUser && (
@@ -401,6 +437,21 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                     </div>
                 </div>
             </Modal>
+            {resetTarget && (
+                <ResetPasswordModal
+                    key={resetTarget.id}
+                    user={resetTarget}
+                    onClose={() => setResetTarget(null)}
+                />
+            )}
+
+            {estadoTarget && (
+                <EstadoUsuarioModal
+                    key={estadoTarget.id}
+                    user={estadoTarget}
+                    onClose={() => setEstadoTarget(null)}
+                />
+            )}
         </div>
     );
 }

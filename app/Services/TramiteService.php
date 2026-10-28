@@ -32,11 +32,11 @@ class TramiteService
         $filtros = $this->normalizarRangoFechas($filtros);
 
         $query = Tramite::with([
-            'creador',
-            'asignado',
+            'creador.persona',
+            'asignado.persona',
             'area',
             'derivaciones' => function ($q) {
-                $q->with(['de', 'a'])->reorder('numero_derivacion', 'desc')->limit(1);
+                $q->with(['de.persona', 'a.persona'])->reorder('numero_derivacion', 'desc')->limit(1);
             },
             'actuaciones' => function ($q) {
                 $q->with(['area', 'persona'])->reorder('fecha_actuacion', 'desc')->limit(1);
@@ -51,8 +51,8 @@ class TramiteService
                         ->orWhere('tramites.descripcion', 'like', "%{$v}%")
                         ->orWhere('tramites.numero_diamante', 'like', "%{$v}%")
                         ->orWhere('tramites.estado', 'like', "%{$v}%")
-                        ->orWhereHas('creador', fn ($q) => $q->where('name', 'like', "%{$v}%"))
-                        ->orWhereHas('asignado', fn ($q) => $q->where('name', 'like', "%{$v}%"))
+                        ->orWhereHas('creador', fn ($q) => $this->buscarUsuario($q, $v))
+                        ->orWhereHas('asignado', fn ($q) => $this->buscarUsuario($q, $v))
                         ->orWhereHas('area', fn ($q) => $q->where('nombre', 'like', "%{$v}%"));
 
                     if (str_contains($v, '/')) {
@@ -127,6 +127,22 @@ class TramiteService
             ->when(isset($filtros['hoy']) && $filtros['hoy'] !== null && $filtros['hoy'] !== '' && filter_var($filtros['hoy'], FILTER_VALIDATE_BOOLEAN), fn ($q) => $q->whereDate('tramites.created_at', today()));
 
         return $this->aplicarOrden($query, $filtros);
+    }
+
+    /**
+     * Búsqueda por credenciales del usuario o por los datos de su persona.
+     */
+    private function buscarUsuario(Builder $query, string $termino): void
+    {
+        $query->where(function (Builder $sub) use ($termino) {
+            $sub->where('users.username', 'like', "%{$termino}%")
+                ->orWhere('users.email', 'like', "%{$termino}%")
+                ->orWhereHas('persona', function (Builder $persona) use ($termino) {
+                    $persona->where('nombres', 'like', "%{$termino}%")
+                        ->orWhere('apellidos', 'like', "%{$termino}%")
+                        ->orWhere('ci', 'like', "%{$termino}%");
+                });
+        });
     }
 
     /**
@@ -241,7 +257,7 @@ class TramiteService
             'derivado_a' => $creadoPor,
         ]);
 
-        return $tramite->load(['creador', 'asignado', 'area']);
+        return $tramite->load(['creador.persona', 'asignado.persona', 'area']);
     }
 
     public function actualizar(Tramite $tramite, array $data): Tramite
@@ -259,10 +275,10 @@ class TramiteService
     public function obtenerPorId(int $id): Tramite
     {
         return Tramite::with([
-            'creador',
-            'asignado',
+            'creador.persona',
+            'asignado.persona',
             'area',
-            'finalizadoPor',
+            'finalizadoPor.persona',
             'derivaciones' => fn ($q) => $q->with([
                 'de.persona.puestoActivo.puesto.area',
                 'a.persona.puestoActivo.puesto.area',

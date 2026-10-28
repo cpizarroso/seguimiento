@@ -35,11 +35,20 @@ class UpdatePersonaRequest extends FormRequest
             'apellidos' => ['required', 'string', 'max:255'],
             'ci' => ['required', 'string', 'max:30', Rule::unique('personas', 'ci')->ignore($personaId)],
             'telefono' => ['nullable', 'string', 'max:30'],
-            'correo' => ['nullable', 'email', 'max:255'],
+            'correo' => ['required', 'email', 'max:255', Rule::unique('personas', 'correo')->ignore($personaId)],
+            'profesion' => ['nullable', 'string', 'max:255'],
             'direccion' => ['nullable', 'string', 'max:500'],
             'activo' => ['nullable', 'boolean'],
             'puesto_id' => ['nullable', 'integer', 'exists:puestos,id'],
             'fecha_inicio' => ['nullable', 'date'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.unique' => 'Ese correo electrónico ya está registrado.',
         ];
     }
 }

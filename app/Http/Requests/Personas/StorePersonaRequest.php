@@ -30,7 +30,8 @@ class StorePersonaRequest extends FormRequest
             'apellidos' => ['required', 'string', 'max:255'],
             'ci' => ['required', 'string', 'max:30', Rule::unique('personas', 'ci')],
             'telefono' => ['nullable', 'string', 'max:30'],
-            'correo' => ['nullable', 'email', 'max:255'],
+            'correo' => ['required', 'email', 'max:255', Rule::unique('personas', 'correo')],
+            'profesion' => ['nullable', 'string', 'max:255'],
             'direccion' => ['nullable', 'string', 'max:500'],
             'activo' => ['boolean'],
             'puesto_id' => ['nullable', 'integer', 'exists:puestos,id'],
@@ -43,6 +44,8 @@ class StorePersonaRequest extends FormRequest
         return [
             'ci.unique' => 'La cédula de identidad ya está registrada.',
             'ci.required' => 'La cédula de identidad es obligatoria.',
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.unique' => 'Ese correo electrónico ya está registrado.',
             'correo.email' => 'El correo electrónico no es válido.',
             'puesto_id.exists' => 'El puesto seleccionado no existe.',
         ];

@@ -21,7 +21,8 @@ class PersonaService
                         $q->where('nombres', 'like', "%{$palabra}%")
                             ->orWhere('apellidos', 'like', "%{$palabra}%")
                             ->orWhere('ci', 'like', "%{$palabra}%")
-                            ->orWhere('correo', 'like', "%{$palabra}%");
+                            ->orWhere('correo', 'like', "%{$palabra}%")
+                            ->orWhere('profesion', 'like', "%{$palabra}%");
                     });
                 }
             }))
@@ -76,8 +77,6 @@ class PersonaService
             if ($puestoId && (int) $puestoId !== (int) $puestoActual) {
                 $this->asignarPuestoInterno($persona, (int) $puestoId, $fechaInicio);
             }
-
-            $this->sincronizarUsuarioVinculado($persona->fresh());
         });
 
         return $persona->fresh()->load(['puestoActivo.puesto.area', 'user', 'historialPuestos.puesto.area']);
@@ -87,7 +86,6 @@ class PersonaService
     {
         DB::transaction(function () use ($persona, $puestoId, $fechaInicio) {
             $this->asignarPuestoInterno($persona, $puestoId, $fechaInicio ?? now()->toDateString());
-            $this->sincronizarUsuarioVinculado($persona->fresh());
         });
 
         return $persona->fresh()->load(['puestoActivo.puesto.area', 'user', 'historialPuestos.puesto.area']);
@@ -175,30 +173,5 @@ class PersonaService
             'fecha_inicio' => $fechaInicio,
             'fecha_fin' => null,
         ]);
-    }
-
-    private function sincronizarUsuarioVinculado(Persona $persona): void
-    {
-        $usuario = $persona->user;
-
-        if (! $usuario) {
-            return;
-        }
-
-        $cambios = [];
-
-        if ($persona->correo && $usuario->email !== $persona->correo) {
-            $cambios['email'] = $persona->correo;
-        }
-
-        $nombreCompleto = $persona->nombre_completo;
-
-        if ($nombreCompleto && $usuario->name !== $nombreCompleto) {
-            $cambios['name'] = $nombreCompleto;
-        }
-
-        if ($cambios !== []) {
-            $usuario->update($cambios);
-        }
     }
 }

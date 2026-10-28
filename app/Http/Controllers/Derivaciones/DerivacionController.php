@@ -58,14 +58,14 @@ class DerivacionController extends Controller
             ]);
         }
 
-        $destino = User::findOrFail((int) $request->input('derivado_a'));
+        $destino = User::with('persona')->findOrFail((int) $request->input('derivado_a'));
         $cantidad = $this->derivacionService->derivarVarios(
             $tramites,
             $destino->id,
             $request->input('glosa_derivacion'),
         );
 
-        return back()->with('success', "Se derivaron {$cantidad} trámites a {$destino->name}.");
+        return back()->with('success', "Se derivaron {$cantidad} trámites a {$destino->nombre_completo}.");
     }
 
     public function recepcionar(RecepcionarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse
