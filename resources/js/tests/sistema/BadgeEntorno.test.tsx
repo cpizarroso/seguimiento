@@ -23,14 +23,15 @@ describe('BadgeEntorno', () => {
             modo: 'dev',
             entorno: 'local',
             etiqueta: 'Desarrollo',
-            variante: 'info',
+            variante: 'warning',
             nota: null,
         };
 
-        render(React.createElement(BadgeEntorno));
+        const { container } = render(React.createElement(BadgeEntorno));
 
         expect(screen.getByText('Desarrollo')).toBeInTheDocument();
         expect(screen.getByTitle('Modo: Desarrollo · APP_ENV: local')).toBeInTheDocument();
+        expect(container.querySelector('.bg-excel-gold')).toBeInTheDocument();
     });
 
     it('muestra Producción cuando el modo es prod', () => {
@@ -42,9 +43,10 @@ describe('BadgeEntorno', () => {
             nota: null,
         };
 
-        render(React.createElement(BadgeEntorno));
+        const { container } = render(React.createElement(BadgeEntorno));
 
         expect(screen.getByText('Producción')).toBeInTheDocument();
+        expect(container.querySelector('.bg-excel-green')).toBeInTheDocument();
     });
 
     it('muestra Capacitación e incluye la nota en el tooltip', () => {
@@ -52,16 +54,17 @@ describe('BadgeEntorno', () => {
             modo: 'capacitacion',
             entorno: 'production',
             etiqueta: 'Capacitación',
-            variante: 'warning',
+            variante: 'info',
             nota: 'Curso de mayo',
         };
 
-        render(React.createElement(BadgeEntorno));
+        const { container } = render(React.createElement(BadgeEntorno));
 
         expect(screen.getByText('Capacitación')).toBeInTheDocument();
         expect(
             screen.getByTitle('Modo: Capacitación · APP_ENV: production · Curso de mayo'),
         ).toBeInTheDocument();
+        expect(container.querySelector('.bg-excel-blue')).toBeInTheDocument();
     });
 
     it('no renderiza nada si la prop sistema no está disponible', () => {

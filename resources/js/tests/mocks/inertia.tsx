@@ -18,7 +18,7 @@ vi.mock('@inertiajs/react', () => ({
                 modo: 'dev',
                 entorno: 'local',
                 etiqueta: 'Desarrollo',
-                variante: 'info',
+                variante: 'warning',
                 nota: null,
             },
             errors: {},

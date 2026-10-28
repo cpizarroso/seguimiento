@@ -8,9 +8,9 @@ La aplicación tiene **tres modos** y cada uno apunta a una base de datos distin
 
 | Modo | `SISTEMA_MODO` | Base de datos | Badge |
 |---|---|---|---|
-| Desarrollo | `dev` | `seguimiento-dev` | **Desarrollo** (azul) |
+| Desarrollo | `dev` | `seguimiento-dev` | **Desarrollo** (amarillo) |
 | Producción | `prod` | `seguimiento-prod` | **Producción** (verde) |
-| Capacitación | `capacitacion` | `seguimiento-cap` | **Capacitación** (dorado) |
+| Capacitación | `capacitacion` | `seguimiento-cap` | **Capacitación** (azul) |
 
 El modo se define **solo en `.env`**. No hay selector en la interfaz ni tabla de configuración.
 
@@ -75,6 +75,7 @@ Dónde se ve:
 - **Login** (`/login`): badge arriba del título "Iniciar sesión". Si `SISTEMA_NOTA_CAPACITACION` tiene texto, se muestra también como aviso.
 - **Cabecera** de la aplicación autenticada: badge junto al menú de usuario.
 - El tooltip del badge muestra `Modo: … · APP_ENV: …` y, si existe, la nota.
+- Colores del badge: **Desarrollo** amarillo (`warning`), **Producción** verde (`success`) y **Capacitación** azul (`info`).
 
 Componentes:
 

@@ -3,6 +3,11 @@
 use App\Support\Modo;
 
 it('comparte el modo por defecto en el login', function () {
+    config([
+        'app.modo' => Modo::DEV,
+        'app.nota_capacitacion' => null,
+    ]);
+
     $this->get('/login')
         ->assertOk()
         ->assertInertia(fn ($page) => $page
@@ -10,7 +15,7 @@ it('comparte el modo por defecto en el login', function () {
             ->where('sistema.modo', Modo::DEV)
             ->where('sistema.entorno', app()->environment())
             ->where('sistema.etiqueta', 'Desarrollo')
-            ->where('sistema.variante', 'info')
+            ->where('sistema.variante', 'warning')
             ->where('sistema.nota', null));
 });
 
@@ -39,6 +44,6 @@ it('comparte el modo capacitación junto con la nota opcional', function () {
         ->assertInertia(fn ($page) => $page
             ->where('sistema.modo', Modo::CAPACITACION)
             ->where('sistema.etiqueta', 'Capacitación')
-            ->where('sistema.variante', 'warning')
+            ->where('sistema.variante', 'info')
             ->where('sistema.nota', 'Datos de prueba para el curso de mayo'));
 });

@@ -65,9 +65,9 @@ final class Modo
     public static function variante(string $modo): string
     {
         return match ($modo) {
-            self::DEV => 'info',
+            self::DEV => 'warning',
             self::PROD => 'success',
-            self::CAPACITACION => 'warning',
+            self::CAPACITACION => 'info',
             default => 'default',
         };
     }

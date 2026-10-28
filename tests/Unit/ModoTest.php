@@ -16,9 +16,9 @@ it('expone la etiqueta y variante del badge', function () {
     expect(Modo::etiqueta(Modo::DEV))->toBe('Desarrollo')
         ->and(Modo::etiqueta(Modo::PROD))->toBe('Producción')
         ->and(Modo::etiqueta(Modo::CAPACITACION))->toBe('Capacitación')
-        ->and(Modo::variante(Modo::DEV))->toBe('info')
+        ->and(Modo::variante(Modo::DEV))->toBe('warning')
         ->and(Modo::variante(Modo::PROD))->toBe('success')
-        ->and(Modo::variante(Modo::CAPACITACION))->toBe('warning');
+        ->and(Modo::variante(Modo::CAPACITACION))->toBe('info');
 });
 
 it('valida los modos permitidos', function () {

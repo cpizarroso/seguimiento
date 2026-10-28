@@ -30,7 +30,7 @@ describe('Login', () => {
             modo: 'dev',
             entorno: 'local',
             etiqueta: 'Desarrollo',
-            variante: 'info',
+            variante: 'warning',
             nota: null,
         };
 
@@ -45,7 +45,7 @@ describe('Login', () => {
             modo: 'capacitacion',
             entorno: 'production',
             etiqueta: 'Capacitación',
-            variante: 'warning',
+            variante: 'info',
             nota: 'Datos de prueba para el curso de mayo',
         };
 
