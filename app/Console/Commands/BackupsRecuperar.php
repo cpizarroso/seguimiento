@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Backups\DiscosBackups;
 use App\Models\Backup;
 use App\Models\BackupEvento;
 use App\Services\BackupService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class BackupsRecuperar extends Command
@@ -17,7 +17,7 @@ class BackupsRecuperar extends Command
 
     protected $description = 'Levanta la aplicación, verifica la conexión y marca como fallidos los backups interrumpidos';
 
-    public function handle(BackupService $backups): int
+    public function handle(BackupService $backups, DiscosBackups $discos): int
     {
         $this->levantarAplicacion();
 
@@ -50,7 +50,7 @@ class BackupsRecuperar extends Command
         $this->info("Backups marcados como fallidos: {$interrumpidos->count()}");
 
         if ($this->option('limpiar')) {
-            $this->limpiarHuerfanos($backups);
+            $this->limpiarHuerfanos($backups, $discos);
         }
 
         return self::SUCCESS;
@@ -127,9 +127,9 @@ class BackupsRecuperar extends Command
         ));
     }
 
-    private function limpiarHuerfanos(BackupService $backups): void
+    private function limpiarHuerfanos(BackupService $backups, DiscosBackups $discos): void
     {
-        $disco = Storage::disk((string) config('backups.disk'));
+        $disco = $discos->disco();
         $registrados = Backup::pluck('nombre')->all();
         $eliminados = 0;
 

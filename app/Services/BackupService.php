@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Backups\Contrato\Dumper;
+use App\Backups\DiscosBackups;
 use App\Models\Backup;
 use App\Models\BackupEvento;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -26,6 +26,7 @@ class BackupService
     public function __construct(
         private readonly Dumper $dumper,
         private readonly BackupProgramacionService $programacion,
+        private readonly DiscosBackups $discos,
     ) {}
 
     /**
@@ -64,14 +65,22 @@ class BackupService
             @set_time_limit(0);
         }
 
-        $discoNombre = (string) config('backups.disk');
-        $disco = Storage::disk($discoNombre);
+        $discoNombre = $this->discos->activo();
+        $errorDestino = null;
 
-        if (! $this->dumper->disponible()) {
-            $mensaje = 'No se encontraron los binarios de MySQL. Configure BACKUP_MYSQLDUMP_PATH y BACKUP_MYSQL_PATH.';
+        try {
+            $this->discos->prepararActivo();
+            $disco = $this->discos->disco($discoNombre);
+        } catch (Throwable $e) {
+            $errorDestino = $e->getMessage();
+        }
+
+        if ($errorDestino !== null || ! $this->dumper->disponible()) {
+            $mensaje = $errorDestino
+                ?? 'No se encontraron los binarios de MySQL. Configure BACKUP_MYSQLDUMP_PATH y BACKUP_MYSQL_PATH.';
 
             $registro = Backup::create([
-                'nombre' => $this->nombreArchivo($tipo),
+                'nombre' => $this->nombreArchivoSeguro($tipo),
                 'ruta' => '',
                 'disco' => $discoNombre,
                 'tipo' => $tipo,
@@ -245,8 +254,9 @@ class BackupService
         ?int $userId,
         ?string $ip = null,
     ): Backup {
-        $discoNombre = (string) config('backups.disk');
-        $disco = Storage::disk($discoNombre);
+        $discoNombre = $this->discos->activo();
+        $this->discos->prepararActivo();
+        $disco = $this->discos->disco($discoNombre);
         $nombre = 'importado-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(8)).'.sql.gz';
 
         $comprimido = gzencode($sql, 6);
@@ -323,7 +333,7 @@ class BackupService
         $nombre = $backup->nombre;
 
         try {
-            Storage::disk($backup->disco)->delete($backup->ruta);
+            $this->discos->disco($backup->disco)->delete($backup->ruta);
         } catch (Throwable $e) {
             Log::warning('backup.borrado.archivo', [
                 'nombre' => $nombre,
@@ -378,11 +388,8 @@ class BackupService
 
     public function nombreArchivo(string $tipo): string
     {
-        $prefijo = (string) config('backups.prefijo', 'backup');
-        $slug = (string) config('backups.app_slug', 'seguimiento-adm');
-        $sufijo = $tipo === Backup::TIPO_PRE_RESTAURACION ? 'pre-restauracion' : $tipo;
-        $base = "{$prefijo}-{$slug}-".now()->format('Ymd-His')."-{$sufijo}";
-        $disco = Storage::disk((string) config('backups.disk'));
+        $base = $this->nombreBase($tipo);
+        $disco = $this->discos->disco();
 
         $nombre = "{$base}.sql.gz";
         $intento = 1;
@@ -393,6 +400,27 @@ class BackupService
         }
 
         return $nombre;
+    }
+
+    /**
+     * Nombre para un backup que no llegó a disco (destino no disponible).
+     */
+    private function nombreArchivoSeguro(string $tipo): string
+    {
+        try {
+            return $this->nombreArchivo($tipo);
+        } catch (Throwable) {
+            return $this->nombreBase($tipo).'.sql.gz';
+        }
+    }
+
+    private function nombreBase(string $tipo): string
+    {
+        $prefijo = (string) config('backups.prefijo', 'backup');
+        $slug = (string) config('backups.app_slug', 'seguimiento-adm');
+        $sufijo = $tipo === Backup::TIPO_PRE_RESTAURACION ? 'pre-restauracion' : $tipo;
+
+        return "{$prefijo}-{$slug}-".now()->format('Ymd-His')."-{$sufijo}";
     }
 
     private function temporal(string $prefijo): string

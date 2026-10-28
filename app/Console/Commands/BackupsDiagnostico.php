@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Backups\DiscosBackups;
 use App\Models\Backup;
 use App\Services\BackupEspacioService;
 use App\Services\BackupProgramacionService;
@@ -25,6 +26,7 @@ class BackupsDiagnostico extends Command
         BackupProgramacionService $programacion,
         BackupEspacioService $espacio,
         BackupRestauracionService $restauracion,
+        DiscosBackups $discos,
     ): int {
         $fallos = 0;
 
@@ -36,7 +38,7 @@ class BackupsDiagnostico extends Command
             $fallos++;
         }
 
-        $this->mostrarConfiguracion($programacion);
+        $this->mostrarConfiguracion($programacion, $discos);
         $this->mostrarBackups();
 
         if ($this->option('limpiar-temporales')) {
@@ -132,15 +134,20 @@ class BackupsDiagnostico extends Command
         return $escribible;
     }
 
-    private function mostrarConfiguracion(BackupProgramacionService $programacion): void
+    private function mostrarConfiguracion(BackupProgramacionService $programacion, DiscosBackups $discos): void
     {
         $config = $programacion->configuracion();
+
+        $destino = $config['destino'] === null
+            ? 'predeterminado'
+            : $config['destino'].' → '.$discos->ruta($discos->nombreDisco($config['destino']));
 
         $this->info('Automatización');
         $this->line('  habilitado: '.($config['habilitado'] ? 'sí' : 'no'));
         $this->line('  frecuencia: '.$config['frecuencia']);
         $this->line('  hora:       '.$config['hora']);
         $this->line('  máximo:     '.$config['maximo']);
+        $this->line('  destino:    '.$destino);
         $this->line('  última:     '.($config['ultima_ejecucion']?->format('d/m/Y H:i') ?? 'nunca'));
         $this->line('  próxima:    '.($config['proxima_ejecucion']?->format('d/m/Y H:i') ?? 'no programada'));
         $this->newLine();

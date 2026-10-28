@@ -25,6 +25,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Disco de destino configurable
+    |--------------------------------------------------------------------------
+    |
+    | El administrador puede elegir una unidad local del servidor (por ejemplo
+    | D:) desde la pestaña Automatización. Los backups nuevos se guardan en
+    | {unidad}\{carpeta_destino}. Sin selección se usa el disco `backups`
+    | (storage/app/private/backups-{app_slug}).
+    |
+    | `destinos` permite declarar el catálogo manualmente (Linux o pruebas):
+    | [['id' => 'D', 'ruta' => '/mnt/d', 'etiqueta' => 'Disco D']]
+    | Si está vacío, en Windows se enumeran las unidades existentes.
+    |
+    */
+
+    'carpeta_destino' => env('BACKUP_CARPETA_DESTINO', 'backup-seguimiento'),
+
+    'destinos' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | Binarios de MySQL (vacío = autodetección)
     |--------------------------------------------------------------------------
     */

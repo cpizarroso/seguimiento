@@ -74,9 +74,18 @@ export interface Automatizacion {
     maximo: number;
     cuota_mb: number;
     alerta_porcentaje: number;
+    destino: string | null;
     ultima_ejecucion: string | null;
     proxima_ejecucion: string | null;
     habilitado_en: string | null;
+}
+
+export interface DiscoDestino {
+    id: string;
+    etiqueta: string;
+    ruta: string;
+    libre_bytes: number | null;
+    total_bytes: number | null;
 }
 
 export interface EventoBackup {
@@ -104,4 +113,7 @@ export interface BackupsIndexProps {
     historial: EventoBackup[];
     puede: PuedeBackups;
     limite_importacion_mb: number;
+    destinos: DiscoDestino[];
+    destino_actual: string | null;
+    ruta_predeterminada: string;
 }

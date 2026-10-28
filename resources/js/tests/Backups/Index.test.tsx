@@ -103,6 +103,7 @@ const automatizacion: Automatizacion = {
     maximo: 10,
     cuota_mb: 0,
     alerta_porcentaje: 85,
+    destino: null,
     ultima_ejecucion: '26/10/2026 02:00',
     proxima_ejecucion: '27/10/2026 02:00',
     habilitado_en: '25/10/2026 10:00',
@@ -124,6 +125,9 @@ function props(puede: PuedeBackups = todosLosPermisos): BackupsIndexProps {
         historial: [],
         puede,
         limite_importacion_mb: 100,
+        destinos: [],
+        destino_actual: null,
+        ruta_predeterminada: 'storage/app/private/backups-seguimiento-dev',
     };
 }
 

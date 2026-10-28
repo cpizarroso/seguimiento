@@ -4,11 +4,14 @@ import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { formatearBytes } from './formato';
 import { backupService } from '@/services/backupService';
-import type { Automatizacion } from '@/types/backups';
+import type { Automatizacion, DiscoDestino } from '@/types/backups';
 
 interface Props {
     automatizacion: Automatizacion;
+    destinos: DiscoDestino[];
+    rutaPredeterminada: string;
 }
 
 type Modo = 'desactivada' | 'diaria' | 'semanal' | 'mensual';
@@ -30,7 +33,7 @@ const MODOS: Array<{ valor: Modo; titulo: string; descripcion: string }> = [
     { valor: 'mensual', titulo: 'Mensual', descripcion: 'Una copia el día del mes elegido.' },
 ];
 
-export function FormAutomatizacion({ automatizacion }: Props) {
+export function FormAutomatizacion({ automatizacion, destinos, rutaPredeterminada }: Props) {
     const form = useForm({
         habilitado: automatizacion.habilitado,
         frecuencia: automatizacion.frecuencia,
@@ -40,9 +43,27 @@ export function FormAutomatizacion({ automatizacion }: Props) {
         maximo: String(automatizacion.maximo),
         cuota_mb: String(automatizacion.cuota_mb),
         alerta_porcentaje: String(automatizacion.alerta_porcentaje),
+        destino: automatizacion.destino ?? '',
     });
 
     const modo: Modo = form.data.habilitado ? form.data.frecuencia : 'desactivada';
+
+    const destinoSeleccionado = destinos.find((disco) => disco.id === form.data.destino);
+    const rutaDestino = destinoSeleccionado?.ruta ?? rutaPredeterminada;
+
+    const unidadYaNoDisponible =
+        automatizacion.destino !== null && !destinos.some((disco) => disco.id === automatizacion.destino);
+
+    const opcionesDestino = [
+        { value: '', label: `Predeterminado del servidor (${rutaPredeterminada})` },
+        ...destinos.map((disco) => ({
+            value: disco.id,
+            label:
+                disco.libre_bytes === null
+                    ? `${disco.etiqueta} — espacio no disponible`
+                    : `${disco.etiqueta} — ${formatearBytes(disco.libre_bytes)} libres`,
+        })),
+    ];
 
     const elegirModo = (valor: Modo) => {
         if (valor === 'desactivada') {
@@ -135,6 +156,40 @@ export function FormAutomatizacion({ automatizacion }: Props) {
                             </span>
                         </label>
                     ))}
+                </div>
+
+                <div className="space-y-2 rounded-md border border-excel-border bg-excel-surface-2/60 p-3 dark:border-gray-700 dark:bg-gray-800/40">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Select
+                            label="Disco de destino"
+                            options={opcionesDestino}
+                            value={form.data.destino}
+                            onChange={(evento) => form.setData('destino', evento.target.value)}
+                            error={form.errors.destino}
+                        />
+
+                        <div className="space-y-1.5">
+                            <span className="block text-xs font-semibold text-excel-text dark:text-gray-200">
+                                Carpeta de destino
+                            </span>
+                            <p className="break-all rounded-md border border-excel-border bg-excel-surface px-3 py-2 font-mono text-[11px] leading-5 text-excel-muted dark:border-gray-600 dark:bg-gray-800">
+                                {rutaDestino}
+                            </p>
+                        </div>
+                    </div>
+
+                    {unidadYaNoDisponible && (
+                        <p className="inline-flex items-start gap-1.5 text-[11px] leading-relaxed text-excel-red">
+                            <Icon name="warning" size={13} className="mt-0.5 flex-shrink-0" />
+                            La unidad «{automatizacion.destino}» configurada ya no está disponible. El backup
+                            automático fallará hasta que elija otra unidad o vuelva al predeterminado.
+                        </p>
+                    )}
+
+                    <p className="text-[11px] leading-relaxed text-excel-muted">
+                        Los backups nuevos se guardan en <span className="font-mono">{rutaDestino}</span>. Los
+                        existentes no se mueven: siguen disponibles desde su ubicación original.
+                    </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

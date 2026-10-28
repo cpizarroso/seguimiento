@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Backups\DiscosBackups;
 use App\Models\Backup;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Calcula el estado del almacenamiento de backups (panel §16).
@@ -15,6 +17,7 @@ class BackupEspacioService
 {
     public function __construct(
         private readonly BackupProgramacionService $programacion,
+        private readonly DiscosBackups $discos,
     ) {}
 
     /**
@@ -41,8 +44,8 @@ class BackupEspacioService
     {
         $config = $this->programacion->configuracion();
 
-        $disco = Storage::disk((string) config('backups.disk'));
-        $ruta = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, rtrim($disco->path(''), '/\\'));
+        $disco = $this->discos->disco();
+        $ruta = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, rtrim($this->discos->ruta(), '/\\'));
 
         if (! is_dir($ruta)) {
             @mkdir($ruta, 0755, true);
@@ -119,8 +122,8 @@ class BackupEspacioService
     }
 
     /**
-     * @param  \Illuminate\Contracts\Filesystem\Filesystem  $disco
-     * @param  \Illuminate\Support\Collection<int, Backup>  $registrados
+     * @param  Filesystem  $disco
+     * @param  Collection<int, Backup>  $registrados
      * @return list<string>
      */
     private function huerfanos($disco, $registrados): array

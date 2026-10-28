@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Backups\DiscosBackups;
 use App\Models\Backup;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -16,6 +16,10 @@ use RuntimeException;
 class BackupValidador
 {
     public const EXTENSIONES = ['sql', 'gz'];
+
+    public function __construct(
+        private readonly DiscosBackups $discos,
+    ) {}
 
     /**
      * Valida una subida y devuelve el SQL descomprimido.
@@ -73,7 +77,7 @@ class BackupValidador
      */
     public function validarInterno(Backup $backup): string
     {
-        $disco = Storage::disk($backup->disco);
+        $disco = $this->discos->disco($backup->disco);
 
         if (! $disco->exists($backup->ruta)) {
             throw new RuntimeException('El archivo del backup ya no existe en el disco.');

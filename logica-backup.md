@@ -288,6 +288,30 @@ Ruta por defecto en esta instalación:
 storage/app/private/backups-seguimiento-adm/     (BACKUP_APP_SLUG=seguimiento-adm)
 ```
 
+### 4.1.1 Disco de destino configurable
+
+Desde la pestaña **Automatización** (`/backups`) se puede elegir una unidad local
+del servidor como destino de los backups nuevos. La carpeta es siempre
+`{unidad}\{BACKUP_CARPETA_DESTINO}` (por defecto `D:\backup-seguimiento`).
+
+- **Catálogo de unidades**: en Windows se enumeran las unidades existentes
+  (`A:`–`Z:`); en Linux se declaran en `config/backups.php → destinos`, con la
+  forma `[['id' => 'D', 'ruta' => '/mnt/d', 'etiqueta' => 'Disco D']]`.
+- **Validación**: solo se acepta un `id` de unidad del catálogo, nunca una ruta
+  libre. Al guardar se crea la carpeta y se comprueba la escritura real.
+- **Un disco por unidad**: el registro guarda `backups.disco` (`backups` para el
+  predeterminado, `backups-d` para `D:`), de modo que cada archivo conserva su
+  ubicación. Cambiar el destino **no mueve** los backups existentes: se siguen
+  descargando, protegiendo y borrando desde su disco original.
+- **Sin selección**: todo funciona como antes, en
+  `storage/app/private/backups-{slug}`.
+- **Unidad desconectada**: el backup falla con un error explícito
+  (`La unidad «D» no está disponible en el servidor.`), queda registrado como
+  `fallido` y el panel muestra la alerta. No hay reescritura silenciosa a otra
+  carpeta.
+- El panel de espacio (ruta, libre, huérfanos) refleja siempre el destino activo;
+  la cuota y la retención siguen siendo globales (suman todos los discos).
+
 > **El slug es independiente de `APP_NAME`.** `APP_NAME` es un texto cosmético («Segimiento ADM» hoy, con typo). Si se derivara la carpeta de él, corregir o traducir el nombre de la aplicación dejaría huérfanos todos los backups existentes. Por eso se usa la variable estable `BACKUP_APP_SLUG`. Corregir `APP_NAME` sigue siendo recomendable, pero ya no afecta al almacenamiento.
 
 > La carpeta **nunca** debe estar en `public/`. La descarga solo se sirve por ruta autenticada con permiso `backups.descarga`.

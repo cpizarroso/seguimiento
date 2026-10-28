@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Backups\DiscosBackups;
 use App\Models\Configuracion;
 use Illuminate\Support\Carbon;
 
@@ -29,6 +30,8 @@ class BackupProgramacionService
 
     public const CLAVE_ALERTA = 'backup_alerta_porcentaje';
 
+    public const CLAVE_DESTINO = DiscosBackups::CLAVE_DESTINO;
+
     public const CLAVE_ULTIMA_EJECUCION = 'backup_ultima_ejecucion';
 
     public const CLAVE_HABILITADO_EN = 'backup_auto_habilitado_en';
@@ -47,6 +50,7 @@ class BackupProgramacionService
             self::CLAVE_MAXIMO,
             self::CLAVE_CUOTA_MB,
             self::CLAVE_ALERTA,
+            self::CLAVE_DESTINO,
             self::CLAVE_ULTIMA_EJECUCION,
             self::CLAVE_HABILITADO_EN,
         ];
@@ -62,6 +66,7 @@ class BackupProgramacionService
      *     maximo: int,
      *     cuota_mb: int,
      *     alerta_porcentaje: int,
+     *     destino: ?string,
      *     ultima_ejecucion: ?Carbon,
      *     habilitado_en: ?Carbon,
      *     proxima_ejecucion: ?Carbon
@@ -83,6 +88,7 @@ class BackupProgramacionService
             'maximo' => max(1, (int) $this->valor($guardado, self::CLAVE_MAXIMO, config('backups.maximo_default', 10))),
             'cuota_mb' => max(0, (int) $this->valor($guardado, self::CLAVE_CUOTA_MB, config('backups.cuota_mb_default', 0))),
             'alerta_porcentaje' => min(99, max(1, (int) $this->valor($guardado, self::CLAVE_ALERTA, config('backups.alerta_porcentaje_default', 85)))),
+            'destino' => $this->textoOpcional($guardado, self::CLAVE_DESTINO),
             'ultima_ejecucion' => $ultima,
             'habilitado_en' => $this->fecha($this->valor($guardado, self::CLAVE_HABILITADO_EN, null)),
         ];
@@ -103,7 +109,8 @@ class BackupProgramacionService
      *     dia_mes?: int,
      *     maximo?: int,
      *     cuota_mb?: int,
-     *     alerta_porcentaje?: int
+     *     alerta_porcentaje?: int,
+     *     destino?: string|null
      * }  $datos
      */
     public function actualizar(array $datos): void
@@ -119,6 +126,7 @@ class BackupProgramacionService
             'maximo' => self::CLAVE_MAXIMO,
             'cuota_mb' => self::CLAVE_CUOTA_MB,
             'alerta_porcentaje' => self::CLAVE_ALERTA,
+            'destino' => self::CLAVE_DESTINO,
         ];
 
         foreach ($mapa as $campo => $clave) {
@@ -244,6 +252,13 @@ class BackupProgramacionService
         $valor = $guardado[$clave] ?? null;
 
         return $valor === null || $valor === '' ? (string) $default : (string) $valor;
+    }
+
+    private function textoOpcional(mixed $guardado, string $clave): ?string
+    {
+        $valor = trim((string) ($guardado[$clave] ?? ''));
+
+        return $valor === '' ? null : $valor;
     }
 
     private function fecha(?string $valor): ?Carbon

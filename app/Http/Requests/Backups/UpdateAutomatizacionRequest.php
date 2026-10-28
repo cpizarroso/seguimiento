@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests\Backups;
 
+use App\Backups\DiscosBackups;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class UpdateAutomatizacionRequest extends FormRequest
 {
@@ -26,6 +29,36 @@ class UpdateAutomatizacionRequest extends FormRequest
             'maximo' => ['required', 'integer', 'between:1,999'],
             'cuota_mb' => ['required', 'integer', 'between:0,1048576'],
             'alerta_porcentaje' => ['required', 'integer', 'between:1,99'],
+            'destino' => [
+                'nullable',
+                'string',
+                'max:60',
+                Rule::in(array_column(app(DiscosBackups::class)->destinos(), 'id')),
+            ],
+        ];
+    }
+
+    /**
+     * Verifica que la unidad elegida se pueda escribir antes de guardarla.
+     *
+     * @return list<callable>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $destino = $this->input('destino');
+
+                if ($validator->errors()->isNotEmpty() || ! is_string($destino) || $destino === '') {
+                    return;
+                }
+
+                try {
+                    app(DiscosBackups::class)->preparar($destino);
+                } catch (Throwable $e) {
+                    $validator->errors()->add('destino', $e->getMessage());
+                }
+            },
         ];
     }
 
@@ -50,6 +83,8 @@ class UpdateAutomatizacionRequest extends FormRequest
             'cuota_mb.between' => 'La cuota debe estar entre 0 y 1.048.576 MB.',
             'alerta_porcentaje.required' => 'Indique el porcentaje de alerta.',
             'alerta_porcentaje.between' => 'El porcentaje de alerta debe estar entre 1 y 99.',
+            'destino.in' => 'La unidad seleccionada no está disponible en el servidor.',
+            'destino.max' => 'La unidad seleccionada no es válida.',
         ];
     }
 
@@ -67,6 +102,7 @@ class UpdateAutomatizacionRequest extends FormRequest
             'maximo' => 'máximo de backups',
             'cuota_mb' => 'cuota',
             'alerta_porcentaje' => 'porcentaje de alerta',
+            'destino' => 'unidad de destino',
         ];
     }
 }

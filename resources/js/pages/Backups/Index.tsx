@@ -37,6 +37,8 @@ export default function BackupsIndex({
     historial,
     puede,
     limite_importacion_mb,
+    destinos,
+    ruta_predeterminada,
 }: BackupsIndexProps) {
     const [pestana, setPestana] = useState<Pestana>('backups');
     const acciones = useBackups(puede);
@@ -213,7 +215,11 @@ export default function BackupsIndex({
                     )}
                 </div>
             ) : puede.editar ? (
-                <FormAutomatizacion automatizacion={automatizacion} />
+                <FormAutomatizacion
+                    automatizacion={automatizacion}
+                    destinos={destinos}
+                    rutaPredeterminada={ruta_predeterminada}
+                />
             ) : (
                 <Card padding="lg">
                     <p className="text-sm text-excel-muted">

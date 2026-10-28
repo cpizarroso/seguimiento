@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Backups;
 
+use App\Backups\DiscosBackups;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backups\UpdateAutomatizacionRequest;
 use App\Http\Resources\BackupResource;
@@ -14,7 +15,6 @@ use App\Services\BackupValidador;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -27,6 +27,7 @@ class BackupController extends Controller
         private readonly BackupEspacioService $espacio,
         private readonly BackupProgramacionService $programacion,
         private readonly BackupValidador $validador,
+        private readonly DiscosBackups $discos,
     ) {}
 
     public function index(Request $request): Response
@@ -48,6 +49,7 @@ class BackupController extends Controller
                 'maximo' => $config['maximo'],
                 'cuota_mb' => $config['cuota_mb'],
                 'alerta_porcentaje' => $config['alerta_porcentaje'],
+                'destino' => $config['destino'],
                 'ultima_ejecucion' => $config['ultima_ejecucion']?->format('d/m/Y H:i'),
                 'proxima_ejecucion' => $config['proxima_ejecucion']?->format('d/m/Y H:i'),
                 'habilitado_en' => $config['habilitado_en']?->format('d/m/Y H:i'),
@@ -75,6 +77,9 @@ class BackupController extends Controller
                 'restaurar' => $user->hasPermission('backups', 'restauracion'),
             ],
             'limite_importacion_mb' => max(1, (int) round($this->validador->maximoBytes() / 1048576)),
+            'destinos' => $this->discos->destinos(),
+            'destino_actual' => $this->discos->destinoActual(),
+            'ruta_predeterminada' => $this->discos->ruta(DiscosBackups::DISCO_PREDETERMINADO),
         ]);
     }
 
@@ -126,7 +131,7 @@ class BackupController extends Controller
     {
         abort_unless($backup->estado === Backup::ESTADO_COMPLETADO, 404);
 
-        $disco = Storage::disk($backup->disco);
+        $disco = $this->discos->disco($backup->disco);
 
         abort_unless($disco->exists($backup->ruta), 404, 'El archivo del backup no existe.');
 
