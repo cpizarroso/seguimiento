@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Area;
+use App\Models\Permiso;
 use App\Models\Rol;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -49,6 +50,14 @@ class UserResource extends JsonResource
 
                 return $area?->id;
             }),
+            'permisos_overrides' => $this->whenLoaded('permisosDirectos', fn () => $this->permisosDirectos
+                ->map(fn (Permiso $permiso) => [
+                    'permiso_id' => $permiso->id,
+                    'permitido' => (bool) $permiso->pivot->permitido,
+                    'modulo' => $permiso->modulo->slug,
+                    'accion' => $permiso->accion->slug,
+                ])
+                ->values()),
         ];
     }
 }

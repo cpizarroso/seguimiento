@@ -1,7 +1,10 @@
+import { router } from '@inertiajs/react';
 import type { InertiaForm } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { SelectorFechaHora } from '@/components/ui/SelectorFechaHora';
 import type { SecuenciasPorArea } from '@/types/tramites';
 
 export interface TramiteAreaOption {
@@ -15,6 +18,7 @@ export type TramiteFormType = InertiaForm<{
     numero_diamante: string;
     area_id: string;
     urgente: boolean;
+    fecha?: string;
 }>;
 
 interface TramiteFormProps {
@@ -29,6 +33,8 @@ interface TramiteFormProps {
     secuencias?: SecuenciasPorArea;
     /** Número ya asignado al trámite; solo se usa al editar. */
     numeroAsignado?: string;
+    /** Muestra el selector de fecha y hora; solo al crear un trámite. */
+    mostrarFechaHora?: boolean;
 }
 
 export function TramiteForm({
@@ -41,8 +47,23 @@ export function TramiteForm({
     onCancel,
     secuencias,
     numeroAsignado,
+    mostrarFechaHora = false,
 }: TramiteFormProps) {
     const { data, setData, post, put, processing, errors } = form;
+
+    // Recarga la previsualización de la numeración cuando la fecha cambia de gestión.
+    const yearCargado = useRef<number | null>(data.fecha ? Number(data.fecha.slice(0, 4)) : null);
+
+    useEffect(() => {
+        if (!mostrarFechaHora || !data.fecha) return;
+
+        const year = Number(data.fecha.slice(0, 4));
+
+        if (!Number.isFinite(year) || year === yearCargado.current) return;
+
+        yearCargado.current = year;
+        router.reload({ only: ['secuencias'], data: { year } });
+    }, [data.fecha, mostrarFechaHora]);
 
     const secuencia = secuencias?.[String(data.area_id)];
     const numeroInfo = numeroAsignado
@@ -118,6 +139,22 @@ export function TramiteForm({
                     error={errors.numero_diamante}
                     placeholder="Opcional"
                 />
+
+                {mostrarFechaHora && (
+                    <div className="sm:col-span-2">
+                        <SelectorFechaHora
+                            id="tramite-fecha"
+                            label="Fecha y hora del trámite"
+                            value={data.fecha ?? ''}
+                            onChange={(valor) => setData('fecha', valor)}
+                            error={errors.fecha}
+                            required
+                        />
+                        <p className="mt-1 text-xs text-excel-muted dark:text-gray-400">
+                            Por defecto se usa la fecha y hora actual. No se permiten fechas futuras.
+                        </p>
+                    </div>
+                )}
 
                 <div className="sm:col-span-2">
                     <label htmlFor="tramite-descripcion" className="block text-sm font-medium text-patuju-green dark:text-patuju-green">

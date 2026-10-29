@@ -15,7 +15,13 @@ class UserService
     public function listar(array $filtros = []): LengthAwarePaginator
     {
         return User::query()
-            ->with(['persona.puestoActivo.puesto.area', 'roles', 'areasHabilitadas'])
+            ->with([
+                'persona.puestoActivo.puesto.area',
+                'roles',
+                'areasHabilitadas',
+                'permisosDirectos.permiso.modulo',
+                'permisosDirectos.permiso.accion',
+            ])
             ->leftJoin('personas', 'personas.id', '=', 'users.persona_id')
             ->select('users.*')
             ->when($filtros['search'] ?? null, function ($q, $v) {
@@ -55,9 +61,10 @@ class UserService
     public function crear(array $data): User
     {
         $roleIds = $data['role_ids'] ?? [];
-        unset($data['role_ids']);
+        $permisos = $data['permisos'] ?? [];
+        unset($data['role_ids'], $data['permisos']);
 
-        return DB::transaction(function () use ($data, $roleIds) {
+        return DB::transaction(function () use ($data, $roleIds, $permisos) {
             $user = User::create([
                 'username' => $data['username'] ?? User::usernameDesdeEmail($data['email']),
                 'email' => $data['email'],
@@ -67,6 +74,7 @@ class UserService
 
             $user->roles()->sync($roleIds);
             $this->sincronizarAreasHabilitadas($user, $data);
+            $this->sincronizarPermisosDirectos($user, $permisos);
 
             return $user;
         });
@@ -75,9 +83,10 @@ class UserService
     public function actualizar(User $user, array $data): User
     {
         $roleIds = $data['role_ids'] ?? [];
-        unset($data['role_ids']);
+        $permisos = $data['permisos'] ?? [];
+        unset($data['role_ids'], $data['permisos']);
 
-        return DB::transaction(function () use ($user, $data, $roleIds) {
+        return DB::transaction(function () use ($user, $data, $roleIds, $permisos) {
             $updateData = [
                 'username' => $data['username'] ?? User::usernameDesdeEmail($data['email']),
                 'email' => $data['email'],
@@ -91,9 +100,32 @@ class UserService
             $user->update($updateData);
             $user->roles()->sync($roleIds);
             $this->sincronizarAreasHabilitadas($user, $data);
+            $this->sincronizarPermisosDirectos($user, $permisos);
 
             return $user;
         });
+    }
+
+    /**
+     * Sincroniza los permisos concedidos o denegados por encima del rol.
+     *
+     * @param  array<int, array{permiso_id?: mixed, permitido?: mixed}>  $permisos
+     */
+    private function sincronizarPermisosDirectos(User $user, array $permisos): void
+    {
+        $sync = [];
+
+        foreach ($permisos as $permiso) {
+            $permisoId = (int) ($permiso['permiso_id'] ?? 0);
+
+            if ($permisoId <= 0) {
+                continue;
+            }
+
+            $sync[$permisoId] = ['permitido' => (bool) ($permiso['permitido'] ?? false)];
+        }
+
+        $user->permisosDirectos()->sync($sync);
     }
 
     /**
@@ -136,8 +168,14 @@ class UserService
 
     public function obtenerPorId(int $id): User
     {
-        return User::with(['persona.puestoActivo.puesto.area', 'persona.historialPuestos.puesto.area', 'roles', 'areasHabilitadas'])
-            ->findOrFail($id);
+        return User::with([
+            'persona.puestoActivo.puesto.area',
+            'persona.historialPuestos.puesto.area',
+            'roles',
+            'areasHabilitadas',
+            'permisosDirectos.permiso.modulo',
+            'permisosDirectos.permiso.accion',
+        ])->findOrFail($id);
     }
 
     public function resetPassword(User $user, string $password, ?string $exceptSessionId = null): void

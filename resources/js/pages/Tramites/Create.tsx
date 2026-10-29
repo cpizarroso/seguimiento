@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Card } from '@/components/ui/Card';
 import { TramiteForm, type TramiteAreaOption } from '@/components/features/tramites/TramiteForm';
+import { fechaHoraActual } from '@/components/ui/SelectorFechaHora';
 import type { SecuenciasPorArea } from '@/types/tramites';
 
 interface CreateProps {
@@ -16,6 +17,7 @@ export default function TramitesCreate({ areas, secuencias }: CreateProps) {
         numero_diamante: '',
         area_id: areaPredeterminada ? String(areaPredeterminada.id) : '',
         urgente: false as boolean,
+        fecha: fechaHoraActual(),
     });
 
     return (

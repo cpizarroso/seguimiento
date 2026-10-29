@@ -32,6 +32,7 @@ class RolesYPermisosSeeder extends Seeder
             ['nombre' => 'Creación', 'slug' => 'creacion'],
             ['nombre' => 'Edición', 'slug' => 'edicion'],
             ['nombre' => 'Baja', 'slug' => 'baja'],
+            ['nombre' => 'Tramitación', 'slug' => 'tramitacion'],
         ];
 
         foreach ($acciones as $a) {
@@ -43,7 +44,7 @@ class RolesYPermisosSeeder extends Seeder
 
         $permisosMatrix = [
             'dashboard' => ['consulta'],
-            'tramites' => ['consulta', 'creacion', 'edicion', 'baja'],
+            'tramites' => ['consulta', 'creacion', 'edicion', 'baja', 'tramitacion'],
             'personas' => ['consulta', 'creacion', 'edicion', 'baja'],
             'areas_puestos' => ['consulta', 'creacion', 'edicion', 'baja'],
             'reporte' => ['consulta'],
@@ -76,7 +77,7 @@ class RolesYPermisosSeeder extends Seeder
                 'es_sistema' => true,
                 'permisos' => [
                     'dashboard' => ['consulta'],
-                    'tramites' => ['consulta', 'creacion', 'edicion'],
+                    'tramites' => ['consulta', 'creacion', 'edicion', 'tramitacion'],
                     'reporte' => ['consulta'],
                     'configuracion' => ['consulta'],
                 ],
@@ -87,7 +88,7 @@ class RolesYPermisosSeeder extends Seeder
                 'es_sistema' => true,
                 'permisos' => [
                     'dashboard' => ['consulta'],
-                    'tramites' => ['consulta'],
+                    'tramites' => ['consulta', 'tramitacion'],
                     'reporte' => ['consulta'],
                 ],
             ],
@@ -97,7 +98,7 @@ class RolesYPermisosSeeder extends Seeder
                 'es_sistema' => true,
                 'permisos' => [
                     'dashboard' => ['consulta'],
-                    'tramites' => ['consulta'],
+                    'tramites' => ['consulta', 'tramitacion'],
                     'reporte' => ['consulta'],
                     'configuracion' => ['consulta'],
                 ],

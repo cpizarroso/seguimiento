@@ -149,13 +149,49 @@ class User extends Authenticatable
         return $this->areasHabilitadas->contains('id', $areaId);
     }
 
+    /**
+     * Permisos concedidos o denegados explícitamente a este usuario, por
+     * encima de lo que aportan sus roles.
+     */
+    public function permisosDirectos(): BelongsToMany
+    {
+        return $this->belongsToMany(Permiso::class, 'permiso_user')
+            ->withPivot('permitido')
+            ->withTimestamps();
+    }
+
+    /**
+     * Overrides del usuario como mapa "modulo.accion" => permitido.
+     *
+     * @return array<string, bool>
+     */
+    public function overridesPermisos(): array
+    {
+        return $this->permisosDirectos
+            ->mapWithKeys(fn (Permiso $permiso) => [
+                "{$permiso->modulo->slug}.{$permiso->accion->slug}" => (bool) $permiso->pivot->permitido,
+            ])
+            ->all();
+    }
+
     public function permisos(): Collection
     {
         return $this->roles->flatMap(fn ($rol) => $rol->permisos);
     }
 
+    /**
+     * Resolución: un override explícito gana siempre (incluso para admin),
+     * luego el bypass de admin y, por último, los permisos del rol.
+     */
     public function hasPermission(string $module, string $action): bool
     {
+        $slug = "{$module}.{$action}";
+        $overrides = $this->overridesPermisos();
+
+        if (array_key_exists($slug, $overrides)) {
+            return $overrides[$slug];
+        }
+
         if ($this->hasAnyRole([self::ROL_ADMIN])) {
             return true;
         }
@@ -171,17 +207,22 @@ class User extends Authenticatable
 
     public function getPermisosSlugAttribute(): array
     {
-        if ($this->hasAnyRole([self::ROL_ADMIN])) {
-            return Permiso::with(['modulo', 'accion'])
-                ->get()
-                ->map(fn ($p) => "{$p->modulo->slug}.{$p->accion->slug}")
-                ->values()
-                ->toArray();
+        $base = $this->hasAnyRole([self::ROL_ADMIN])
+            ? Permiso::with(['modulo', 'accion'])->get()
+            : $this->permisos();
+
+        $slugs = $base
+            ->map(fn ($p) => "{$p->modulo->slug}.{$p->accion->slug}")
+            ->flip();
+
+        foreach ($this->overridesPermisos() as $slug => $permitido) {
+            if ($permitido) {
+                $slugs[$slug] = true;
+            } else {
+                $slugs->forget($slug);
+            }
         }
 
-        return $this->permisos()
-            ->map(fn ($p) => "{$p->modulo->slug}.{$p->accion->slug}")
-            ->values()
-            ->toArray();
+        return $slugs->keys()->values()->toArray();
     }
 }

@@ -11,6 +11,7 @@ use App\Http\Resources\AreaResource;
 use App\Http\Resources\PersonaResource;
 use App\Http\Resources\RolResource;
 use App\Http\Resources\UserResource;
+use App\Models\Permiso;
 use App\Models\Rol;
 use App\Models\User;
 use App\Services\AreaService;
@@ -48,7 +49,35 @@ class UserController extends Controller
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
             'personas' => PersonaResource::collection($this->personaService->obtenerTodos()),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'permisos' => $this->catalogoPermisos(),
         ]);
+    }
+
+    /**
+     * Catálogo completo de permisos para el control Heredar / Permitir / Denegar.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function catalogoPermisos(): array
+    {
+        return Permiso::query()
+            ->with(['modulo', 'accion'])
+            ->get()
+            ->sortBy(fn (Permiso $permiso) => sprintf(
+                '%03d|%s|%s',
+                (int) ($permiso->modulo->orden ?? 0),
+                $permiso->modulo->slug,
+                $permiso->accion->slug,
+            ))
+            ->map(fn (Permiso $permiso) => [
+                'id' => $permiso->id,
+                'modulo' => $permiso->modulo->slug,
+                'modulo_nombre' => $permiso->modulo->nombre,
+                'accion' => $permiso->accion->slug,
+                'accion_nombre' => $permiso->accion->nombre,
+            ])
+            ->values()
+            ->all();
     }
 
     public function store(StoreUserRequest $request): RedirectResponse
@@ -73,6 +102,8 @@ class UserController extends Controller
             'persona.historialPuestos.puesto.area',
             'roles.permisos',
             'areasHabilitadas',
+            'permisosDirectos.permiso.modulo',
+            'permisosDirectos.permiso.accion',
         ]);
 
         return Inertia::render('Users/Show', [
@@ -82,13 +113,20 @@ class UserController extends Controller
 
     public function edit(User $user): Response
     {
-        $user->load('persona.puestoActivo.puesto.area', 'roles', 'areasHabilitadas');
+        $user->load(
+            'persona.puestoActivo.puesto.area',
+            'roles',
+            'areasHabilitadas',
+            'permisosDirectos.permiso.modulo',
+            'permisosDirectos.permiso.accion',
+        );
 
         return Inertia::render('Users/Edit', [
             'user' => new UserResource($user),
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
             'personas' => PersonaResource::collection($this->personaService->obtenerTodos()),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'permisos' => $this->catalogoPermisos(),
         ]);
     }
 

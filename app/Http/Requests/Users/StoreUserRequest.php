@@ -3,11 +3,13 @@
 namespace App\Http\Requests\Users;
 
 use App\Http\Requests\Concerns\ValidaAreasHabilitadas;
+use App\Http\Requests\Concerns\ValidaPermisosDirectos;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
 {
     use ValidaAreasHabilitadas;
+    use ValidaPermisosDirectos;
 
     public function authorize(): bool
     {
@@ -32,6 +34,7 @@ class StoreUserRequest extends FormRequest
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
             ...$this->reglasAreasHabilitadas(),
+            ...$this->reglasPermisosDirectos(),
         ];
     }
 

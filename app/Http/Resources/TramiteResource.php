@@ -17,7 +17,7 @@ class TramiteResource extends JsonResource
             'numero_formateado' => $this->numero_formateado,
             'numero_completo' => $this->numero_completo,
             'year' => $this->year,
-            'fecha' => $this->fecha?->format('d/m/Y'),
+            'fecha' => $this->fecha?->format('d/m/Y H:i'),
             'descripcion' => $this->descripcion,
             'numero_diamante' => $this->numero_diamante,
             'estado' => $this->estado,

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Derivaciones\DerivarTramiteRequest;
 use App\Http\Requests\Derivaciones\DerivarTramitesRequest;
 use App\Http\Requests\Derivaciones\RecepcionarDerivacionRequest;
+use App\Http\Requests\Derivaciones\RecepcionarTramitesRequest;
 use App\Http\Requests\Derivaciones\RechazarDerivacionRequest;
 use App\Models\Derivacion;
 use App\Models\Tramite;
@@ -82,6 +83,38 @@ class DerivacionController extends Controller
 
         return to_route('tramites.show', $derivacion->tramite_id)
             ->with('success', 'Derivación recepcionada exitosamente.');
+    }
+
+    public function recepcionarVarios(RecepcionarTramitesRequest $request): RedirectResponse
+    {
+        $usuarioId = (int) $request->user()?->id;
+        $ids = collect($request->input('tramite_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $tramites = Tramite::whereIn('id', $ids)->get();
+        $noPermitidos = $tramites->reject(
+            fn (Tramite $tramite) => $this->derivacionService->puedeRecepcionar($tramite, $usuarioId)
+        );
+
+        if ($tramites->count() !== $ids->count() || $noPermitidos->isNotEmpty()) {
+            $numeros = $noPermitidos->pluck('numero_completo')->implode(', ');
+
+            throw ValidationException::withMessages([
+                'tramite_ids' => $numeros !== ''
+                    ? "No puedes recepcionar los siguientes trámites: {$numeros}."
+                    : 'Uno o más trámites seleccionados ya no están disponibles.',
+            ]);
+        }
+
+        $cantidad = $this->derivacionService->recepcionarVarios(
+            $tramites,
+            $usuarioId,
+            $request->input('glosa_recepcion'),
+        );
+
+        return back()->with('success', "Se recepcionaron {$cantidad} trámite".($cantidad === 1 ? '' : 's').'.');
     }
 
     public function rechazar(RechazarDerivacionRequest $request, Derivacion $derivacion): RedirectResponse

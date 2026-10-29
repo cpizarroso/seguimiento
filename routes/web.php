@@ -41,10 +41,15 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:tramites,edicion')->group(function () {
         Route::get('tramites/{tramite}/edit', [TramiteController::class, 'edit'])->name('tramites.edit');
         Route::put('tramites/{tramite}', [TramiteController::class, 'update'])->name('tramites.update');
+    });
+
+    Route::middleware('permission:tramites,tramitacion')->group(function () {
         Route::put('tramites/{tramite}/estado', [TramiteController::class, 'updateEstado'])
             ->name('tramites.update-estado');
         Route::post('tramites/derivar-varios', [DerivacionController::class, 'derivarVarios'])
             ->name('tramites.derivar-varios');
+        Route::post('tramites/recepcionar-varios', [DerivacionController::class, 'recepcionarVarios'])
+            ->name('tramites.recepcionar-varios');
         Route::post('tramites/{tramite}/derivar', [DerivacionController::class, 'derivar'])
             ->name('tramites.derivar');
         Route::put('derivaciones/{derivacion}/recepcionar', [DerivacionController::class, 'recepcionar'])

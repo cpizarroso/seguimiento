@@ -119,12 +119,12 @@ class TramiteService
                 $q->where('tramites.urgente', filter_var($filtros['urgente'], FILTER_VALIDATE_BOOLEAN));
             })
             ->when(filled($filtros['fecha_desde'] ?? null), function ($q) use ($filtros) {
-                $q->where('tramites.created_at', '>=', Carbon::parse($filtros['fecha_desde'])->startOfDay());
+                $q->where('tramites.fecha', '>=', Carbon::parse($filtros['fecha_desde'])->startOfDay());
             })
             ->when(filled($filtros['fecha_hasta'] ?? null), function ($q) use ($filtros) {
-                $q->where('tramites.created_at', '<', Carbon::parse($filtros['fecha_hasta'])->addDay()->startOfDay());
+                $q->where('tramites.fecha', '<', Carbon::parse($filtros['fecha_hasta'])->addDay()->startOfDay());
             })
-            ->when(isset($filtros['hoy']) && $filtros['hoy'] !== null && $filtros['hoy'] !== '' && filter_var($filtros['hoy'], FILTER_VALIDATE_BOOLEAN), fn ($q) => $q->whereDate('tramites.created_at', today()));
+            ->when(isset($filtros['hoy']) && $filtros['hoy'] !== null && $filtros['hoy'] !== '' && filter_var($filtros['hoy'], FILTER_VALIDATE_BOOLEAN), fn ($q) => $q->whereDate('tramites.fecha', today()));
 
         return $this->aplicarOrden($query, $filtros);
     }
@@ -178,6 +178,7 @@ class TramiteService
             'numero_tramite',
             'urgente',
             'created_at',
+            'fecha',
             'numero_diamante',
             'area',
             'descripcion',
@@ -240,14 +241,17 @@ class TramiteService
 
     public function crear(array $data, int $creadoPor): Tramite
     {
-        $areaId = $data['area_id'];
-        $year = now()->year;
+        $areaId = (int) $data['area_id'];
+        $fecha = filled($data['fecha'] ?? null)
+            ? Carbon::createFromFormat('Y-m-d\TH:i', (string) $data['fecha'])
+            : now();
+        $year = (int) $fecha->year;
         $numero = $this->contadorService->siguienteNumero($areaId, $year);
 
         $tramite = Tramite::create([
             'numero_tramite' => $numero,
             'year' => $year,
-            'fecha' => now(),
+            'fecha' => $fecha,
             'descripcion' => $data['descripcion'],
             'numero_diamante' => $data['numero_diamante'] ?? null,
             'estado' => 'iniciado',

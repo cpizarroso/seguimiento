@@ -112,23 +112,32 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 
 ## Seeders disponibles
 
-- `php artisan db:seed` — ejecuta `DatabaseSeeder`: **limpia** las tablas de negocio (incluidas `backups` y `backup_eventos`), corre todos los seeders y sincroniza roles, áreas habilitadas y contadores
-- `php artisan migrate:fresh --seed` — reset completo + seed
+- `php artisan db:seed` — ejecuta `DatabaseSeeder`: **limpia** las tablas de negocio (incluidas `backups` y `backup_eventos`, solo si existen) y siembra únicamente roles y permisos, configuración, áreas con sus puestos y los usuarios institucionales. **No crea trámites, derivaciones ni actuaciones**
+- `php artisan migrate:fresh --seed` — reset completo + seed (deja la base operativa vacía de trámites)
 - `php artisan db:seed --class=RolesYPermisosSeeder` — módulos, acciones, permisos y roles (`admin`, `secretaria`, `jefe`, `user`)
 - `php artisan db:seed --class=PermisosBackupsSeeder` — módulo `backups` con sus 6 permisos; idempotente
 - `php artisan db:seed --class=ConfiguracionSeeder` — configuración inicial (gestión del reporte)
 - `php artisan db:seed --class=AreaSeeder` — áreas y puestos
-- `php artisan db:seed --class=PersonaSeeder` — personas de ejemplo
-- `php artisan db:seed --class=AdminUserSeeder` — usuarios administradores
-- `php artisan db:seed --class=UserSeeder` / `UserSecretariaSeeder` — usuarios de prueba por puesto y secretaría
-- `php artisan db:seed --class=TramiteSeeder` — trámites con derivaciones y actuaciones (`crearParaUsuario($user, $cantidad)` para lotes a medida). Asume que ya existen usuarios y áreas sembrados
-- `php artisan db:seed --class=ActuacionSeeder` — actuaciones adicionales
+- `php artisan db:seed --class=UsuarioSeeder` — los 7 usuarios institucionales con su persona, puesto vigente, rol y áreas habilitadas; idempotente
+- `php artisan db:seed --class=TramiteSeeder` — **solo manual**: trámites con derivaciones y actuaciones (`crearParaUsuario($user, $cantidad)` para lotes a medida). Asume que ya existen usuarios y áreas sembrados
+- `php artisan db:seed --class=ActuacionSeeder` — **solo manual**: actuaciones adicionales
+- `PersonaSeeder`, `AdminUserSeeder`, `UserSeeder` y `UserSecretariaSeeder` quedan en disco como referencia histórica pero **ya no se invocan** desde `DatabaseSeeder`; `UsuarioSeeder` los reemplaza
 
 ### Usuarios
 - El dominio institucional de las cuentas es `APP_USER_DOMAIN` (`.env`; por defecto `seguimiento.com`) y se expone al frontend como `dominio_usuario`
-- Admin: `admin@seguimiento.com` / `password` (Carlos Mendoza)
-- También son admin: `amontoya@seguimiento.com` y `cpizarroso@seguimiento.com`, misma contraseña
-- Secretaría: `erodriguez@seguimiento.com` / `password`
+- El seed deja exactamente **7 usuarios**, todos con contraseña `1234567`:
+
+  | Usuario | Nombre | Área / Puesto | Rol |
+  |---|---|---|---|
+  | `amontoya@seguimiento.com` | Alfredo Montoya Calderón | SEMPLA / JEFE | admin |
+  | `cpizarroso@seguimiento.com` | Cristian Marcelo Pizarroso Peredo | SEMPLA / PROFESIONAL | admin |
+  | `erodriguez@seguimiento.com` | Erika Rodriguez | DLA / SECRETARIA | secretaria |
+  | `mfcastillo@seguimiento.com` | Mauricio Federico Castillo Otero | ADM / PROFESIONAL | user |
+  | `guantelo@seguimiento.com` | Gustavo Antelo Rivero | ADM / PROFESIONAL | user |
+  | `motero@seguimiento.com` | Monica Otero Melgar | ADM / ASISTENTE | user |
+  | `cyescudero@seguimiento.com` | Carol Yasmil Escudero Mariscal | SEMPLA / ASISTENTE | secretaria |
+
+- Áreas habilitadas: cada usuario tiene el área de su puesto como predeterminada, salvo `erodriguez`, que tiene `LEG` (predeterminada) y `ADM`
 - El login acepta el correo completo, el `username` o la parte local del correo institucional
 - `users.activo` (por defecto `true`): un usuario inactivo no puede iniciar sesión
 - Activar/desactivar se hace desde el modal de estado en el index, edit y show (permiso `usuarios.edicion`); al desactivar se cierran sus sesiones abiertas y se revocan sus tokens API. Un admin no puede desactivar su propia cuenta

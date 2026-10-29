@@ -40,6 +40,7 @@ class TramiteController extends Controller
         $filtros = $this->filtros();
         $filtros['per_page'] = request()->input('per_page', $this->userService->getPerPage($user));
         $areasCreacion = $this->areasParaCrear($user);
+        $year = $this->yearSolicitado();
 
         return Inertia::render('Tramites/Index', [
             'tramites' => TramiteResource::collection(
@@ -47,7 +48,7 @@ class TramiteController extends Controller
             ),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'areasCreacion' => AreaResource::collection($areasCreacion),
-            'secuencias' => $this->contadorService->secuenciasParaAreas($areasCreacion),
+            'secuencias' => $this->contadorService->secuenciasParaAreas($areasCreacion, $year),
             'destinatarios' => $this->destinatariosDerivacion($user),
         ]);
     }
@@ -99,8 +100,22 @@ class TramiteController extends Controller
 
         return Inertia::render('Tramites/Create', [
             'areas' => AreaResource::collection($areas),
-            'secuencias' => $this->contadorService->secuenciasParaAreas($areas),
+            'secuencias' => $this->contadorService->secuenciasParaAreas($areas, $this->yearSolicitado()),
         ]);
+    }
+
+    /**
+     * Gestión (año) solicitada para previsualizar la numeración.
+     */
+    private function yearSolicitado(): ?int
+    {
+        $year = request()->input('year');
+
+        if ($year === null || $year === '' || ! is_numeric($year)) {
+            return null;
+        }
+
+        return (int) $year;
     }
 
     /**
@@ -124,7 +139,7 @@ class TramiteController extends Controller
      */
     private function destinatariosDerivacion(?User $user): Collection
     {
-        if (! $user || ! $user->hasPermission('tramites', 'edicion')) {
+        if (! $user || ! $user->hasPermission('tramites', 'tramitacion')) {
             return collect();
         }
 

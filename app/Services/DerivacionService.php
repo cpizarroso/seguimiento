@@ -145,6 +145,57 @@ class DerivacionService
     }
 
     /**
+     * Última derivación del trámite si está pendiente de recepción por el usuario.
+     */
+    public function derivacionPendiente(Tramite $tramite, int $usuarioId): ?Derivacion
+    {
+        if ($tramite->estado === 'finalizado') {
+            return null;
+        }
+
+        $ultima = $tramite->derivaciones()
+            ->reorder('numero_derivacion', 'desc')
+            ->first();
+
+        if ($ultima === null
+            || $ultima->estado !== 'derivado'
+            || (int) $ultima->derivado_a !== $usuarioId) {
+            return null;
+        }
+
+        return $ultima;
+    }
+
+    public function puedeRecepcionar(Tramite $tramite, int $usuarioId): bool
+    {
+        return $this->derivacionPendiente($tramite, $usuarioId) !== null;
+    }
+
+    /**
+     * Recepciona varios trámites del usuario dentro de una transacción.
+     *
+     * @param  Collection<int, Tramite>  $tramites
+     */
+    public function recepcionarVarios(Collection $tramites, int $usuarioId, ?string $glosaRecepcion = null): int
+    {
+        return DB::transaction(function () use ($tramites, $usuarioId, $glosaRecepcion) {
+            foreach ($tramites as $tramite) {
+                $derivacion = $this->derivacionPendiente($tramite, $usuarioId);
+
+                if ($derivacion === null) {
+                    throw new \InvalidArgumentException(
+                        "El trámite {$tramite->numero_completo} no tiene una derivación pendiente para ti."
+                    );
+                }
+
+                $this->recepcionar($derivacion, $glosaRecepcion);
+            }
+
+            return $tramites->count();
+        });
+    }
+
+    /**
      * Usuarios que pueden recibir una derivación: tienen persona,
      * un puesto vigente y pertenecen a un área activa.
      *

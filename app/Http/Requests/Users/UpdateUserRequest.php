@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Users;
 
 use App\Http\Requests\Concerns\ValidaAreasHabilitadas;
+use App\Http\Requests\Concerns\ValidaPermisosDirectos;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateUserRequest extends FormRequest
 {
     use ValidaAreasHabilitadas;
+    use ValidaPermisosDirectos;
 
     public function authorize(): bool
     {
@@ -51,7 +54,13 @@ class UpdateUserRequest extends FormRequest
             'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['exists:roles,id'],
             ...$this->reglasAreasHabilitadas(),
+            ...$this->reglasPermisosDirectos(),
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(fn (Validator $validator) => $this->protegerAutoBloqueo($validator));
     }
 
     public function messages(): array
