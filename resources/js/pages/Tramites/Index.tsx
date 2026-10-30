@@ -555,7 +555,7 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                 }
 
                 return (
-                    <div className="flex flex-col items-center gap-1.5">
+                    <div className="flex flex-row items-center gap-1.5 flex-wrap">
                         <Badge
                             variant={derivacionColors[estado] ?? 'default'}
                             title={derivacionTitulos[estado] ?? estado}
@@ -570,7 +570,6 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                                 onClick={() => setRecepcionarTramiteId(t.id)}
                             >
                                 <Icon name="check" size={14} />
-                                Recepcionar
                             </Button>
                         )}
                         {esDerivable(t) && (
@@ -580,7 +579,6 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                                 onClick={() => setDerivarTramiteId(t.id)}
                             >
                                 <Icon name="arrow-right" size={14} />
-                                Derivar
                             </Button>
                         )}
                     </div>
