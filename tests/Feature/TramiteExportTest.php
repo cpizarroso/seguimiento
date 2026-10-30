@@ -16,7 +16,7 @@ beforeEach(function () {
 
 function tramiteCreadoAyer(): Tramite
 {
-    $tramite = Tramite::factory()->create();
+    $tramite = Tramite::factory()->create(['fecha' => now()->subDay()]);
 
     DB::table('tramites')->where('id', $tramite->id)->update([
         'created_at' => now()->subDay(),
@@ -26,8 +26,8 @@ function tramiteCreadoAyer(): Tramite
     return $tramite->fresh();
 }
 
-it('el filtro hoy muestra solo los tramites creados hoy', function () {
-    $deHoy = Tramite::factory()->create();
+it('el filtro hoy muestra solo los tramites con fecha de hoy', function () {
+    $deHoy = Tramite::factory()->create(['fecha' => now()]);
     $deAyer = tramiteCreadoAyer();
 
     $ids = app(TramiteService::class)->listar(['hoy' => '1'])->getCollection()->pluck('id')->all();
@@ -36,7 +36,7 @@ it('el filtro hoy muestra solo los tramites creados hoy', function () {
 });
 
 it('sin el filtro hoy el listado incluye tramites de otros dias', function () {
-    $deHoy = Tramite::factory()->create();
+    $deHoy = Tramite::factory()->create(['fecha' => now()]);
     $deAyer = tramiteCreadoAyer();
 
     $ids = app(TramiteService::class)->listar()->getCollection()->pluck('id')->all();
@@ -45,7 +45,7 @@ it('sin el filtro hoy el listado incluye tramites de otros dias', function () {
 });
 
 it('la exportacion respeta el filtro hoy', function () {
-    $deHoy = Tramite::factory()->create();
+    $deHoy = Tramite::factory()->create(['fecha' => now()]);
     $deAyer = tramiteCreadoAyer();
 
     $todas = app(TramitesExport::class, ['filtros' => []])->collection();

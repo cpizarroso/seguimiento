@@ -78,6 +78,7 @@ function Harness({ onCreated }: { onCreated?: (creado: any) => void } = {}) {
         role_ids: [] as number[],
         area_ids: [] as number[],
         area_predeterminada_id: '',
+        permisos: [] as { permiso_id: number; permitido: boolean }[],
     });
 
     const form: any = {

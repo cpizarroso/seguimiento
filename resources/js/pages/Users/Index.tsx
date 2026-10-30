@@ -14,7 +14,7 @@ import { ReporteAccesoModal } from '@/components/features/users/ReporteAccesoMod
 import { ResetPasswordModal, resetPasswordTarget } from '@/components/features/users/ResetPasswordModal';
 import type { ResetPasswordTarget } from '@/components/features/users/ResetPasswordModal';
 import { UserForm } from '@/components/features/users/UserForm';
-import type { RolOption, UsuarioCreado } from '@/components/features/users/UserForm';
+import type { RolOption, PermisoCatalogo, PermisoOverride, UsuarioCreado } from '@/components/features/users/UserForm';
 import { generarPassword } from '@/components/features/users/passwordReset';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { Area, PaginatedData, Persona } from '@/types/generated/Tramite';
@@ -30,6 +30,7 @@ interface UserRow {
     roles?: { id: number; nombre: string }[];
     areas?: { id: number; predeterminada: boolean }[];
     area_predeterminada_id?: number | null;
+    permisos_overrides?: PermisoOverride[];
 }
 
 interface UsersIndexProps {
@@ -37,9 +38,10 @@ interface UsersIndexProps {
     roles?: { data: RolOption[] };
     personas?: { data: Persona[] };
     areas?: { data: Area[] };
+    permisos?: PermisoCatalogo[];
 }
 
-export default function UsersIndex({ users, roles, personas, areas }: UsersIndexProps) {
+export default function UsersIndex({ users, roles, personas, areas, permisos }: UsersIndexProps) {
     const { url, props } = usePage();
     const { can } = usePermissions();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
@@ -55,7 +57,10 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
     const [estadoTarget, setEstadoTarget] = useState<EstadoUsuarioTarget | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
-    const puedeResetear = can('usuarios', 'edicion');
+    const puedeCrear = can('usuarios', 'creacion');
+    const puedeEditar = can('usuarios', 'edicion');
+    const puedeEliminar = can('usuarios', 'baja');
+    const puedeResetear = puedeEditar;
     const usuarioActualId = props.auth.user?.id ?? null;
 
     const hayFiltros = search !== '' || roleId !== '' || areaId !== '';
@@ -78,6 +83,7 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
         role_ids: [] as number[],
         area_ids: [] as number[],
         area_predeterminada_id: '',
+        permisos: [] as PermisoOverride[],
     }));
 
     const editForm = useForm({
@@ -88,6 +94,7 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
         role_ids: [] as number[],
         area_ids: [] as number[],
         area_predeterminada_id: '',
+        permisos: [] as PermisoOverride[],
     });
 
     const filtrosActuales = (overrides: Record<string, string | number | undefined> = {}) => ({
@@ -159,6 +166,10 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
             role_ids: (user.roles ?? []).map((rol) => rol.id),
             area_ids: areasUsuario.map((area) => area.id),
             area_predeterminada_id: predeterminada,
+            permisos: (user.permisos_overrides ?? []).map((permiso) => ({
+                permiso_id: permiso.permiso_id,
+                permitido: permiso.permitido,
+            })),
         });
         editForm.clearErrors();
         setEditUser(user);
@@ -222,7 +233,9 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                     <Link href={`/users/${user.id}`}>
                         <Button size="sm" variant="secondary">Ver</Button>
                     </Link>
-                    <Button size="sm" variant="secondary" onClick={() => abrirEdicion(user)}>Editar</Button>
+                    {puedeEditar && (
+                        <Button size="sm" variant="secondary" onClick={() => abrirEdicion(user)}>Editar</Button>
+                    )}
                     {puedeResetear && (
                         <Button
                             size="sm"
@@ -250,7 +263,9 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                             <Icon name={user.activo ? 'lock' : 'unlock'} size={14} />
                         </Button>
                     )}
-                    <Button size="sm" variant="danger" onClick={() => setDeleteTarget(user)}>Eliminar</Button>
+                    {puedeEliminar && (
+                        <Button size="sm" variant="danger" onClick={() => setDeleteTarget(user)}>Eliminar</Button>
+                    )}
                 </div>
             ),
         },
@@ -263,13 +278,15 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                     <h1 className="text-2xl font-bold text-patuju-green">Usuarios</h1>
                     <p className="text-sm text-gray-500">Cuentas vinculadas a una persona.</p>
                 </div>
-                <Button onClick={() => {
-                    createForm.reset();
-                    createForm.clearErrors();
-                    setCreateOpen(true);
-                }}>
-                    Nuevo usuario
-                </Button>
+                {puedeCrear && (
+                    <Button onClick={() => {
+                        createForm.reset();
+                        createForm.clearErrors();
+                        setCreateOpen(true);
+                    }}>
+                        Nuevo usuario
+                    </Button>
+                )}
             </div>
 
             <Card padding="sm">
@@ -375,6 +392,7 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                     roles={roles}
                     personas={personas}
                     areas={areas}
+                    permisos={permisos}
                     submitUrl="/users"
                     onCreated={(creado) => {
                         setCreateOpen(false);
@@ -405,6 +423,7 @@ export default function UsersIndex({ users, roles, personas, areas }: UsersIndex
                         roles={roles}
                         personas={personas}
                         areas={areas}
+                        permisos={permisos}
                         submitUrl={`/users/${editUser.id}`}
                         method="put"
                         isEditing

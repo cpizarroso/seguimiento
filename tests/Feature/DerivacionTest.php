@@ -42,6 +42,8 @@ it('expone el destino de la ultima derivacion en el index', function () {
     [$editor, , $areaEditor] = crearEditorConPuesto();
     crearTramiteDerivacion($editor, $areaEditor);
 
+    $puesto = $editor->persona->puestoActivo->puesto;
+
     $this->actingAs($editor)
         ->get(route('tramites.index'))
         ->assertOk()
@@ -49,6 +51,8 @@ it('expone el destino de la ultima derivacion en el index', function () {
             ->component('Tramites/Index')
             ->where('tramites.data.0.derivaciones.0.estado', 'recepcionado')
             ->where('tramites.data.0.derivaciones.0.derivado_a.id', $editor->id)
+            ->where('tramites.data.0.derivaciones.0.derivado_a.persona.area.codigo', $areaEditor->codigo)
+            ->where('tramites.data.0.derivaciones.0.derivado_a.persona.puesto_activo.puesto.nombre', $puesto->nombre)
         );
 });
 

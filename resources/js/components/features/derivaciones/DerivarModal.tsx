@@ -1,7 +1,8 @@
 import { useForm } from '@inertiajs/react';
 import { Modal } from '@/components/ui/Modal';
 import { DerivarForm } from './DerivarForm';
-import type { DestinatarioDerivacion } from '@/types/derivaciones';
+import { ResumenTramites } from './ResumenTramites';
+import type { DestinatarioDerivacion, TramiteResumenDerivacion } from '@/types/derivaciones';
 
 interface DerivarModalProps {
     open: boolean;
@@ -9,6 +10,7 @@ interface DerivarModalProps {
     destinatarios: DestinatarioDerivacion[];
     submitUrl: string;
     tramiteIds?: number[];
+    tramites?: TramiteResumenDerivacion[];
     title?: string;
     onSuccess?: () => void;
 }
@@ -19,6 +21,7 @@ export function DerivarModal({
     destinatarios,
     submitUrl,
     tramiteIds,
+    tramites,
     title = 'Derivar Trámite',
     onSuccess,
 }: DerivarModalProps) {
@@ -37,17 +40,20 @@ export function DerivarModal({
 
     return (
         <Modal open={open} onClose={cerrar} title={title} maxWidth="xl">
-            <DerivarForm
-                form={form}
-                destinatarios={destinatarios}
-                submitUrl={submitUrl}
-                onCancel={cerrar}
-                onSuccess={() => {
-                    form.reset();
-                    onSuccess?.();
-                    onClose();
-                }}
-            />
+            <div className="space-y-4">
+                {tramites && tramites.length > 0 && <ResumenTramites tramites={tramites} />}
+                <DerivarForm
+                    form={form}
+                    destinatarios={destinatarios}
+                    submitUrl={submitUrl}
+                    onCancel={cerrar}
+                    onSuccess={() => {
+                        form.reset();
+                        onSuccess?.();
+                        onClose();
+                    }}
+                />
+            </div>
         </Modal>
     );
 }

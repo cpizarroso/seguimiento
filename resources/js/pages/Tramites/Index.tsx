@@ -9,13 +9,15 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RangoCalendario } from '@/components/features/reporte/RangoCalendario';
+import { fechaHoraActual } from '@/components/ui/SelectorFechaHora';
 import { Table, type SortDirection } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
 import { TramiteForm } from '@/components/features/tramites/TramiteForm';
 import { DerivarModal } from '@/components/features/derivaciones/DerivarModal';
+import { ModalRecepcionMasiva } from '@/components/features/derivaciones/ModalRecepcionMasiva';
 import { usePermissions } from '@/hooks/usePermissions';
-import type { Tramite, PaginatedData, Area } from '@/types/generated/Tramite';
-import type { DestinatarioDerivacion } from '@/types/derivaciones';
+import type { Tramite, PaginatedData, Area, Derivacion, Persona } from '@/types/generated/Tramite';
+import type { DestinatarioDerivacion, TramiteResumenDerivacion } from '@/types/derivaciones';
 import type { SecuenciasPorArea } from '@/types/tramites';
 
 interface TramitesIndexProps {
@@ -40,8 +42,33 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
+const derivacionColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
+    derivado: 'warning',
+    recepcionado: 'success',
+    rechazado: 'danger',
+    historico: 'default',
+};
+
+const derivacionLabels: Record<string, string> = {
+    derivado: 'Pr',
+    recepcionado: 'RE',
+    rechazado: 'Rch',
+    historico: 'Hist',
+};
+
+const derivacionTitulos: Record<string, string> = {
+    derivado: 'Por recepcionar',
+    recepcionado: 'Recepcionado',
+    rechazado: 'Rechazado',
+    historico: 'Histórico',
+};
+
 const DEFAULT_SORT = 'created_at';
 const DEFAULT_DIRECTION: SortDirection = 'desc';
+
+type UsuarioDerivacion = NonNullable<Derivacion['derivado_a']> & {
+    persona?: Persona | null;
+};
 
 type FiltroRecepcion = 'todos' | 'por_recepcionar' | 'recepcionados';
 
@@ -71,10 +98,12 @@ const SORTABLE_KEYS = [
     'numero_tramite',
     'urgente',
     'created_at',
+    'fecha',
     'numero_diamante',
     'area',
     'descripcion',
     'ultima_derivacion',
+    'estado_derivacion',
     'dias_transcurridos',
     'estado',
 ];
@@ -84,9 +113,12 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
     const { auth } = usePage().props;
     const { can } = usePermissions();
     const usuarioId = auth.user?.id;
-    const puedeGestionar = can('tramites', 'edicion');
+    const puedeTramitar = can('tramites', 'tramitacion');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [derivarOpen, setDerivarOpen] = useState(false);
+    const [recepcionarOpen, setRecepcionarOpen] = useState(false);
+    const [derivarTramiteId, setDerivarTramiteId] = useState<number | null>(null);
+    const [recepcionarTramiteId, setRecepcionarTramiteId] = useState<number | null>(null);
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const hoyISO = fechaISO(new Date());
     const esRangoHoy = params.get('hoy') === '1';
@@ -127,7 +159,7 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
     const esHoy = aplicadoDesde === hoyISO && aplicadoHasta === hoyISO;
 
     const esDerivable = (tramite: Tramite): boolean => {
-        if (!usuarioId || !puedeGestionar || tramite.estado === 'finalizado' || tramite.asignado?.id !== usuarioId) {
+        if (!usuarioId || !puedeTramitar || tramite.estado === 'finalizado' || tramite.asignado?.id !== usuarioId) {
             return false;
         }
 
@@ -142,13 +174,25 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
         return ultima?.estado === 'recepcionado' && ultima.derivado_a?.id === usuarioId;
     };
 
+    const esRecepcionable = (tramite: Tramite): boolean => {
+        if (!usuarioId || !puedeTramitar || tramite.estado === 'finalizado' || tramite.asignado?.id !== usuarioId) {
+            return false;
+        }
+
+        const ultima = (tramite.derivaciones ?? []).at(-1);
+
+        return ultima?.estado === 'derivado' && ultima.derivado_a?.id === usuarioId;
+    };
+
+    const esSeleccionable = (tramite: Tramite): boolean => esDerivable(tramite) || esRecepcionable(tramite);
+
     useEffect(() => {
         setSelectedIds((previos) => previos.filter((id) => {
             const tramite = tramites.data.find((item) => item.id === id);
 
-            return tramite ? esDerivable(tramite) : false;
+            return tramite ? esSeleccionable(tramite) : false;
         }));
-    }, [tramites.data, puedeGestionar, usuarioId]);
+    }, [tramites.data, puedeTramitar, usuarioId]);
 
     useEffect(() => {
         setSelectedIds([]);
@@ -167,12 +211,18 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
         numero_diamante: '',
         area_id: areaPredeterminada ? String(areaPredeterminada.id) : '',
         urgente: false as boolean,
+        fecha: fechaHoraActual(),
     });
 
     const abrirCreacion = () => {
-        createForm.setData('area_id', areaPredeterminada ? String(areaPredeterminada.id) : '');
+        createForm.setData({
+            ...createForm.data,
+            area_id: areaPredeterminada ? String(areaPredeterminada.id) : '',
+            fecha: fechaHoraActual(),
+        });
         createForm.clearErrors();
-        router.reload({ only: ['secuencias'] });
+        const year = new Date().getFullYear();
+        router.reload({ only: ['secuencias'], data: { year } });
         setCreateOpen(true);
     };
 
@@ -348,6 +398,29 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
 
     const queryActual = url.split('?')[1] ?? '';
 
+    const idsDerivables = tramites.data.filter(esDerivable).map((t) => t.id);
+    const idsRecepcionables = tramites.data.filter(esRecepcionable).map((t) => t.id);
+    const seleccionadosDerivables = selectedIds.filter((id) => idsDerivables.includes(id));
+    const seleccionadosRecepcionables = selectedIds.filter((id) => idsRecepcionables.includes(id));
+
+    const resumenTramites = (ids: number[]): TramiteResumenDerivacion[] =>
+        tramites.data
+            .filter((t) => ids.includes(t.id))
+            .map((t) => {
+                const ultima = t.derivaciones?.[0];
+
+                return {
+                    id: t.id,
+                    numero_completo: t.numero_completo,
+                    fecha: t.fecha ?? null,
+                    descripcion: t.descripcion,
+                    area: t.area ? `${t.area.codigo} · ${t.area.nombre}` : null,
+                    derivacion_numero: ultima?.numero_derivacion ?? null,
+                    derivacion_fecha: ultima?.fecha_derivacion ?? null,
+                    derivado_de: ultima?.derivado_de?.name ?? null,
+                };
+            });
+
     const columns = [
         {
             key: 'numero_tramite',
@@ -363,20 +436,11 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
             ),
         },
         {
-            key: 'urgente',
-            header: 'Urgente',
+            key: 'fecha',
+            header: 'Fecha',
             sortable: true,
-            cellClassName: 'text-center',
-            render: (t: Tramite) => (
-                <span className="flex items-center justify-center">
-                    {t.urgente
-                        ? <Badge variant="danger">Urgente</Badge>
-                        : <span className="text-gray-300 dark:text-gray-600">—</span>}
-                </span>
-            ),
+            render: (t: Tramite) => t.fecha ?? '—',
         },
-        { key: 'created_at', header: 'Fecha creación', sortable: true, render: (t: Tramite) => t.created_at ?? '—' },
-        { key: 'numero_diamante', header: 'N° Diamante', sortable: true, render: (t: Tramite) => resaltar(t.numero_diamante, numeroDiamante) },
         {
             key: 'area',
             header: 'Área',
@@ -401,7 +465,15 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
             header: 'Descripción',
             sortable: true,
             render: (t: Tramite) => (
-                <span className="line-clamp-2 max-w-xs">{resaltar(t.descripcion, descripcion)}</span>
+                <div className="max-w-xs space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-excel-muted dark:text-gray-400">
+                            Diamante: {resaltar(t.numero_diamante, numeroDiamante)}
+                        </span>
+                        {t.urgente && <Badge variant="danger">Urgente</Badge>}
+                    </div>
+                    <span className="line-clamp-2">{resaltar(t.descripcion, descripcion)}</span>
+                </div>
             ),
         },
         {
@@ -415,6 +487,10 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                     return <span className="text-xs text-gray-400 dark:text-gray-500">Sin derivaciones</span>;
                 }
 
+                const destino = derivacion.derivado_a as UsuarioDerivacion | null;
+                const areaDestino = destino?.persona?.area ?? null;
+                const puestoDestino = destino?.persona?.puesto_activo?.puesto?.nombre ?? null;
+
                 return (
                     <div className="max-w-[240px]">
                         <div className="text-xs font-medium text-patuju-green dark:text-patuju-green">
@@ -423,6 +499,16 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                         <div className="line-clamp-2 text-sm">{resaltar(derivacion.glosa_derivacion, '')}</div>
                         {t.asignado?.name && (
                             <div className="truncate text-xs text-gray-500 dark:text-gray-400">{t.asignado.name}</div>
+                        )}
+                        {(areaDestino || puestoDestino) && (
+                            <div className="text-[11px] text-excel-muted dark:text-gray-400">
+                                {areaDestino && (
+                                    <div className="truncate">
+                                        {areaDestino.codigo} · {areaDestino.nombre}
+                                    </div>
+                                )}
+                                {puestoDestino && <div className="truncate">{puestoDestino}</div>}
+                            </div>
                         )}
                     </div>
                 );
@@ -455,6 +541,51 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                     {estadoLabels[t.estado] ?? t.estado}
                 </Badge>
             ),
+        },
+        {
+            key: 'estado_derivacion',
+            header: 'Recepción',
+            sortable: true,
+            cellClassName: 'text-center',
+            render: (t: Tramite) => {
+                const estado = t.derivaciones?.[0]?.estado;
+
+                if (!estado) {
+                    return <span className="text-gray-300 dark:text-gray-600">—</span>;
+                }
+
+                return (
+                    <div className="flex flex-col items-center gap-1.5">
+                        <Badge
+                            variant={derivacionColors[estado] ?? 'default'}
+                            title={derivacionTitulos[estado] ?? estado}
+                        >
+                            {derivacionLabels[estado] ?? estado}
+                        </Badge>
+                        {esRecepcionable(t) && (
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="whitespace-nowrap"
+                                onClick={() => setRecepcionarTramiteId(t.id)}
+                            >
+                                <Icon name="check" size={14} />
+                                Recepcionar
+                            </Button>
+                        )}
+                        {esDerivable(t) && (
+                            <Button
+                                size="sm"
+                                className="whitespace-nowrap"
+                                onClick={() => setDerivarTramiteId(t.id)}
+                            >
+                                <Icon name="arrow-right" size={14} />
+                                Derivar
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
         },
     ];
 
@@ -611,10 +742,18 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                             <Button variant="secondary" size="sm" onClick={() => setSelectedIds([])}>
                                 Limpiar
                             </Button>
-                            <Button size="sm" onClick={() => setDerivarOpen(true)}>
-                                <Icon name="arrow-right" size={14} />
-                                Derivar seleccionados
-                            </Button>
+                            {seleccionadosRecepcionables.length > 0 && (
+                                <Button size="sm" variant="secondary" onClick={() => setRecepcionarOpen(true)}>
+                                    <Icon name="check" size={14} />
+                                    Recepcionar seleccionados
+                                </Button>
+                            )}
+                            {seleccionadosDerivables.length > 0 && (
+                                <Button size="sm" onClick={() => setDerivarOpen(true)}>
+                                    <Icon name="arrow-right" size={14} />
+                                    Derivar seleccionados
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -626,10 +765,10 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                     sortBy={sortBy}
                     sortDirection={sortDirection}
                     onSort={ordenar}
-                    selectable={puedeGestionar}
+                    selectable={puedeTramitar}
                     selectedKeys={selectedIds}
                     onSelectionChange={(keys) => setSelectedIds(keys.map(Number))}
-                    isRowSelectable={esDerivable}
+                    isRowSelectable={esSeleccionable}
                     getRowLabel={(t) => `Seleccionar trámite ${t.numero_completo}`}
                 />
                 <Pagination
@@ -651,6 +790,7 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                     areas={areasCreacionData}
                     secuencias={secuencias}
                     submitUrl="/tramites"
+                    mostrarFechaHora
                     onSuccess={() => {
                         setCreateOpen(false);
                         createForm.reset();
@@ -665,12 +805,49 @@ export default function TramitesIndex({ tramites, areas, areasCreacion, secuenci
                     onClose={() => setDerivarOpen(false)}
                     destinatarios={destinatarios ?? []}
                     submitUrl="/tramites/derivar-varios"
-                    tramiteIds={selectedIds}
-                    title={`Derivar ${selectedIds.length} trámite${selectedIds.length === 1 ? '' : 's'}`}
+                    tramiteIds={seleccionadosDerivables}
+                    tramites={resumenTramites(seleccionadosDerivables)}
+                    title={`Derivar ${seleccionadosDerivables.length} trámite${seleccionadosDerivables.length === 1 ? '' : 's'}`}
                     onSuccess={() => {
                         setDerivarOpen(false);
                         setSelectedIds([]);
                     }}
+                />
+            )}
+
+            {recepcionarOpen && (
+                <ModalRecepcionMasiva
+                    open
+                    onClose={() => setRecepcionarOpen(false)}
+                    tramiteIds={seleccionadosRecepcionables}
+                    tramites={resumenTramites(seleccionadosRecepcionables)}
+                    onSuccess={() => {
+                        setRecepcionarOpen(false);
+                        setSelectedIds([]);
+                    }}
+                />
+            )}
+
+            {derivarTramiteId !== null && (
+                <DerivarModal
+                    open
+                    onClose={() => setDerivarTramiteId(null)}
+                    destinatarios={destinatarios ?? []}
+                    submitUrl="/tramites/derivar-varios"
+                    tramiteIds={[derivarTramiteId]}
+                    tramites={resumenTramites([derivarTramiteId])}
+                    title="Derivar trámite"
+                    onSuccess={() => setDerivarTramiteId(null)}
+                />
+            )}
+
+            {recepcionarTramiteId !== null && (
+                <ModalRecepcionMasiva
+                    open
+                    onClose={() => setRecepcionarTramiteId(null)}
+                    tramiteIds={[recepcionarTramiteId]}
+                    tramites={resumenTramites([recepcionarTramiteId])}
+                    onSuccess={() => setRecepcionarTramiteId(null)}
                 />
             )}
         </div>

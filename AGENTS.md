@@ -115,6 +115,8 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 - `php artisan db:seed` — ejecuta `DatabaseSeeder`: **limpia** las tablas de negocio (incluidas `backups` y `backup_eventos`, solo si existen) y siembra únicamente roles y permisos, configuración, áreas con sus puestos y los usuarios institucionales. **No crea trámites, derivaciones ni actuaciones**
 - `php artisan migrate:fresh --seed` — reset completo + seed (deja la base operativa vacía de trámites)
 - `php artisan db:seed --class=RolesYPermisosSeeder` — módulos, acciones, permisos y roles (`admin`, `secretaria`, `jefe`, `user`)
+- `php artisan db:seed --class=PermisosTramitacionSeeder` — agrega la acción `tramitacion` del módulo `tramites` y la concede a todos los roles existentes; idempotente (apto para producción sin `migrate:fresh`)
+- `php artisan db:seed --class=PermisosCreacionTramitesSeeder` — agrega la acción `creacion` del módulo `tramites` y la concede a todos los roles existentes (todos los usuarios pueden crear trámites); idempotente
 - `php artisan db:seed --class=PermisosBackupsSeeder` — módulo `backups` con sus 6 permisos; idempotente
 - `php artisan db:seed --class=ConfiguracionSeeder` — configuración inicial (gestión del reporte)
 - `php artisan db:seed --class=AreaSeeder` — áreas y puestos

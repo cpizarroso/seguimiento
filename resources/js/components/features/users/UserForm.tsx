@@ -8,6 +8,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Select } from '@/components/ui/Select';
 import type { Area, Persona } from '@/types/generated/Tramite';
 import { SugerenciasContrasena } from './SugerenciasContrasena';
+import { PermisosUsuario } from './PermisosUsuario';
 import { construirReporteAcceso } from './passwordReset';
 
 export interface RolPermiso {
@@ -26,6 +27,19 @@ export interface RolOption {
     permisos: RolPermiso[];
 }
 
+export interface PermisoCatalogo {
+    id: number;
+    modulo: string;
+    modulo_nombre: string;
+    accion: string;
+    accion_nombre: string;
+}
+
+export interface PermisoOverride {
+    permiso_id: number;
+    permitido: boolean;
+}
+
 export type UserFormType = InertiaForm<{
     username: string;
     email: string;
@@ -34,6 +48,7 @@ export type UserFormType = InertiaForm<{
     role_ids: number[];
     area_ids: number[];
     area_predeterminada_id: string;
+    permisos: PermisoOverride[];
 }>;
 
 /** Datos del reporte de acceso que se muestra tras crear un usuario. */
@@ -48,6 +63,7 @@ interface UserFormProps {
     roles?: { data: RolOption[] };
     personas?: { data: Persona[] } | Persona[];
     areas?: { data: Area[] } | Area[];
+    permisos?: PermisoCatalogo[];
     submitUrl: string;
     method?: 'post' | 'put';
     isEditing?: boolean;
@@ -59,7 +75,7 @@ interface UserFormProps {
 }
 
 const accionLabels: Record<string, string> = {
-    consulta: 'Consulta', creacion: 'Creación', edicion: 'Edición', baja: 'Baja',
+    consulta: 'Consulta', creacion: 'Creación', edicion: 'Edición', baja: 'Baja', tramitacion: 'Tramitación',
 };
 
 export function usernameDesdeEmail(email: string): string {
@@ -84,9 +100,10 @@ export function emailDeAcceso(correo: string | null | undefined, dominio: string
     return `${local}@${dominio.trim()}`;
 }
 
-export function UserForm({ form, roles, personas, areas, submitUrl, method = 'post', isEditing = false, personaActualId = null, onSuccess, onCreated, onCancel }: UserFormProps) {
+export function UserForm({ form, roles, personas, areas, permisos, submitUrl, method = 'post', isEditing = false, personaActualId = null, onSuccess, onCreated, onCancel }: UserFormProps) {
     const { data, setData, post, put, processing, errors } = form;
     const dominioUsuario = usePage().props.dominio_usuario ?? '';
+    const catalogo = useMemo(() => permisos ?? [], [permisos]);
 
     const listaPersonas = useMemo(() => {
         if (!personas) return [] as Persona[];
@@ -126,6 +143,29 @@ export function UserForm({ form, roles, personas, areas, submitUrl, method = 'po
         })),
         [listaPersonas, personaActualId],
     );
+
+    const permisosDelRol = useMemo(() => {
+        const seleccionados = new Set(data.role_ids);
+        const ids = new Set<number>();
+
+        (roles?.data ?? []).forEach((rol) => {
+            if (seleccionados.has(rol.id)) {
+                rol.permiso_ids.forEach((id) => ids.add(id));
+            }
+        });
+
+        return ids;
+    }, [roles, data.role_ids]);
+
+    const cambiarOverride = (permisoId: number, estado: 'heredar' | 'permitir' | 'denegar') => {
+        const restantes = data.permisos.filter((permiso) => permiso.permiso_id !== permisoId);
+
+        if (estado !== 'heredar') {
+            restantes.push({ permiso_id: permisoId, permitido: estado === 'permitir' });
+        }
+
+        setData('permisos', restantes);
+    };
 
     const toggleRole = (id: number) => {
         setData('role_ids',
@@ -381,6 +421,14 @@ export function UserForm({ form, roles, personas, areas, submitUrl, method = 'po
                 </div>
                 {errors.role_ids && <p className="mt-1 text-sm text-patuju-red">{errors.role_ids}</p>}
             </div>
+
+            <PermisosUsuario
+                catalogo={catalogo}
+                seleccionados={data.permisos}
+                permisosDelRol={permisosDelRol}
+                onChange={cambiarOverride}
+                error={errors.permisos as string | undefined}
+            />
 
             <div className="flex gap-3 pt-4">
                 <Button type="submit" loading={processing}>Guardar</Button>

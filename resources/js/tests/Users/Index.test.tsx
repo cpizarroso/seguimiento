@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routerGet = vi.fn();
 let mockUrl = '/users';
-let mockPermisos: string[] = ['usuarios.consulta', 'usuarios.edicion'];
+let mockPermisos: string[] = ['usuarios.consulta', 'usuarios.creacion', 'usuarios.edicion', 'usuarios.baja'];
 let mockUserId = 99;
 
 vi.mock('@inertiajs/react', () => ({
@@ -81,7 +81,7 @@ describe('Users Index', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockUrl = '/users';
-        mockPermisos = ['usuarios.consulta', 'usuarios.edicion'];
+        mockPermisos = ['usuarios.consulta', 'usuarios.creacion', 'usuarios.edicion', 'usuarios.baja'];
         mockUserId = 99;
     });
 
@@ -173,6 +173,17 @@ describe('Users Index', () => {
         render(React.createElement(UsersIndex, props() as any));
 
         expect(screen.queryByRole('button', { name: 'Desactivar usuario Ana Pérez' })).not.toBeInTheDocument();
+    });
+
+    it('oculta las acciones sin permisos de creación, edición y baja', () => {
+        mockPermisos = ['usuarios.consulta'];
+
+        render(React.createElement(UsersIndex, props() as any));
+
+        expect(screen.queryByRole('button', { name: 'Nuevo usuario' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Ver' })).toBeInTheDocument();
     });
 
     it('muestra el reporte de acceso después de crear un usuario', () => {

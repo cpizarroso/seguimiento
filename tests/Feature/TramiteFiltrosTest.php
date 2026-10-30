@@ -106,7 +106,7 @@ it('filtra por numero de diamante y descripcion de forma parcial', function () {
         ->not->toContain($otro->id);
 });
 
-it('filtra por created_at incluyendo todo el dia seleccionado', function () {
+it('filtra por fecha incluyendo todo el dia seleccionado', function () {
     $user = User::factory()->create();
     $area = Area::factory()->create(['nombre' => 'Fechas '.uniqid(), 'codigo' => 'FEC']);
 
@@ -114,9 +114,9 @@ it('filtra por created_at incluyendo todo el dia seleccionado', function () {
     $finDelDia = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
     $diaSiguiente = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
 
-    DB::table('tramites')->where('id', $inicioDelDia->id)->update(['created_at' => '2026-10-23 00:00:00']);
-    DB::table('tramites')->where('id', $finDelDia->id)->update(['created_at' => '2026-10-23 23:59:59']);
-    DB::table('tramites')->where('id', $diaSiguiente->id)->update(['created_at' => '2026-10-24 00:00:00']);
+    DB::table('tramites')->where('id', $inicioDelDia->id)->update(['fecha' => '2026-10-23 00:00:00']);
+    DB::table('tramites')->where('id', $finDelDia->id)->update(['fecha' => '2026-10-23 23:59:59']);
+    DB::table('tramites')->where('id', $diaSiguiente->id)->update(['fecha' => '2026-10-24 00:00:00']);
 
     $ids = app(TramiteService::class)
         ->listar(['fecha_desde' => '2026-10-23', 'fecha_hasta' => '2026-10-23'])
@@ -136,9 +136,9 @@ it('permite rangos de fecha abiertos y normaliza un rango invertido', function (
     $dia = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
     $diaSiguiente = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
 
-    DB::table('tramites')->where('id', $diaAnterior->id)->update(['created_at' => '2026-10-22 23:59:59']);
-    DB::table('tramites')->where('id', $dia->id)->update(['created_at' => '2026-10-23 12:00:00']);
-    DB::table('tramites')->where('id', $diaSiguiente->id)->update(['created_at' => '2026-10-24 00:00:00']);
+    DB::table('tramites')->where('id', $diaAnterior->id)->update(['fecha' => '2026-10-22 23:59:59']);
+    DB::table('tramites')->where('id', $dia->id)->update(['fecha' => '2026-10-23 12:00:00']);
+    DB::table('tramites')->where('id', $diaSiguiente->id)->update(['fecha' => '2026-10-24 00:00:00']);
 
     $service = app(TramiteService::class);
 

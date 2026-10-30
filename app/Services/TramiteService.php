@@ -36,7 +36,9 @@ class TramiteService
             'asignado.persona',
             'area',
             'derivaciones' => function ($q) {
-                $q->with(['de.persona', 'a.persona'])->reorder('numero_derivacion', 'desc')->limit(1);
+                $q->with(['de.persona', 'a.persona.puestoActivo.puesto.area'])
+                    ->reorder('numero_derivacion', 'desc')
+                    ->limit(1);
             },
             'actuaciones' => function ($q) {
                 $q->with(['area', 'persona'])->reorder('fecha_actuacion', 'desc')->limit(1);
@@ -183,6 +185,7 @@ class TramiteService
             'area',
             'descripcion',
             'ultima_derivacion',
+            'estado_derivacion',
             'dias_transcurridos',
             'estado',
         ];
@@ -216,6 +219,18 @@ class TramiteService
 
             return $query
                 ->orderBy($ultimaDerivacion, $direction)
+                ->orderBy('tramites.id');
+        }
+
+        if ($sort === 'estado_derivacion') {
+            $estadoDerivacion = DB::table('derivaciones')
+                ->select(DB::raw("CASE derivaciones.estado WHEN 'derivado' THEN 0 WHEN 'recepcionado' THEN 1 WHEN 'rechazado' THEN 2 ELSE 3 END"))
+                ->whereColumn('derivaciones.tramite_id', 'tramites.id')
+                ->orderByDesc('derivaciones.numero_derivacion')
+                ->limit(1);
+
+            return $query
+                ->orderBy($estadoDerivacion, $direction)
                 ->orderBy('tramites.id');
         }
 

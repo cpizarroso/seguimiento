@@ -27,7 +27,13 @@ export default function TramitesCreate({ areas, secuencias }: CreateProps) {
             <h2 className="text-2xl font-bold text-patuju-green dark:text-patuju-green">Nuevo Trámite</h2>
 
             <Card>
-                <TramiteForm form={form} areas={areas.data} secuencias={secuencias} submitUrl="/tramites" />
+                <TramiteForm
+                    form={form}
+                    areas={areas.data}
+                    secuencias={secuencias}
+                    submitUrl="/tramites"
+                    mostrarFechaHora
+                />
             </Card>
         </div>
     );

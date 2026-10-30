@@ -1,43 +1,30 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
-import { RolForm, type PermisoOption } from '@/components/features/roles/RolForm';
-
-interface RolPermiso {
-    id: number;
-    modulo: string;
-    accion: string;
-}
-
-interface RolRow {
-    id: number;
-    nombre: string;
-    slug: string;
-    descripcion: string | null;
-    es_sistema: boolean;
-    permisos: RolPermiso[];
-}
+import { RolForm } from '@/components/features/roles/RolForm';
+import { usePermissions } from '@/hooks/usePermissions';
+import type { PermisosAgrupados, RolRow } from '@/types/roles';
 
 interface RolesIndexProps {
-    roles: { data: RolRow[] };
-    permisos_agrupados?: Record<string, PermisoOption[]>;
+    roles: { data: RolRow[] } | RolRow[];
+    permisos_agrupados?: PermisosAgrupados;
 }
 
-const accionLabels: Record<string, string> = {
-    consulta: 'Consulta',
-    creacion: 'Creación',
-    edicion: 'Edición',
-    baja: 'Baja',
-};
-
 export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProps) {
-    const [deleting, setDeleting] = useState<number | null>(null);
+    const { can } = usePermissions();
     const [createOpen, setCreateOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<RolRow | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
     const data = Array.isArray(roles) ? roles : roles.data ?? [];
+
+    const puedeCrear = can('roles', 'creacion');
+    const puedeEditar = can('roles', 'edicion');
+    const puedeEliminar = can('roles', 'baja');
 
     const createForm = useForm({
         nombre: '',
@@ -46,23 +33,29 @@ export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProp
         permiso_ids: [] as number[],
     });
 
-    const handleDelete = (id: number) => {
-        if (!confirm('¿Eliminar este rol? Los usuarios con este rol perderán sus permisos.')) return;
-        setDeleting(id);
-        router.delete(`/roles/${id}`, {
-            preserveState: true,
-            onFinish: () => setDeleting(null),
+    const confirmarEliminar = () => {
+        if (!deleteTarget) return;
+
+        router.delete(`/roles/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onStart: () => setDeleting(true),
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
         });
     };
+
+    const usuariosAfectados = deleteTarget?.usuarios_count ?? 0;
 
     const columns = [
         {
             key: 'nombre',
             header: 'Rol',
             render: (r: RolRow) => (
-                <Link href={`/roles/${r.id}/edit`} className="text-patuju-green hover:underline font-medium">
-                    {r.nombre}
-                </Link>
+                puedeEditar
+                    ? <Link href={`/roles/${r.id}/edit`} className="font-medium text-excel-green hover:underline">{r.nombre}</Link>
+                    : <span className="font-medium">{r.nombre}</span>
             ),
         },
         {
@@ -73,13 +66,20 @@ export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProp
             key: 'permisos',
             header: 'Permisos',
             render: (r: RolRow) => (
-                <div className="flex flex-wrap gap-1 max-w-md">
+                <div className="flex max-w-md flex-wrap gap-1">
                     {r.permisos.map((p) => (
                         <Badge key={p.id} variant="info" className="text-xs">
-                            {p.modulo}.{accionLabels[p.accion] ?? p.accion}
+                            {p.modulo}.{p.accion_nombre ?? p.accion}
                         </Badge>
                     ))}
                 </div>
+            ),
+        },
+        {
+            key: 'usuarios_count',
+            header: 'Usuarios',
+            render: (r: RolRow) => (
+                <span className="text-excel-muted">{r.usuarios_count ?? 0}</span>
             ),
         },
         {
@@ -96,15 +96,16 @@ export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProp
             header: 'Acciones',
             render: (r: RolRow) => (
                 <div className="flex gap-2">
-                    <Link href={`/roles/${r.id}/edit`}>
-                        <Button size="sm" variant="secondary">Editar</Button>
-                    </Link>
-                    {!r.es_sistema && (
+                    {puedeEditar && (
+                        <Link href={`/roles/${r.id}/edit`}>
+                            <Button size="sm" variant="secondary">Editar</Button>
+                        </Link>
+                    )}
+                    {puedeEliminar && !r.es_sistema && (
                         <Button
                             size="sm"
                             variant="danger"
-                            loading={deleting === r.id}
-                            onClick={() => handleDelete(r.id)}
+                            onClick={() => setDeleteTarget(r)}
                         >
                             Eliminar
                         </Button>
@@ -117,8 +118,8 @@ export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProp
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-patuju-green">Roles</h2>
-                <Button onClick={() => setCreateOpen(true)}>Nuevo Rol</Button>
+                <h2 className="text-2xl font-bold text-excel-green">Roles</h2>
+                {puedeCrear && <Button onClick={() => setCreateOpen(true)}>Nuevo Rol</Button>}
             </div>
 
             <Card>
@@ -141,6 +142,32 @@ export default function RolesIndex({ roles, permisos_agrupados }: RolesIndexProp
                     }}
                     onCancel={() => setCreateOpen(false)}
                 />
+            </Modal>
+
+            <Modal
+                open={deleteTarget !== null}
+                onClose={() => setDeleteTarget(null)}
+                title="Eliminar rol"
+                maxWidth="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-excel-text dark:text-gray-200">
+                        ¿Eliminar el rol «{deleteTarget?.nombre}»?
+                    </p>
+                    <p className="text-sm text-excel-muted">
+                        {usuariosAfectados > 0
+                            ? `${usuariosAfectados} usuario(s) tienen este rol y perderán sus permisos.`
+                            : 'Ningún usuario tiene este rol asignado.'}
+                    </p>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="danger" loading={deleting} onClick={confirmarEliminar}>
+                            Eliminar rol
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

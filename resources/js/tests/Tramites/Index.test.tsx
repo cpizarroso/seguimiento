@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const routerGet = vi.fn();
@@ -216,6 +216,60 @@ function propsDerivable() {
     };
 }
 
+function propsRecepcionable() {
+    const base = props();
+
+    return {
+        ...base,
+        tramites: {
+            ...base.tramites,
+            data: [
+                {
+                    ...mockTramite,
+                    estado: 'proceso',
+                    asignado: { id: 1, name: 'Test' },
+                    derivaciones: [
+                        {
+                            ...mockTramite.derivaciones[0],
+                            estado: 'derivado',
+                            derivado_a: { id: 1, name: 'Test' },
+                        },
+                    ],
+                },
+            ],
+        },
+    };
+}
+
+function propsConDestino() {
+    const base = props();
+
+    return {
+        ...base,
+        tramites: {
+            ...base.tramites,
+            data: [
+                {
+                    ...mockTramite,
+                    derivaciones: [
+                        {
+                            ...mockTramite.derivaciones[0],
+                            derivado_a: {
+                                id: 5,
+                                name: 'Ana Pérez',
+                                persona: {
+                                    area: { id: 9, nombre: 'Administración', codigo: 'ADM' },
+                                    puesto_activo: { puesto: { nombre: 'JEFE DE ÁREA' } },
+                                },
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+    };
+}
+
 function mockMatchMedia(matches: boolean) {
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -232,14 +286,19 @@ describe('Tramites Index', () => {
         mockMatchMedia(false);
     });
 
-    it('muestra las 8 columnas pedidas y no las anteriores', () => {
+    it('muestra las columnas en el orden pedido y sin las columnas viejas', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
-        for (const header of ['NRO', 'Fecha creación', 'N° Diamante', 'Área', 'Descripción', 'Última derivación', 'Días', 'Estado']) {
+        for (const header of ['NRO', 'Fecha', 'Área', 'Descripción', 'Última derivación', 'Días', 'Estado', 'Recepción']) {
             expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
         }
-        expect(screen.getByRole('columnheader', { name: 'Urgente' })).toBeInTheDocument();
-        expect(screen.getByText('Urgente', { selector: 'span' })).toBeInTheDocument();
+
+        expect(screen.queryByRole('columnheader', { name: 'Urgente' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('columnheader', { name: 'N° Diamante' })).not.toBeInTheDocument();
+
+        const headers = screen.getAllByRole('columnheader').map((th) => th.textContent);
+
+        expect(headers.at(-1)).toBe('Recepción');
 
         expect(screen.queryByText('Gestión')).not.toBeInTheDocument();
         expect(screen.queryByText('Última actuación')).not.toBeInTheDocument();
@@ -247,12 +306,21 @@ describe('Tramites Index', () => {
         expect(screen.queryByText('Respuesta')).not.toBeInTheDocument();
     });
 
+    it('agrupa nro diamante, descripción y urgente en la columna descripción', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        expect(screen.getByText(/Diamante:/)).toBeInTheDocument();
+        expect(screen.getByText('DIA-1234')).toBeInTheDocument();
+        expect(screen.getByText('Solicitud de prueba')).toBeInTheDocument();
+        expect(screen.getByText('Urgente', { selector: 'span' })).toBeInTheDocument();
+    });
+
     it('la columna nro muestra solo el numero sin codigo de area ni gestion', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
         expect(screen.queryByText('DLA-0007/2026')).not.toBeInTheDocument();
-        expect(screen.queryByText('10/06/2026')).not.toBeInTheDocument();
-        expect(screen.getByText('10/06/2026 08:00')).toBeInTheDocument();
+        expect(screen.getByText('10/06/2026')).toBeInTheDocument();
+        expect(screen.queryByText('10/06/2026 08:00')).not.toBeInTheDocument();
     });
     it('muestra la ultima derivacion con numero, fecha, glosa y destino', () => {
         render(React.createElement(TramitesIndex, props() as any));
@@ -260,7 +328,117 @@ describe('Tramites Index', () => {
         expect(screen.getByText(/N° 3/)).toBeInTheDocument();
         expect(screen.getByText(/Se deriva para revisión/)).toBeInTheDocument();
         expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
-        expect(screen.getByText('10/06/2026 08:00')).toBeInTheDocument();
+        expect(screen.getByText(/11\/06\/2026 09:00/)).toBeInTheDocument();
+    });
+
+    it('muestra el área y el puesto del usuario destino en la última derivación', () => {
+        render(React.createElement(TramitesIndex, propsConDestino() as any));
+
+        const celda = screen.getByText(/N° 3/).closest('td');
+
+        expect(celda).not.toBeNull();
+
+        const detalle = within(celda as HTMLElement);
+
+        expect(detalle.getByText('ADM · Administración')).toBeInTheDocument();
+        expect(detalle.getByText('JEFE DE ÁREA')).toBeInTheDocument();
+    });
+
+    it('muestra el estado de la última derivación abreviado en la columna recepción', () => {
+        render(React.createElement(TramitesIndex, propsRecepcionable() as any));
+
+        expect(screen.getByText('Pr', { selector: 'span' })).toBeInTheDocument();
+    });
+
+    it('abrevia recepcionado como RE', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        expect(screen.getByText('RE', { selector: 'span' })).toBeInTheDocument();
+    });
+
+    it('muestra un guion cuando el trámite no tiene derivaciones', () => {
+        const base = props();
+
+        render(React.createElement(TramitesIndex, {
+            ...base,
+            tramites: {
+                ...base.tramites,
+                data: [{ ...mockTramite, derivaciones: [] }],
+            },
+        } as any));
+
+        expect(screen.queryByText('Pr', { selector: 'span' })).not.toBeInTheDocument();
+        expect(screen.queryByText('RE', { selector: 'span' })).not.toBeInTheDocument();
+        expect(screen.getByText('—')).toBeInTheDocument();
+    });
+
+    it('solo muestra el botón Derivar cuando la última derivación fue recepcionada por el usuario', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        expect(screen.getByRole('button', { name: /Derivar$/ })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^Recepcionar$/ })).not.toBeInTheDocument();
+    });
+
+    it('abre el modal de derivación individual desde la fila', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: /Derivar$/ }));
+
+        expect(screen.getByRole('heading', { name: 'Derivar trámite' })).toBeInTheDocument();
+    });
+
+    it('muestra el detalle compacto del trámite en el modal de derivación individual', () => {
+        render(React.createElement(TramitesIndex, propsDerivable() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: /Derivar$/ }));
+
+        const lista = within(screen.getByRole('list', { name: 'Trámites seleccionados' }));
+
+        expect(lista.getByText('DLA-0007/2026')).toBeInTheDocument();
+        expect(lista.getByText('Solicitud de prueba')).toBeInTheDocument();
+        expect(lista.getByText('DLA · Dirección Legal')).toBeInTheDocument();
+        expect(lista.getByText(/Derivación N° 3/)).toBeInTheDocument();
+        expect(screen.getByText('1 trámite seleccionado')).toBeInTheDocument();
+    });
+
+    it('muestra el botón Recepcionar cuando la derivación está pendiente para el usuario', () => {
+        render(React.createElement(TramitesIndex, propsRecepcionable() as any));
+
+        expect(screen.getByRole('button', { name: /^Recepcionar$/ })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Derivar$/ })).not.toBeInTheDocument();
+    });
+
+    it('abre el modal de recepción individual desde la fila', () => {
+        render(React.createElement(TramitesIndex, propsRecepcionable() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: /^Recepcionar$/ }));
+
+        expect(screen.getByRole('heading', { name: 'Recepcionar trámite' })).toBeInTheDocument();
+        expect(screen.getByText(/Se recepcionará 1 trámite/)).toBeInTheDocument();
+    });
+
+    it('muestra el detalle compacto en el modal de recepción masiva', () => {
+        render(React.createElement(TramitesIndex, propsRecepcionable() as any));
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' }));
+        fireEvent.click(screen.getByRole('button', { name: /Recepcionar seleccionados/ }));
+
+        const lista = within(screen.getByRole('list', { name: 'Trámites seleccionados' }));
+
+        expect(lista.getByText('DLA-0007/2026')).toBeInTheDocument();
+        expect(lista.getByText('Solicitud de prueba')).toBeInTheDocument();
+    });
+
+    it('ordena por estado de la última derivación al hacer clic en la columna', () => {
+        render(React.createElement(TramitesIndex, props() as any));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Recepción' }));
+
+        expect(routerGet).toHaveBeenCalledWith(
+            '/tramites',
+            expect.objectContaining({ sort: 'estado_derivacion', direction: 'asc', page: 1 }),
+            expect.anything(),
+        );
     });
 
     it('en pantalla pequena pide 5 por pagina si no hay per_page explicito', () => {
@@ -355,11 +533,11 @@ describe('Tramites Index', () => {
         mockUrl = '/tramites?recepcion=recepcionados';
         render(React.createElement(TramitesIndex, props() as any));
 
-        fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Fecha' }));
 
         expect(routerGet).toHaveBeenLastCalledWith(
             '/tramites',
-            expect.objectContaining({ recepcion: 'recepcionados', sort: 'created_at' }),
+            expect.objectContaining({ recepcion: 'recepcionados', sort: 'fecha' }),
             expect.anything(),
         );
     });
@@ -451,14 +629,14 @@ describe('Tramites Index', () => {
         );
     });
 
-    it('al hacer clic en la columna activa (fecha de creación) alterna a ascendente', () => {
+    it('al hacer clic en la columna fecha ordena ascendente', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
-        fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Fecha' }));
 
         expect(routerGet).toHaveBeenCalledWith(
             '/tramites',
-            expect.objectContaining({ sort: 'created_at', direction: 'asc', page: 1 }),
+            expect.objectContaining({ sort: 'fecha', direction: 'asc', page: 1 }),
             expect.anything(),
         );
     });
@@ -468,11 +646,11 @@ describe('Tramites Index', () => {
         render(React.createElement(TramitesIndex, props() as any));
 
         fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'borrador' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Fecha creación' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Fecha' }));
 
         const filtros = routerGet.mock.calls.at(-1)?.[1] as Record<string, unknown>;
 
-        expect(filtros).toEqual(expect.objectContaining({ numero_diamante: '777', sort: 'created_at' }));
+        expect(filtros).toEqual(expect.objectContaining({ numero_diamante: '777', sort: 'fecha' }));
         expect(filtros).not.toHaveProperty('descripcion');
     });
 
@@ -485,7 +663,7 @@ describe('Tramites Index', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Nuevo Trámite' }));
 
-        expect(routerReload).toHaveBeenCalledWith({ only: ['secuencias'] });
+        expect(routerReload).toHaveBeenCalledWith({ only: ['secuencias'], data: { year: new Date().getFullYear() } });
     });
 
     it('muestra el nombre y el codigo del area del tramite', () => {
@@ -527,5 +705,24 @@ describe('Tramites Index', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
 
         expect(screen.queryByText('1 trámite seleccionado')).not.toBeInTheDocument();
+    });
+
+    it('habilita el checkbox de los tramites pendientes de recepcion', () => {
+        render(React.createElement(TramitesIndex, propsRecepcionable() as any));
+
+        expect(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' })).toBeEnabled();
+    });
+
+    it('muestra el boton de recepcion masiva y abre su modal', () => {
+        render(React.createElement(TramitesIndex, propsRecepcionable() as any));
+
+        expect(screen.queryByRole('button', { name: /Recepcionar seleccionados/ })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar trámite DLA-0007/2026' }));
+
+        fireEvent.click(screen.getByRole('button', { name: /Recepcionar seleccionados/ }));
+
+        expect(screen.getByRole('heading', { name: 'Recepcionar trámite' })).toBeInTheDocument();
+        expect(screen.getByText(/Se recepcionará 1 trámite/)).toBeInTheDocument();
     });
 });

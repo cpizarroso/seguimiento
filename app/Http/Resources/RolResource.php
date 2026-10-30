@@ -17,12 +17,15 @@ class RolResource extends JsonResource
             'slug' => $this->slug,
             'descripcion' => $this->descripcion,
             'es_sistema' => $this->es_sistema,
+            'usuarios_count' => $this->whenCounted('usuarios'),
             'permiso_ids' => $this->permisos->pluck('id')->toArray(),
             'permisos' => $this->permisos->map(fn ($p) => [
                 'id' => $p->id,
                 'modulo' => $p->modulo->slug,
+                'modulo_nombre' => $p->modulo->nombre,
                 'accion' => $p->accion->slug,
-            ]),
+                'accion_nombre' => $p->accion->nombre,
+            ])->values(),
             'created_at' => $this->created_at,
         ];
     }

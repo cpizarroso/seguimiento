@@ -90,6 +90,7 @@ class DatabaseSeeder extends Seeder
             RolesYPermisosSeeder::class,
             PermisosBackupsSeeder::class,
             PermisosTramitacionSeeder::class,
+            PermisosCreacionTramitesSeeder::class,
             ConfiguracionSeeder::class,
             AreaSeeder::class,
             UsuarioSeeder::class,

@@ -172,6 +172,37 @@ it('el listado carga solo la última derivación de cada trámite', function () 
         ->and($item->derivaciones->first()->numero_derivacion)->toBe(2);
 });
 
+it('ordena por el estado de la última derivación', function () {
+    $user = User::factory()->create();
+    $area = Area::factory()->create(['nombre' => 'Área Recepción', 'codigo' => 'RE']);
+
+    $pendiente = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
+    $recepcionado = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
+    $rechazado = Tramite::factory()->create(['area_id' => $area->id, 'creado_por' => $user->id, 'derivado_a' => $user->id]);
+
+    foreach ([
+        [$pendiente, 'derivado'],
+        [$rechazado, 'rechazado'],
+    ] as [$tramite, $estado]) {
+        $tramite->derivaciones()->create([
+            'numero_derivacion' => 2,
+            'derivado_de' => $user->id,
+            'derivado_a' => $user->id,
+            'fecha_derivacion' => now(),
+            'glosa_derivacion' => 'Derivación '.$estado,
+            'estado' => $estado,
+        ]);
+    }
+
+    $servicio = app(TramiteService::class);
+
+    $ascendente = $servicio->listar(['sort' => 'estado_derivacion', 'direction' => 'asc'])->getCollection()->pluck('id')->all();
+    $descendente = $servicio->listar(['sort' => 'estado_derivacion', 'direction' => 'desc'])->getCollection()->pluck('id')->all();
+
+    expect($ascendente)->toBe([$pendiente->id, $recepcionado->id, $rechazado->id])
+        ->and($descendente)->toBe([$rechazado->id, $recepcionado->id, $pendiente->id]);
+});
+
 it('ignora un campo de orden no permitido y mantiene el orden por defecto', function () {
     $user = User::factory()->create();
     $areaAA = Area::factory()->create(['nombre' => 'Área Segura A', 'codigo' => 'SA']);

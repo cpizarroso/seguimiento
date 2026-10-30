@@ -93,3 +93,46 @@ describe('TramiteForm número de trámite', () => {
         expect(screen.queryByText('Próximo N° de trámite')).not.toBeInTheDocument();
     });
 });
+
+function HarnessFecha({ conFecha = true }: { conFecha?: boolean }) {
+    const [data, setData] = useState({
+        descripcion: '',
+        numero_diamante: '',
+        area_id: '7',
+        urgente: false,
+        fecha: '2026-10-30T12:30',
+    });
+
+    const form: any = {
+        data,
+        setData: (key: string, value: unknown) => setData((prev) => ({ ...prev, [key]: value })),
+        post: vi.fn(),
+        put: vi.fn(),
+        processing: false,
+        errors: {},
+    };
+
+    return (
+        <TramiteForm
+            form={form}
+            areas={areas}
+            submitUrl="/tramites"
+            secuencias={secuencias}
+            mostrarFechaHora={conFecha}
+        />
+    );
+}
+
+describe('TramiteForm fecha y hora', () => {
+    it('oculta el selector cuando no se solicita', () => {
+        render(<HarnessFecha conFecha={false} />);
+
+        expect(screen.queryByRole('button', { name: /Seleccionar fecha y hora del trámite/ })).not.toBeInTheDocument();
+    });
+
+    it('muestra el selector con el valor recibido al crear', () => {
+        render(<HarnessFecha />);
+
+        expect(screen.getByRole('button', { name: /Seleccionar fecha y hora del trámite/ })).toHaveTextContent('30/10/2026 12:30');
+    });
+});

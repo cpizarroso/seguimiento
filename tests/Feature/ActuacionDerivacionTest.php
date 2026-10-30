@@ -16,10 +16,10 @@ function editor(): User
 {
     $user = User::factory()->create();
     $rol = Rol::firstOrCreate(['slug' => 'editor-actuaciones'], ['nombre' => 'Editor actuaciones']);
-    $permiso = Permiso::whereHas('modulo', fn ($q) => $q->where('slug', 'tramites'))
-        ->whereHas('accion', fn ($q) => $q->where('slug', 'edicion'))
-        ->firstOrFail();
-    $rol->permisos()->sync([$permiso->id]);
+    $permisos = Permiso::whereHas('modulo', fn ($q) => $q->where('slug', 'tramites'))
+        ->whereHas('accion', fn ($q) => $q->whereIn('slug', ['edicion', 'tramitacion']))
+        ->pluck('id');
+    $rol->permisos()->sync($permisos);
     $user->roles()->sync([$rol->id]);
 
     return $user->fresh();

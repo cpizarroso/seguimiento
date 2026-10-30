@@ -38,7 +38,8 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
     const usuario = auth?.user as { id: number; permisos: string[] } | null;
     const usuarioId = usuario?.id;
     const { can } = usePermissions();
-    const puedeGestionar = can('tramites', 'edicion');
+    const puedeTramitar = can('tramites', 'tramitacion');
+    const puedeEditar = can('tramites', 'edicion');
     const volverHref = url.includes('?') ? `/tramites?${url.split('?')[1]}` : '/tramites';
     const [recepcionarOpen, setRecepcionarOpen] = useState<number | null>(null);
     const [observarOpen, setObservarOpen] = useState(false);
@@ -59,10 +60,10 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
     const asignadoAMi = tramite.asignado?.id === usuarioId;
     const recepcionadoPorMi = ultimaDerivacion?.estado === 'recepcionado' && ultimaDerivacion.derivado_a?.id === usuarioId;
 
-    const puedeDerivar = puedeGestionar && tramite.estado !== 'finalizado' && asignadoAMi && recepcionadoPorMi;
-    const puedeObservar = puedeGestionar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
-    const puedeFinalizar = puedeGestionar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
-    const puedeRecepcionar = puedeGestionar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
+    const puedeDerivar = puedeTramitar && tramite.estado !== 'finalizado' && asignadoAMi && recepcionadoPorMi;
+    const puedeObservar = puedeTramitar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
+    const puedeFinalizar = puedeTramitar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
+    const puedeRecepcionar = puedeTramitar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
 
     const derivaciones = tramite.derivaciones ?? [];
     const [derivacionSeleccionadaId, setDerivacionSeleccionadaId] = useState<number | null>(
@@ -76,7 +77,7 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
     const derivacionSeleccionada = derivaciones.find((d) => d.id === derivacionSeleccionadaId)
         ?? derivaciones.at(-1);
     const actuacionesVisibles = derivacionSeleccionada?.actuaciones ?? [];
-    const puedeActuar = puedeGestionar
+    const puedeActuar = puedeTramitar
         && tramite.estado !== 'finalizado'
         && !!derivacionSeleccionada
         && derivacionSeleccionada.estado === 'recepcionado'
@@ -132,7 +133,7 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
                     )}
                 </h2>
                 <div className="flex gap-2">
-                    {puedeGestionar && (
+                    {puedeEditar && (
                         <Link href={`/tramites/${tramite.id}/edit`}>
                             <Button>Editar</Button>
                         </Link>

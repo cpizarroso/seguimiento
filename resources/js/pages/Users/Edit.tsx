@@ -11,7 +11,7 @@ import type { ResetPasswordTarget } from '@/components/features/users/ResetPassw
 import { UserForm } from '@/components/features/users/UserForm';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { Area, Persona } from '@/types/generated/Tramite';
-import type { RolOption } from '@/components/features/users/UserForm';
+import type { RolOption, PermisoCatalogo, PermisoOverride } from '@/components/features/users/UserForm';
 
 interface UserEditData {
     id: number;
@@ -24,6 +24,7 @@ interface UserEditData {
     roles?: { id: number }[];
     areas?: { id: number; predeterminada: boolean }[];
     area_predeterminada_id?: number | null;
+    permisos_overrides?: PermisoOverride[];
 }
 
 interface UsersEditProps {
@@ -31,9 +32,10 @@ interface UsersEditProps {
     roles?: { data: RolOption[] };
     personas?: { data: Persona[] };
     areas?: { data: Area[] };
+    permisos?: PermisoCatalogo[];
 }
 
-export default function UsersEdit({ user, roles, personas, areas }: UsersEditProps) {
+export default function UsersEdit({ user, roles, personas, areas, permisos }: UsersEditProps) {
     const { can } = usePermissions();
     const { props } = usePage();
     const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
@@ -55,6 +57,10 @@ export default function UsersEdit({ user, roles, personas, areas }: UsersEditPro
         role_ids: (user.roles ?? []).map((rol) => rol.id),
         area_ids: areasUsuario.map((area) => area.id),
         area_predeterminada_id: predeterminada,
+        permisos: (user.permisos_overrides ?? []).map((permiso) => ({
+            permiso_id: permiso.permiso_id,
+            permitido: permiso.permitido,
+        })),
     });
 
     return (
@@ -98,6 +104,7 @@ export default function UsersEdit({ user, roles, personas, areas }: UsersEditPro
                     roles={roles}
                     personas={personas}
                     areas={areas}
+                    permisos={permisos}
                     submitUrl={`/users/${user.id}`}
                     method="put"
                     isEditing

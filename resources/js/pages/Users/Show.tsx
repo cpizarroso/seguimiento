@@ -35,11 +35,27 @@ interface UserShowData {
     historial_puestos?: PersonaPuesto[];
     roles?: { id: number; nombre: string; slug: string }[];
     areas?: { id: number; nombre: string; codigo: string; predeterminada: boolean }[];
+    permisos_overrides?: {
+        permiso_id: number;
+        permitido: boolean;
+        modulo: string;
+        accion: string;
+    }[];
 }
 
 interface UsersShowProps {
     user: UserShowData;
 }
+
+const ACCIONES: Record<string, string> = {
+    consulta: 'Consulta',
+    creacion: 'Creación',
+    edicion: 'Edición',
+    baja: 'Baja',
+    tramitacion: 'Tramitación',
+    descarga: 'Descarga',
+    restauracion: 'Restauración',
+};
 
 export default function UsersShow({ user }: UsersShowProps) {
     const { can } = usePermissions();
@@ -130,6 +146,31 @@ export default function UsersShow({ user }: UsersShowProps) {
                     </div>
                 ) : (
                     <p className="text-sm text-gray-400 dark:text-gray-500">Sin áreas habilitadas.</p>
+                )}
+            </Card>
+
+            <Card>
+                <h2 className="mb-4 text-lg font-semibold text-patuju-green">Permisos personalizados</h2>
+                {(user.permisos_overrides ?? []).length > 0 ? (
+                    <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                        {(user.permisos_overrides ?? []).map((permiso) => (
+                            <li
+                                key={permiso.permiso_id}
+                                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                            >
+                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {permiso.modulo}.{ACCIONES[permiso.accion] ?? permiso.accion}
+                                </span>
+                                <Badge variant={permiso.permitido ? 'success' : 'danger'}>
+                                    {permiso.permitido ? 'Permitir' : 'Denegar'}
+                                </Badge>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                        Sin overrides: hereda únicamente los permisos de sus roles.
+                    </p>
                 )}
             </Card>
 

@@ -40,6 +40,7 @@ class UserController extends Controller
             'roles' => RolResource::collection(Rol::with('permisos.modulo', 'permisos.accion')->get()),
             'personas' => PersonaResource::collection($this->personaService->obtenerTodos()),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
+            'permisos' => $this->catalogoPermisos(),
         ]);
     }
 

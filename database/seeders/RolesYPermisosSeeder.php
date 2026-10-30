@@ -88,7 +88,7 @@ class RolesYPermisosSeeder extends Seeder
                 'es_sistema' => true,
                 'permisos' => [
                     'dashboard' => ['consulta'],
-                    'tramites' => ['consulta', 'tramitacion'],
+                    'tramites' => ['consulta', 'creacion', 'tramitacion'],
                     'reporte' => ['consulta'],
                 ],
             ],
@@ -98,7 +98,7 @@ class RolesYPermisosSeeder extends Seeder
                 'es_sistema' => true,
                 'permisos' => [
                     'dashboard' => ['consulta'],
-                    'tramites' => ['consulta', 'tramitacion'],
+                    'tramites' => ['consulta', 'creacion', 'tramitacion'],
                     'reporte' => ['consulta'],
                     'configuracion' => ['consulta'],
                 ],
