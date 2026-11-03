@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import { BadgeEntorno } from '@/components/features/sistema/BadgeEntorno';
 import { Icon } from '@/components/ui/Icon';
+import { useTheme } from '@/hooks/useTheme';
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -22,6 +23,7 @@ const sectionNames: Record<string, string> = {
 export function Header({ onMenuClick }: HeaderProps) {
     const { auth } = usePage().props;
     const { url } = usePage();
+    const { theme, toggle } = useTheme();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -75,9 +77,22 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
 
             <div className="flex items-center gap-2.5">
+
+                {/* Botón de cambio de tema integrado con useTheme */}
+                <button
+                    onClick={toggle}
+                    title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                    className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-excel-muted transition-colors hover:bg-excel-surface-2 hover:text-excel-text dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                >
+                    <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} className="flex-shrink-0" />
+                    <span className="hidden sm:inline">{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>
+                </button>
+
                 <div className="hidden sm:block">
                     <BadgeEntorno />
                 </div>
+
+
 
                 <div className="relative" ref={menuRef}>
                     <button
