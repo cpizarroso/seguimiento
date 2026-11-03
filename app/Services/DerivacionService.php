@@ -14,50 +14,46 @@ class DerivacionService
     {
         $this->marcarAnterioresComoHistorico($tramite);
 
-        $ultimoNumero = $tramite->derivaciones()->max('numero_derivacion') ?? 0;
-        $nuevoNumero = $ultimoNumero + 1;
-
-        $derivacion = Derivacion::create([
-            'tramite_id' => $tramite->id,
-            'numero_derivacion' => $nuevoNumero,
-            'derivado_de' => $tramite->derivado_a,
-            'derivado_a' => $derivadoA,
-            'fecha_derivacion' => now(),
-            'glosa_derivacion' => $glosaDerivacion,
-            'estado' => 'derivado',
-        ]);
+        $derivacion = $this->crearDerivacion($tramite, $derivadoA, $glosaDerivacion);
 
         $tramite->update([
             'derivado_a' => $derivadoA,
             'estado' => 'proceso',
         ]);
 
-        return $derivacion->load(['de', 'a']);
+        return $derivacion;
+    }
+
+    /**
+     * Deriva y recepciona en un solo paso. Se usa al aprobar una reasignación:
+     * el solicitante pasa a tener el trámite listo para derivar.
+     */
+    public function derivarRecepcionado(Tramite $tramite, int $derivadoA, ?string $glosaDerivacion = null): Derivacion
+    {
+        $this->marcarAnterioresComoHistorico($tramite);
+
+        $derivacion = $this->crearDerivacion($tramite, $derivadoA, $glosaDerivacion, 'recepcionado');
+
+        $tramite->update([
+            'derivado_a' => $derivadoA,
+            'estado' => 'proceso',
+        ]);
+
+        return $derivacion;
     }
 
     public function observar(Tramite $tramite, int $derivadoA, ?string $glosaObservacion = null): Derivacion
     {
         $this->marcarAnterioresComoHistorico($tramite);
 
-        $ultimoNumero = $tramite->derivaciones()->max('numero_derivacion') ?? 0;
-        $nuevoNumero = $ultimoNumero + 1;
-
-        $derivacion = Derivacion::create([
-            'tramite_id' => $tramite->id,
-            'numero_derivacion' => $nuevoNumero,
-            'derivado_de' => $tramite->derivado_a,
-            'derivado_a' => $derivadoA,
-            'fecha_derivacion' => now(),
-            'glosa_derivacion' => $glosaObservacion,
-            'estado' => 'derivado',
-        ]);
+        $derivacion = $this->crearDerivacion($tramite, $derivadoA, $glosaObservacion);
 
         $tramite->update([
             'derivado_a' => $derivadoA,
             'estado' => 'observado',
         ]);
 
-        return $derivacion->load(['de', 'a']);
+        return $derivacion;
     }
 
     public function recepcionar(Derivacion $derivacion, ?string $glosaRecepcion = null): Derivacion
@@ -236,5 +232,32 @@ class DerivacionService
         $tramite->derivaciones()
             ->whereIn('estado', ['derivado', 'recepcionado'])
             ->update(['estado' => 'historico']);
+    }
+
+    /**
+     * Crea la siguiente derivación de la cadena. El estado por defecto es
+     * 'derivado'; al recepcionar en el acto se usa 'recepcionado'.
+     */
+    private function crearDerivacion(
+        Tramite $tramite,
+        int $derivadoA,
+        ?string $glosaDerivacion,
+        string $estado = 'derivado',
+    ): Derivacion {
+        $ultimoNumero = $tramite->derivaciones()->max('numero_derivacion') ?? 0;
+        $ahora = now();
+
+        $derivacion = Derivacion::create([
+            'tramite_id' => $tramite->id,
+            'numero_derivacion' => $ultimoNumero + 1,
+            'derivado_de' => $tramite->derivado_a,
+            'derivado_a' => $derivadoA,
+            'fecha_derivacion' => $ahora,
+            'glosa_derivacion' => $glosaDerivacion,
+            'fecha_recepcion' => $estado === 'recepcionado' ? $ahora : null,
+            'estado' => $estado,
+        ]);
+
+        return $derivacion->load(['de', 'a']);
     }
 }

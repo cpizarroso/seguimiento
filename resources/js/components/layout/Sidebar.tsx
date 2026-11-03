@@ -12,6 +12,7 @@ interface MenuItem {
 const allMenuItems: MenuItem[] = [
     { label: 'Dashboard', href: '/dashboard', icon: 'dashboard', permission: 'dashboard' },
     { label: 'Trámites', href: '/tramites', icon: 'document', permission: 'tramites' },
+    { label: 'Reasignaciones', href: '/reasignaciones', icon: 'history', permission: 'reasignaciones' },
     { label: 'Personas', href: '/personas', icon: 'people', permission: 'personas' },
     { label: 'Áreas y Puestos', href: '/areas', icon: 'building', permission: 'areas_puestos' },
     { label: 'Reporte', href: '/reporte', icon: 'chart', permission: 'reporte' },
@@ -31,8 +32,13 @@ interface SidebarProps {
 export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
     const { url, props } = usePage();
     const { theme, toggle } = useTheme();
-    const authUser = props.auth?.user as { role?: string; permisos?: string[] } | null;
+    const authUser = props.auth?.user as {
+        role?: string;
+        permisos?: string[];
+        reasignaciones_pendientes?: number;
+    } | null;
     const permisos = authUser?.permisos ?? [];
+    const pendientesReasignacion = authUser?.reasignaciones_pendientes ?? 0;
 
     const menuItems = allMenuItems.filter((item) => {
         if (item.permission) return permisos.includes(`${item.permission}.consulta`);
@@ -101,6 +107,11 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
                         >
                             <Icon name={item.icon} size={18} className="flex-shrink-0" />
                             {!collapsed && <span className="truncate">{item.label}</span>}
+                            {!collapsed && item.href === '/reasignaciones' && pendientesReasignacion > 0 && (
+                                <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-excel-red px-1.5 text-[10px] font-bold text-white">
+                                    {pendientesReasignacion > 99 ? '99+' : pendientesReasignacion}
+                                </span>
+                            )}
                         </Link>
                     );
                 })}

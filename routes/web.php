@@ -9,8 +9,10 @@ use App\Http\Controllers\Configuracion\ConfiguracionController;
 use App\Http\Controllers\Contador\ContadorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Derivaciones\DerivacionController;
+use App\Http\Controllers\Modificaciones\ModificacionController;
 use App\Http\Controllers\Personas\PersonaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Reasignaciones\ReasignacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\Roles\RolController;
 use App\Http\Controllers\Tramites\TramiteController;
@@ -38,9 +40,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('tramites/{tramite}', [TramiteController::class, 'show'])->name('tramites.show');
 
-    Route::middleware('permission:tramites,edicion')->group(function () {
+    // La edición real se autoriza por trámite: permiso tramites.edicion
+    // (admin/jefe) o una solicitud de modificación aprobada y vigente.
+    Route::middleware('permission:tramites')->group(function () {
         Route::get('tramites/{tramite}/edit', [TramiteController::class, 'edit'])->name('tramites.edit');
         Route::put('tramites/{tramite}', [TramiteController::class, 'update'])->name('tramites.update');
+        Route::delete('tramites/{tramite}', [TramiteController::class, 'destroy'])->name('tramites.destroy');
     });
 
     Route::middleware('permission:tramites,tramitacion')->group(function () {
@@ -62,8 +67,38 @@ Route::middleware('auth')->group(function () {
             ->name('actuaciones.destroy');
     });
 
-    Route::middleware('permission:tramites,baja')->group(function () {
-        Route::delete('tramites/{tramite}', [TramiteController::class, 'destroy'])->name('tramites.destroy');
+    Route::middleware('permission:reasignaciones')->group(function () {
+        Route::get('reasignaciones', [ReasignacionController::class, 'index'])->name('reasignaciones.index');
+    });
+
+    Route::middleware('permission:reasignaciones,creacion')->group(function () {
+        Route::post('reasignaciones', [ReasignacionController::class, 'store'])->name('reasignaciones.store');
+        Route::delete('reasignaciones/{reasignacion}', [ReasignacionController::class, 'cancelar'])
+            ->name('reasignaciones.cancelar');
+    });
+
+    Route::middleware('permission:reasignaciones,resolucion')->group(function () {
+        Route::put('reasignaciones/{reasignacion}/aprobar', [ReasignacionController::class, 'aprobar'])
+            ->name('reasignaciones.aprobar');
+        Route::put('reasignaciones/{reasignacion}/rechazar', [ReasignacionController::class, 'rechazar'])
+            ->name('reasignaciones.rechazar');
+    });
+
+    Route::middleware('permission:modificaciones')->group(function () {
+        Route::get('modificaciones', [ModificacionController::class, 'index'])->name('modificaciones.index');
+    });
+
+    Route::middleware('permission:modificaciones,creacion')->group(function () {
+        Route::post('modificaciones', [ModificacionController::class, 'store'])->name('modificaciones.store');
+        Route::delete('modificaciones/{modificacion}', [ModificacionController::class, 'cancelar'])
+            ->name('modificaciones.cancelar');
+    });
+
+    Route::middleware('permission:modificaciones,resolucion')->group(function () {
+        Route::put('modificaciones/{modificacion}/aprobar', [ModificacionController::class, 'aprobar'])
+            ->name('modificaciones.aprobar');
+        Route::put('modificaciones/{modificacion}/rechazar', [ModificacionController::class, 'rechazar'])
+            ->name('modificaciones.rechazar');
     });
 
     Route::get('reporte', [ReporteController::class, 'index'])->name('reporte.index');

@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         'backups',
         'configuraciones',
         'reportes',
+        'reasignaciones',
         'derivaciones',
         'actuaciones',
         'tramites',
@@ -89,11 +90,13 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesYPermisosSeeder::class,
             PermisosBackupsSeeder::class,
+            PermisosReasignacionesSeeder::class,
             PermisosTramitacionSeeder::class,
             PermisosCreacionTramitesSeeder::class,
             ConfiguracionSeeder::class,
             AreaSeeder::class,
             UsuarioSeeder::class,
+            UsuarioImportacionSeeder::class,
         ]);
     }
 }

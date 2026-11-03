@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\AreaService;
 use App\Services\ContadorTramiteService;
 use App\Services\DerivacionService;
+use App\Services\ReasignacionService;
 use App\Services\TramiteService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,7 @@ class TramiteController extends Controller
         private readonly DerivacionService $derivacionService,
         private readonly UserService $userService,
         private readonly ContadorTramiteService $contadorService,
+        private readonly ReasignacionService $reasignacionService,
     ) {}
 
     public function index(): Response
@@ -165,6 +167,7 @@ class TramiteController extends Controller
             'tramite' => new TramiteResource($tramite),
             'areas' => AreaResource::collection($this->areaService->obtenerTodos()),
             'destinatarios' => $this->destinatariosDerivacion(request()->user()),
+            'reasignacion_pendiente' => $this->reasignacionService->pendienteDeTramite($tramite),
         ]);
     }
 

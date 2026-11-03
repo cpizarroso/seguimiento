@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Reasignacion;
 use App\Support\Modo;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -33,6 +34,9 @@ class HandleInertiaRequests extends Middleware
                     'area' => $user->persona?->puestoActivo?->puesto?->area?->nombre,
                     'area_id' => $user->persona?->puestoActivo?->puesto?->area_id,
                     'permisos' => $user->permisos_slug,
+                    'reasignaciones_pendientes' => $user->hasPermission('reasignaciones', 'resolucion')
+                        ? Reasignacion::query()->pendientes()->count()
+                        : 0,
                 ] : null,
             ],
             'dominio_usuario' => (string) config('app.user_domain'),

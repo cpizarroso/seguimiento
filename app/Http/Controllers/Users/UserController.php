@@ -103,8 +103,8 @@ class UserController extends Controller
             'persona.historialPuestos.puesto.area',
             'roles.permisos',
             'areasHabilitadas',
-            'permisosDirectos.permiso.modulo',
-            'permisosDirectos.permiso.accion',
+            'permisosDirectos.modulo',
+            'permisosDirectos.accion',
         ]);
 
         return Inertia::render('Users/Show', [
@@ -118,8 +118,8 @@ class UserController extends Controller
             'persona.puestoActivo.puesto.area',
             'roles',
             'areasHabilitadas',
-            'permisosDirectos.permiso.modulo',
-            'permisosDirectos.permiso.accion',
+            'permisosDirectos.modulo',
+            'permisosDirectos.accion',
         );
 
         return Inertia::render('Users/Edit', [

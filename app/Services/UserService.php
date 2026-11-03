@@ -19,8 +19,8 @@ class UserService
                 'persona.puestoActivo.puesto.area',
                 'roles',
                 'areasHabilitadas',
-                'permisosDirectos.permiso.modulo',
-                'permisosDirectos.permiso.accion',
+                'permisosDirectos.modulo',
+                'permisosDirectos.accion',
             ])
             ->leftJoin('personas', 'personas.id', '=', 'users.persona_id')
             ->select('users.*')
@@ -173,8 +173,8 @@ class UserService
             'persona.historialPuestos.puesto.area',
             'roles',
             'areasHabilitadas',
-            'permisosDirectos.permiso.modulo',
-            'permisosDirectos.permiso.accion',
+            'permisosDirectos.modulo',
+            'permisosDirectos.accion',
         ])->findOrFail($id);
     }
 

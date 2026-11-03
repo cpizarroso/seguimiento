@@ -50,7 +50,17 @@ class AreaSeeder extends Seeder
             ]
         );
 
-        foreach ([$sempla, $dla, $leg, $adm] as $area) {
+        $com = Area::updateOrCreate(
+            ['codigo' => 'COM'],
+            [
+                'nombre' => 'Comunicaciones',
+                'descripcion' => 'Recepción y despacho de comunicaciones de la Dirección Legal y Administrativa.',
+                'activo' => true,
+                'area_padre_id' => $dla->id,
+            ]
+        );
+
+        foreach ([$sempla, $dla, $leg, $adm, $com] as $area) {
             $this->crearPuestosEstandar($area);
         }
     }

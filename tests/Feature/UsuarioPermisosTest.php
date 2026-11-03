@@ -1,10 +1,11 @@
 <?php
 
-use App\Models\Persona;
 use App\Models\Permiso;
+use App\Models\Persona;
 use App\Models\Rol;
 use App\Models\User;
 use Database\Seeders\RolesYPermisosSeeder;
+use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     $this->seed(RolesYPermisosSeeder::class);
@@ -148,4 +149,36 @@ it('permite guardar overrides propios que no bloquean el acceso', function () {
         'permiso_id' => $permisoId,
         'permitido' => true,
     ]);
+});
+
+it('carga las pantallas de usuarios con overrides directos registrados', function () {
+    $persona = crearPersonaConPuesto(crearArea('OV'.uniqid()));
+
+    $otro = User::factory()->create(['persona_id' => $persona->id]);
+    $otro->permisosDirectos()->sync([
+        permisoIdPorSlug('usuarios', 'edicion') => ['permitido' => true],
+    ]);
+
+    $this->actingAs($this->admin->fresh())
+        ->get(route('users.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('Users/Index'));
+
+    $this->actingAs($this->admin->fresh())
+        ->get(route('users.show', $otro))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Users/Show')
+            ->where('user.permisos_overrides.0.accion', 'edicion')
+        );
+
+    $this->actingAs($this->admin->fresh())
+        ->get(route('users.edit', $otro))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('Users/Edit'));
+
+    $this->actingAs($this->admin->fresh())
+        ->get(route('roles.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('Roles/Index'));
 });

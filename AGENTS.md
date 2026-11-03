@@ -110,6 +110,34 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 - Archivos en `storage/app/private/backups-{BACKUP_APP_SLUG}`; el slug es estable y **no** se deriva de `APP_NAME`.
 - Tests: `tests/Feature/Backup*.php` y `resources/js/tests/Backups/`.
 
+## Módulo Reasignaciones
+
+Permite que un usuario pida que se le reasigne un trámite y que el jefe o administrador lo apruebe. Al aprobar se crea una derivación **recepcionada** al solicitante, que queda listo para derivarlo a cualquier otro usuario.
+
+### Permisos
+Módulo `reasignaciones` con 3 acciones: `consulta`, `creacion`, `resolucion`.
+- `consulta` y `creacion`: todos los roles.
+- `resolucion`: solo `admin` y `jefe`.
+
+### Rutas principales (`routes/web.php`)
+| Ruta | Nombre | Acción requerida |
+|---|---|---|
+| `GET /reasignaciones` | `reasignaciones.index` | `consulta` |
+| `POST /reasignaciones` | `reasignaciones.store` | `creacion` |
+| `DELETE /reasignaciones/{reasignacion}` | `reasignaciones.cancelar` | `creacion` (solo el dueño) |
+| `PUT /reasignaciones/{reasignacion}/aprobar` | `reasignaciones.aprobar` | `resolucion` |
+| `PUT /reasignaciones/{reasignacion}/rechazar` | `reasignaciones.rechazar` | `resolucion` |
+
+### Reglas del módulo
+- No se puede solicitar un trámite finalizado, uno que el usuario ya tenga recepcionado (puede derivarlo directamente) ni si ya hay otra solicitud pendiente.
+- Una sola solicitud pendiente por trámite: al aprobar una, las demás se rechazan automáticamente con glosa.
+- Aprobar ejecuta `DerivacionService::derivarRecepcionado()`: marca las derivaciones vigentes como `historico`, crea una nueva `recepcionado`, deja `tramite.derivado_a` en el solicitante y el trámite en `proceso`.
+- Si había una derivación pendiente sin recepcionar, también queda como `historico`.
+- El solicitante puede cancelar su propia solicitud mientras esté `pendiente`.
+- Solo admin/jefe ven las solicitudes de todos; el resto ve únicamente las propias.
+- Sin FK hacia `users` (tabla MyISAM): `solicitante_id` y `resuelto_por_id` se validan por aplicación.
+- Tests: `tests/Feature/ReasignacionTest.php` y `resources/js/tests/Reasignaciones/`.
+
 ## Seeders disponibles
 
 - `php artisan db:seed` — ejecuta `DatabaseSeeder`: **limpia** las tablas de negocio (incluidas `backups` y `backup_eventos`, solo si existen) y siembra únicamente roles y permisos, configuración, áreas con sus puestos y los usuarios institucionales. **No crea trámites, derivaciones ni actuaciones**
@@ -118,16 +146,18 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 - `php artisan db:seed --class=PermisosTramitacionSeeder` — agrega la acción `tramitacion` del módulo `tramites` y la concede a todos los roles existentes; idempotente (apto para producción sin `migrate:fresh`)
 - `php artisan db:seed --class=PermisosCreacionTramitesSeeder` — agrega la acción `creacion` del módulo `tramites` y la concede a todos los roles existentes (todos los usuarios pueden crear trámites); idempotente
 - `php artisan db:seed --class=PermisosBackupsSeeder` — módulo `backups` con sus 6 permisos; idempotente
+- `php artisan db:seed --class=PermisosReasignacionesSeeder` — módulo `reasignaciones` con `consulta`, `creacion` y `resolucion` (resolución solo para `admin` y `jefe`); idempotente
 - `php artisan db:seed --class=ConfiguracionSeeder` — configuración inicial (gestión del reporte)
 - `php artisan db:seed --class=AreaSeeder` — áreas y puestos
 - `php artisan db:seed --class=UsuarioSeeder` — los 7 usuarios institucionales con su persona, puesto vigente, rol y áreas habilitadas; idempotente
+- `php artisan db:seed --class=UsuarioImportacionSeeder` — usuario técnico `importacion@{dominio}` ("Usuario Importación") en el área `COM`, destinatario de las derivaciones migradas desde la planilla DLA; idempotente y apto para producción
 - `php artisan db:seed --class=TramiteSeeder` — **solo manual**: trámites con derivaciones y actuaciones (`crearParaUsuario($user, $cantidad)` para lotes a medida). Asume que ya existen usuarios y áreas sembrados
 - `php artisan db:seed --class=ActuacionSeeder` — **solo manual**: actuaciones adicionales
 - `PersonaSeeder`, `AdminUserSeeder`, `UserSeeder` y `UserSecretariaSeeder` quedan en disco como referencia histórica pero **ya no se invocan** desde `DatabaseSeeder`; `UsuarioSeeder` los reemplaza
 
 ### Usuarios
 - El dominio institucional de las cuentas es `APP_USER_DOMAIN` (`.env`; por defecto `seguimiento.com`) y se expone al frontend como `dominio_usuario`
-- El seed deja exactamente **7 usuarios**, todos con contraseña `1234567`:
+- El seed deja **7 usuarios institucionales** más el usuario técnico `importacion@{dominio}`, todos con contraseña `1234567`:
 
   | Usuario | Nombre | Área / Puesto | Rol |
   |---|---|---|---|
@@ -155,6 +185,23 @@ Módulo `backups` con 6 acciones: `consulta`, `creacion`, `edicion`, `baja`, `de
 
 ### Estructura de derivaciones
 Cada trámite generado por el seeder recibe una primera derivación y una cadena de 9 a 19 derivaciones (`DerivacionFactory::crearCadena`), con seguimiento de origen/destino, glosas y recepciones. El número es aleatorio por trámite, así que no hay totales fijos.
+
+## Importación de la planilla DLA (gestión 2026)
+
+Migra la hoja `DOCUMENTOS RECIB DLA` (columnas `NRO`, `FECHA`, `DESCRIPCION`, `DERIVADO A.`, `RAO-91`, `DERIVACION 2..5`).
+
+```bash
+php artisan importar:documentos-dla "ruta/al/archivo.xlsx" [--simular] [--forzar]
+```
+
+- Lectura con `PhpSpreadsheet`; la lógica vive en `App\Services\ImportacionDocumentosDlaService` y las fechas en `App\Support\NormalizadorFechaExcel`.
+- `NRO` se conserva como `numero_tramite`; los duplicados y los `S/N`/`SN` se renumeran con el contador (desde el máximo de la planilla) y el original queda en `numero_diamante`.
+- `RAO-91` se agrega a la descripción en una línea `RAO-91: ...`.
+- Filas sin descripción: fecha `2026-01-01` y descripción `sin datos`.
+- La primera derivación sale de `DERIVADO A.`; luego `DERIVACION 2..5`. La fecha se extrae del texto; si no aparece se guarda `1970-01-01 00:00:01` (mínimo válido de MySQL `TIMESTAMP`) y el trámite queda `proceso`.
+- Todas las derivaciones se asignan al usuario técnico `importacion@{dominio}` (área `COM`); los trámites quedan en el área `DLA`.
+- Estado: `finalizado`, salvo que la última derivación no tenga fecha recuperada → `proceso`.
+- No reejecutar sin `--forzar`: aborta si ya existen trámites de `DLA` en la gestión.
 
 ## Verificación antes de cerrar un cambio
 

@@ -30,6 +30,22 @@ class Tramite extends Model
         'glosa_finalizacion',
         'fecha_finalizacion',
         'finalizado_por',
+        'glosa_baja',
+        'fecha_baja',
+        'dado_de_baja_por',
+    ];
+
+    public const ESTADO_ANULADO = 'anulado';
+
+    /**
+     * Estados que un usuario puede fijar manualmente desde el detalle. El
+     * estado `anulado` solo lo asigna el flujo de baja autorizada.
+     */
+    public const ESTADOS_OPERATIVOS = [
+        'iniciado',
+        'proceso',
+        'observado',
+        'finalizado',
     ];
 
     public const ESTADOS = [
@@ -37,6 +53,7 @@ class Tramite extends Model
         'proceso',
         'observado',
         'finalizado',
+        self::ESTADO_ANULADO,
     ];
 
     protected function casts(): array
@@ -44,6 +61,7 @@ class Tramite extends Model
         return [
             'fecha' => 'datetime',
             'fecha_finalizacion' => 'datetime',
+            'fecha_baja' => 'datetime',
             'urgente' => 'boolean',
         ];
     }
@@ -141,12 +159,38 @@ class Tramite extends Model
         return $this->belongsTo(User::class, 'finalizado_por');
     }
 
+    public function dadoDeBajaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dado_de_baja_por');
+    }
+
+    public function modificaciones(): HasMany
+    {
+        return $this->hasMany(Modificacion::class);
+    }
+
+    public function estaAnulado(): bool
+    {
+        return $this->estado === self::ESTADO_ANULADO;
+    }
+
+    /**
+     * Estados que impiden cualquier gestión posterior del trámite.
+     */
+    public function estaCerrado(): bool
+    {
+        return in_array($this->estado, ['finalizado', self::ESTADO_ANULADO], true);
+    }
+
     public function getDiasTranscurridosAttribute(): int
     {
         $desde = $this->created_at ?? $this->fecha ?? now();
-        $hasta = $this->estado === 'finalizado' && $this->fecha_finalizacion
-            ? $this->fecha_finalizacion
-            : now();
+
+        $hasta = match (true) {
+            $this->estado === 'finalizado' && $this->fecha_finalizacion !== null => $this->fecha_finalizacion,
+            $this->estaAnulado() && $this->fecha_baja !== null => $this->fecha_baja,
+            default => now(),
+        };
 
         return (int) $desde->diffInDays($hasta);
     }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Tramite;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -279,14 +280,19 @@ class TramiteService
         return $tramite->load(['creador.persona', 'asignado.persona', 'area']);
     }
 
-    public function actualizar(Tramite $tramite, array $data): Tramite
+    public function actualizar(Tramite $tramite, array $data, bool $soloContenido = false): Tramite
     {
-        $tramite->update([
+        $cambios = [
             'descripcion' => $data['descripcion'],
             'numero_diamante' => $data['numero_diamante'] ?? null,
-            'area_id' => $data['area_id'],
-            'urgente' => $data['urgente'] ?? false,
-        ]);
+        ];
+
+        if (! $soloContenido) {
+            $cambios['area_id'] = $data['area_id'];
+            $cambios['urgente'] = $data['urgente'] ?? false;
+        }
+
+        $tramite->update($cambios);
 
         return $tramite;
     }
@@ -309,7 +315,7 @@ class TramiteService
 
     public function cambiarEstado(Tramite $tramite, string $estado, ?array $data = []): Tramite
     {
-        if (! in_array($estado, Tramite::ESTADOS)) {
+        if (! in_array($estado, Tramite::ESTADOS_OPERATIVOS, true)) {
             throw new \InvalidArgumentException("Estado inválido: {$estado}");
         }
 
@@ -329,5 +335,25 @@ class TramiteService
     public function eliminar(Tramite $tramite): void
     {
         $tramite->delete();
+    }
+
+    /**
+     * Baja lógica: conserva el trámite y su historial, pero lo deja fuera de
+     * circulación. Las derivaciones vigentes pasan a histórico.
+     */
+    public function darDeBaja(Tramite $tramite, User $usuario, string $glosa): Tramite
+    {
+        $tramite->derivaciones()
+            ->whereIn('estado', ['derivado', 'recepcionado'])
+            ->update(['estado' => 'historico']);
+
+        $tramite->update([
+            'estado' => Tramite::ESTADO_ANULADO,
+            'glosa_baja' => trim($glosa),
+            'fecha_baja' => now(),
+            'dado_de_baja_por' => $usuario->id,
+        ]);
+
+        return $tramite;
     }
 }

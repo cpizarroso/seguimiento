@@ -9,6 +9,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { TramiteTimeline } from '@/components/features/tramites/TramiteTimeline';
 import { DerivarModal } from '@/components/features/derivaciones/DerivarModal';
 import { DestinoDerivacion } from '@/components/features/derivaciones/DestinoDerivacion';
+import { ModalSolicitarReasignacion } from '@/components/features/reasignaciones/ModalSolicitarReasignacion';
 import { useEffect, useState } from 'react';
 import type { Tramite, Actuacion } from '@/types/generated/Tramite';
 import type { DestinatarioDerivacion } from '@/types/derivaciones';
@@ -16,6 +17,12 @@ import type { DestinatarioDerivacion } from '@/types/derivaciones';
 interface ShowProps {
     tramite: Tramite;
     destinatarios?: DestinatarioDerivacion[];
+    reasignacion_pendiente?: {
+        id: number;
+        solicitante: string | null;
+        motivo: string;
+        created_at: string | null;
+    } | null;
 }
 
 const estadoColors: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
@@ -32,7 +39,7 @@ const estadoLabels: Record<string, string> = {
     finalizado: 'Finalizado',
 };
 
-export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps) {
+export default function TramitesShow({ tramite, destinatarios = [], reasignacion_pendiente = null }: ShowProps) {
     const { url, props } = usePage();
     const { auth } = props;
     const usuario = auth?.user as { id: number; permisos: string[] } | null;
@@ -46,6 +53,7 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
     const [finalizarOpen, setFinalizarOpen] = useState(false);
     const [actuacionOpen, setActuacionOpen] = useState(false);
     const [derivarOpen, setDerivarOpen] = useState(false);
+    const [solicitarReasignacionOpen, setSolicitarReasignacionOpen] = useState(false);
 
     const actuacionForm = useForm({ glosa: '' });
     const recepcionarForm = useForm({ glosa_recepcion: '' });
@@ -64,6 +72,10 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
     const puedeObservar = puedeTramitar && tramite.estado === 'proceso' && asignadoAMi && recepcionadoPorMi;
     const puedeFinalizar = puedeTramitar && ['proceso', 'observado'].includes(tramite.estado) && asignadoAMi && recepcionadoPorMi;
     const puedeRecepcionar = puedeTramitar && ultimaDerivacion && ultimaDerivacion.estado === 'derivado' && ultimaDerivacion.derivado_a?.id === usuarioId && tramite.estado !== 'finalizado';
+    const puedeSolicitarReasignacion = can('reasignaciones', 'creacion')
+        && tramite.estado !== 'finalizado'
+        && !asignadoAMi
+        && !reasignacion_pendiente;
 
     const derivaciones = tramite.derivaciones ?? [];
     const [derivacionSeleccionadaId, setDerivacionSeleccionadaId] = useState<number | null>(
@@ -126,6 +138,15 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
                     {tramite.urgente && (
                         <Badge variant="danger" className="text-base px-4 py-1">Urgente</Badge>
                     )}
+                    {reasignacion_pendiente && (
+                        <Badge
+                            variant="info"
+                            className="text-base px-4 py-1"
+                            title={reasignacion_pendiente.solicitante ? `Solicitada por ${reasignacion_pendiente.solicitante}` : undefined}
+                        >
+                            Solicitud en revisión
+                        </Badge>
+                    )}
                     {typeof tramite.dias_transcurridos === 'number' && (
                         <Badge variant="warning" className="text-base px-4 py-1">
                             {tramite.dias_transcurridos} {tramite.dias_transcurridos === 1 ? 'día' : 'días'}
@@ -141,6 +162,11 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
                     {puedeDerivar && (
                         <Button onClick={() => setDerivarOpen(true)}>
                             Derivar
+                        </Button>
+                    )}
+                    {puedeSolicitarReasignacion && (
+                        <Button variant="secondary" onClick={() => setSolicitarReasignacionOpen(true)}>
+                            Solicitar reasignación
                         </Button>
                     )}
                     {puedeRecepcionar && (
@@ -404,6 +430,12 @@ export default function TramitesShow({ tramite, destinatarios = [] }: ShowProps)
                     onSuccess={() => setDerivarOpen(false)}
                 />
             )}
+
+            <ModalSolicitarReasignacion
+                open={solicitarReasignacionOpen}
+                onClose={() => setSolicitarReasignacionOpen(false)}
+                tramite={{ id: tramite.id, numero_completo: tramite.numero_completo }}
+            />
         </div>
     );
 }
